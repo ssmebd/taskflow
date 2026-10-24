@@ -1,0 +1,4 @@
+config.php
+deploy_config.php
+*.log
+error_log
