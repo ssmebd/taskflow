@@ -80,7 +80,7 @@ body.sc #wlinks,body.sc .sf{display:none}body.sc #vname{display:block}
 #smenu button{text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:6px;width:100%}
 #smenu button:hover{background:var(--col)}
 #smenu button[hidden]{display:none}
-.ro #setw{display:none}
+.ro #smenu>button:not(#pm){display:none}
 .tc{display:flex;align-items:center;gap:2px}.tc .ed{flex:1;min-width:0}
 .ovb{color:#fff;background:#dc2626;border-radius:6px;font-size:11px;line-height:1;padding:3px 5px;cursor:help;flex:none}
 .gtools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:0 16px 10px;color:var(--mut);font-size:13px}
@@ -107,15 +107,18 @@ body.sc #wlinks,body.sc .sf{display:none}body.sc #vname{display:block}
 .msg{border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:13px;white-space:pre-wrap;word-break:break-word}.msg.ins{border-color:#f59e0b;background:rgba(245,158,11,.1)}.msg.new{box-shadow:0 0 0 2px #3b82f6}.msg small{display:block;color:var(--mut);font-size:11px}.msg .x{float:right;cursor:pointer;color:var(--mut);border:0;background:none;width:auto;padding:0}
 #bell{position:relative}#bell b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:3px}
 .ib{border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:6px 0;cursor:pointer;font-size:13px}.ib:hover{background:rgba(127,127,127,.1)}
-header{--nv:#0f2a5c;background:var(--nv);border-bottom:1px solid #0a1d42;color:#fff}
-header h1,header .app,header #who,header a.out,header #live{color:#fff!important}header .app{opacity:.75}
-header input,header select,header button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
-header input::placeholder{color:rgba(255,255,255,.7)}header option{color:#1d2433;background:#fff}
-header button:hover:not(:disabled){background:rgba(255,255,255,.22)}header button:disabled{opacity:.7}
-header .tabs button.on{background:#fff;color:var(--nv);border-color:#fff;font-weight:600}
-header button.p{background:#fff;color:var(--nv);border-color:#fff}header button.p:hover{background:#e6ecfb}
+header{--nv:#0f2a5c;--hfg:#ffffff;background:var(--nv);border-bottom:1px solid color-mix(in srgb,var(--nv) 80%,#000);color:var(--hfg)}
+header h1,header .app,header #who,header a.out,header #live{color:var(--hfg)!important}header .app{opacity:.75}
+header input,header select,header button{background:color-mix(in srgb,var(--hfg) 12%,transparent);color:var(--hfg);border-color:color-mix(in srgb,var(--hfg) 30%,transparent)}
+header input::placeholder{color:color-mix(in srgb,var(--hfg) 70%,transparent)}header option{color:#1d2433;background:#fff}
+header button:hover:not(:disabled){background:color-mix(in srgb,var(--hfg) 22%,transparent)}header button:disabled{opacity:.7}
+header .tabs button.on{background:var(--hfg);color:var(--nv);border-color:var(--hfg);font-weight:600}
+header button.p{background:var(--hfg);color:var(--nv);border-color:var(--hfg)}header button.p:hover{opacity:.88}
 header #bell b{background:#ef4444;color:#fff}
 header #smenu button{background:var(--card);color:var(--ink);border-color:transparent;text-align:left}header #smenu button:hover{background:var(--col)}
+body.hdark #wlogo .wh,body.hdark #wlogo img[src^="data:"]{filter:brightness(0)}
+.sw{display:inline-block;width:46px;height:30px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0;font-size:11px;font-weight:700}.sw:hover{border-color:var(--pri)}
+#pprev{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}
 #side{background:#0b2150;border-right-color:#081a40}#side .sh{border-bottom-color:rgba(255,255,255,.18)}
 #side button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}#side button:hover{background:rgba(255,255,255,.24)}
 #side .wl{background:rgba(255,255,255,.1)}#side .wl:hover{border-color:rgba(255,255,255,.5)}#side .wl.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.28)}
@@ -153,6 +156,7 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
+   <button id="pm">🎨 Colours</button>
    <button id="cm">➕ Column</button>
    <button id="dm">✏ Drawing types</button>
    <button id="xm">⬇ Export to Excel</button>
@@ -201,6 +205,12 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
+<dialog id="pdlg"><b>Top bar colours</b>
+ <div id="pprev">TaskFlow – preview text</div>
+ <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center;margin:0">Bar <input type="color" id="pbg" style="width:52px;height:34px;padding:2px"></label><label style="display:flex;gap:8px;align-items:center;margin:0">Text <input type="color" id="pfg" style="width:52px;height:34px;padding:2px"></label></div>
+ <div id="psw" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+ <div class="acts"><button id="prs">Reset to default</button><span class="sp"></span><button id="pcx">Cancel</button><button class="p" id="psv">Save</button></div>
+</dialog>
 <dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
 <dialog id="odlg"><b>Overlap rules</b>
@@ -256,7 +266,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=j.groups||[];try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=j.groups||[];try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -267,6 +277,12 @@ function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const 
 const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
   return `<option value="">—</option>`+names.map(n=>`<option value="${ea(n)}"${n===cur?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`)};
 async function addDtype(){const n=prompt("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
+const THEMES=[["#0f2a5c","#ffffff","Navy"],["#312e81","#ffffff","Indigo"],["#0f766e","#ffffff","Teal"],["#166534","#ffffff","Green"],["#7f1d1d","#ffffff","Maroon"],["#1f2937","#ffffff","Charcoal"],["#ffffff","#1d2433","White"],["#dbeafe","#1e3a8a","Sky"]];
+function applyTheme(v){const m=/^(#[0-9a-f]{6})\|(#[0-9a-f]{6})$/i.exec(v||""),bg=m?m[1]:"#0f2a5c",fg=m?m[2]:"#ffffff",st=document.documentElement.style;
+  st.setProperty("--nv",bg);st.setProperty("--hfg",fg);
+  const h=document.querySelector("header");if(h){h.style.setProperty("--nv",bg);h.style.setProperty("--hfg",fg)}
+  const lum=c=>{const n=parseInt(c.slice(1),16);return .3*(n>>16)+.59*((n>>8)&255)+.11*(n&255)};document.body.classList.toggle("hdark",lum(fg)<128)}
+try{applyTheme(localStorage.getItem("tf_theme")||"")}catch(e){}
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const fmtD=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||"");if(!m)return"?";return MON[+m[2]-1]+" "+(+m[3])+(+m[1]!==new Date().getFullYear()?", "+m[1]:"")};
 const fmtRange=t=>t.start_date&&t.end_date&&t.start_date===t.end_date?fmtD(t.start_date):fmtD(t.start_date)+" – "+fmtD(t.end_date);
@@ -736,6 +752,15 @@ $("#dlist").addEventListener("click",async e=>{try{
   if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=prompt("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
   if(e.target.dataset.dd&&confirm("Delete this drawing type? Tasks that already use it keep their value."))await api("dt_del",{id:e.target.dataset.dd}).then(async()=>{await load(true);renderDt()})
 }catch(err){alert(err.message)}});
+function pPrev(){const bg=$("#pbg").value,fg=$("#pfg").value,p=$("#pprev");p.style.background=bg;p.style.color=fg;applyTheme(bg+"|"+fg)}
+$("#pm").onclick=()=>{const t=(me.theme||"#0f2a5c|#ffffff").split("|");$("#pbg").value=t[0];$("#pfg").value=t[1];
+  $("#psw").innerHTML=THEMES.map((x,i)=>`<button type="button" class="sw" data-sw="${i}" title="${x[2]}" style="background:${x[0]};color:${x[1]}">Aa</button>`).join("");pPrev();$("#pdlg").showModal()};
+$("#psw").addEventListener("click",e=>{const i=e.target.dataset.sw;if(i==null)return;$("#pbg").value=THEMES[i][0];$("#pfg").value=THEMES[i][1];pPrev()});
+$("#pbg").addEventListener("input",pPrev);$("#pfg").addEventListener("input",pPrev);
+$("#pcx").onclick=()=>$("#pdlg").close();
+$("#pdlg").addEventListener("close",()=>applyTheme(me.theme||""));
+$("#psv").onclick=async()=>{const v=$("#pbg").value+"|"+$("#pfg").value;try{await api("pref_theme",{v});me.theme=v;try{localStorage.setItem("tf_theme",v)}catch(x){}$("#pdlg").close()}catch(e){alert(e.message)}};
+$("#prs").onclick=async()=>{try{await api("pref_theme",{v:""});me.theme="";try{localStorage.setItem("tf_theme","")}catch(x){}$("#pdlg").close()}catch(e){alert(e.message)}};
 $("#om").onclick=()=>{$("#oh").checked=!!+ovset.hand;$("#oo").checked=!!+ovset.one;$("#odlg").showModal()};
 $("#oc").onclick=()=>$("#odlg").close();
 $("#os").onclick=async()=>{try{await api("ov_set",{hand:$("#oh").checked,one:$("#oo").checked});$("#odlg").close();await load(true)}catch(e){alert(e.message)}};
