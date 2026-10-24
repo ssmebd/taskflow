@@ -135,6 +135,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 #rpop .rf{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--mut)}#rpop .rf .sp{flex:1}
 .hd{display:inline-block;cursor:grab;color:var(--mut);padding:2px 5px 2px 0;touch-action:none;user-select:none;font-size:13px;letter-spacing:-2px}.hd:hover{color:var(--ink)}
 tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{box-shadow:inset 0 -3px 0 var(--pri)}.gh.rd-g td,.gh.rd-g{outline:2px solid var(--pri);outline-offset:-2px}body.rdg{cursor:grabbing;user-select:none}
+#mdlg{width:min(580px,94vw)}#mdlg #thr{margin-top:0;border-top:1px solid var(--line)}#mdlg #thl{max-height:46vh;min-height:120px}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -200,6 +201,7 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
+<dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
 <dialog id="odlg"><b>Overlap rules</b>
  <p style="color:var(--mut);font-size:13px;margin:8px 0">A task is flagged ⚠ when the same person has another open task on overlapping dates, in any workspace. These rules apply to everyone.</p>
@@ -238,7 +240,7 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -258,7 +260,7 @@ async function load(force){
     if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
-    render();bellUpd();if(deepT){const t=tasks.find(x=>x.id==deepT);deepT=0;if(t)openDlg(t)}}catch(e){}
+    render();bellUpd();if(deepT){const t=tasks.find(x=>x.id==deepT);deepT=0;if(t){if(deepM){deepM=null;openMsg(t.id)}else openDlg(t)}}}catch(e){}
 }
 const cmBadge=t=>{const m=cmeta[t.id];if(!m)return"";return `<span class="cmb o${m[2]?" me":m[1]?" un":""}" title="${m[2]?"Message for you":m[1]?"New messages":"Messages"}">💬${m[0]}</span>`};
 function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const cur=(wss.find(w=>w.id==W)||{}).name;document.title=(inboxN?"("+inboxN+") ":"")+(cur?cur+" – ":"")+"TaskFlow"}
@@ -444,17 +446,25 @@ function openDlg(t,grp){
   $("#del").style.display=t&&LV==="full"?"":"none";
   const ro=LV==="view";$("#sv").style.display=ro?"none":"";
   document.querySelectorAll("#dlg input,#dlg select,#dlg textarea").forEach(el=>el.disabled=ro);
-  thrInit(t);document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
+  thrHome();thrInit(t);document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
   $("#dlg").showModal();$("#t").focus();if(t)thrLoad(true);
 }
 const fmtT=s=>(s||"").slice(0,16).replace("T"," ");
+function thrHome(){const d=$("#dlg"),ref=$("#del").parentNode;if($("#thr").parentNode!==d)d.insertBefore($("#thr"),ref)}
+function openMsg(id){const t=tasks.find(x=>x.id==id);if(!t)return;
+  $("#mord").textContent=t.order_no?"Order #"+t.order_no:"";$("#mtit").textContent=t.title||"";
+  thrInit(t);$("#mbody").appendChild($("#thr"));document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
+  $("#mdlg").showModal();thrLoad(true);$("#cbody").focus()}
+$("#mcl").onclick=()=>$("#mdlg").close();
+$("#mdlg").addEventListener("close",()=>{thrHome();$("#thr").hidden=true;thrId=null;if(dirty)poll()});
+$("#mopen").onclick=()=>{const id=thrId,t=tasks.find(x=>x.id==id);$("#mdlg").close();if(t)openDlg(t)};
 function thrInit(t){
   thrId=t?t.id:null;$("#thr").hidden=!t;$("#thl").innerHTML="";$("#cbody").value="";if(!t)return;
   $("#cto").innerHTML=`<option value="">To: everyone</option>`+users.filter(u=>u.id!=me.id).map(u=>`<option value="${u.id}">To: ${esc(u.name)}</option>`).join("");
   $("#ckind").value="comment";
 }
 async function thrLoad(first){
-  if(!thrId||!$("#dlg").open)return;
+  if(!thrId||!($("#dlg").open||$("#mdlg").open))return;
   try{const r=await api("cm_list",{task_id:thrId}),k=r.comments.map(c=>c.id).join(",");if(!first&&k===thrKey)return;thrKey=k;
     $("#thl").innerHTML=r.comments.length?r.comments.map(c=>`<div class="msg${c.kind==="instruction"?" ins":""}${c.id>r.prev&&c.user_id!=r.me?" new":""}"><small>${c.user_id==r.me||me.role==="admin"?`<button class="x" data-cd="${c.id}" title="Delete">✕</button>`:""}<b>${esc(c.name)}</b>${c.kind==="instruction"?" 📌 instruction":""}${c.to_name?" → "+esc(c.to_name):""} · ${esc(fmtT(c.created_at))}</small>${esc(c.body)}</div>`).join(""):`<small style="color:var(--mut)">No messages yet.</small>`;
     $("#thl").scrollTop=1e9;
@@ -474,7 +484,7 @@ $("#bell").onclick=async()=>{try{const r=await api("inbox");$("#ilist").innerHTM
 $("#icl").onclick=()=>$("#idlg").close();
 $("#iall").onclick=async()=>{try{await api("inbox_read");$("#idlg").close();await load(true)}catch(e){alert(e.message)}};
 $("#ilist").addEventListener("click",e=>{const b=e.target.closest(".ib");if(!b)return;const w=+b.dataset.w,t=+b.dataset.t;$("#idlg").close();
-  if(w===W){const x=tasks.find(z=>z.id==t);if(x)openDlg(x)}else location.href="index.php?w="+w+"&t="+t});
+  if(w===W)openMsg(t);else location.href="index.php?w="+w+"&t="+t+"&m=1"});
 $("#dt").addEventListener("change",async e=>{if(e.target.value!=="__new")return;const prev=editing?((tasks.find(x=>x.id==editing)||{}).drawing_type||""):"";
   try{const n=await addDtype();$("#dt").innerHTML=dtOpts(n||prev);$("#dt").value=n||prev}catch(err){alert(err.message);$("#dt").innerHTML=dtOpts(prev);$("#dt").value=prev}});
 $("#add").onclick=()=>openDlg(null);
@@ -496,6 +506,7 @@ $("#main").addEventListener("click",e=>{
   if(e.target.closest(".dh")){toggleDone();return}
   const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)openDlg(null,ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
   if(e.target.classList.contains("cc"))return;
+  const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
   const el=e.target.closest("[data-id]");if(!el)return;
   if(el.tagName==="TR"&&!e.target.closest(".o"))return;
   const t=tasks.find(x=>x.id==el.dataset.id);if(t)openDlg(t);
@@ -846,7 +857,7 @@ async function poll(){
   if(document.hidden)return;
   try{
     const r=await api("ping");setLive(true);
-    if($("#dlg").open&&thrId&&r.v!==thrVer){thrVer=r.v;thrLoad(false)}
+    if(($("#dlg").open||$("#mdlg").open)&&thrId&&r.v!==thrVer){thrVer=r.v;thrLoad(false)}
     if(r.v!==lastVer||dirty){if(busy()){dirty=true;return}dirty=false;await load()}
   }catch(e){if(e.message!=="auth")setLive(false)}
 }
