@@ -176,15 +176,18 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
  <div class="acts"><button id="del" style="display:none">Delete</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
-<dialog id="tdlg" style="width:min(780px,94vw)"><b>Users</b>
+<dialog id="tdlg" style="width:min(780px,94vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b><button class="p" id="tnew">+ New user</button></div>
  <div class="uh"><span>Full name</span><span>Username</span><span>Password</span><span>User type</span><span></span></div>
  <div id="tlist"></div>
- <div class="acts" style="margin-top:12px"><b>Add user</b></div>
- <div class="uh"><span>Full name</span><span>Username</span><span>Password (8+ chars)</span><span>User type</span><span></span></div>
- <div class="ur2"><input id="un" placeholder="Full name"><input id="uu" placeholder="Username" autocomplete="off"><span class="pw"><input id="up" type="password" placeholder="Password" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
- <select id="ur"><option value="member">Member</option><option value="admin">Admin</option></select><button class="p" id="ta">Add</button></div>
  <small style="color:var(--mut)">Saved passwords are stored scrambled, so they cannot be shown. Type a new one and press Set to change it.</small>
  <div class="acts"><span class="sp"></span><button id="tc">Close</button></div>
+</dialog>
+<dialog id="udlg"><b>New user</b>
+ <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
+ <label>Username</label><input id="uu" name="nf_user" autocomplete="off" readonly>
+ <label>Password (8+ characters)</label><span class="pw"><input id="up" name="nf_pass" type="password" autocomplete="new-password" readonly><button type="button" class="eye" title="Show / hide">👁</button></span>
+ <label>User type</label><select id="ur"><option value="member">Member</option><option value="admin">Admin</option></select>
+ <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
@@ -727,9 +730,13 @@ function renderUsers(){
 }
 $("#tm").onclick=()=>{renderUsers();$("#tdlg").showModal()};
 $("#tc").onclick=()=>$("#tdlg").close();
+$("#tnew").onclick=()=>{for(const i of ["un","uu","up"]){const el=$("#"+i);el.value="";el.readOnly=true;if(i==="up")el.type="password"}$("#ur").value="member";$("#udlg").showModal()};
+for(const i of ["un","uu","up"])$("#"+i).addEventListener("focus",e=>{e.target.readOnly=false});
+$("#uc").onclick=()=>$("#udlg").close();
+$("#udlg").addEventListener("click",e=>{const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}});
 $("#ta").onclick=async()=>{
   try{await api("user_add",{name:$("#un").value,username:$("#uu").value,password:$("#up").value,role:$("#ur").value});
-    for(const i of ["un","uu","up"])$("#"+i).value="";await load(true);renderUsers()}catch(e){alert(e.message)}
+    for(const i of ["un","uu","up"])$("#"+i).value="";$("#udlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}
 };
 $("#tlist").addEventListener("click",async e=>{
   try{
@@ -738,7 +745,6 @@ $("#tlist").addEventListener("click",async e=>{
     const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}
   }catch(err){alert(err.message)}
 });
-$("#tdlg").addEventListener("click",e=>{const ey=e.target.closest(".eye");if(ey&&!e.target.closest("#tlist")){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}});
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
