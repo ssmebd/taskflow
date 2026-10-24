@@ -121,6 +121,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 #side .wl{background:rgba(255,255,255,.1)}#side .wl:hover{border-color:rgba(255,255,255,.5)}#side .wl.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.28)}
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
+.wh{filter:brightness(0) invert(1)}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -485,6 +486,11 @@ $("#bar").addEventListener("click",async e=>{
   if(id==="bdup"){sel.clear();act("dup",{ids})}
   if(id==="bdel"&&confirm("Delete "+ids.length+" selected task(s)? This cannot be undone.")){sel.clear();act("delete",{ids})}
 });
+// Logos with a transparent background are shown as white silhouettes on the navy bars
+document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG"||!im.closest(".wl,#wlogo,#vname"))return;
+  try{const c=document.createElement("canvas");c.width=c.height=32;const x=c.getContext("2d");x.drawImage(im,0,0,32,32);const d=x.getImageData(0,0,32,32).data;
+    const px=(i,j)=>d[(j*32+i)*4+3];if(px(0,0)<40&&px(31,0)<40&&px(0,31)<40&&px(31,31)<40)im.classList.add("wh")}catch(err){}
+},true);
 // ---- Gantt: drag to move / resize / reassign ----
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
 function gTipShow(e,txt){let g=$("#gtip");if(!g){g=document.createElement("div");g.id="gtip";document.body.appendChild(g)}g.textContent=txt;g.style.left=(e.clientX+14)+"px";g.style.top=(e.clientY+14)+"px"}
