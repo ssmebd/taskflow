@@ -486,10 +486,16 @@ $("#bar").addEventListener("click",async e=>{
   if(id==="bdup"){sel.clear();act("dup",{ids})}
   if(id==="bdel"&&confirm("Delete "+ids.length+" selected task(s)? This cannot be undone.")){sel.clear();act("delete",{ids})}
 });
-// Logos with a transparent background are shown as white silhouettes on the navy bars
-document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG"||!im.closest(".wl,#wlogo,#vname"))return;
-  try{const c=document.createElement("canvas");c.width=c.height=32;const x=c.getContext("2d");x.drawImage(im,0,0,32,32);const d=x.getImageData(0,0,32,32).data;
-    const px=(i,j)=>d[(j*32+i)*4+3];if(px(0,0)<40&&px(31,0)<40&&px(0,31)<40&&px(31,31)<40)im.classList.add("wh")}catch(err){}
+// Logos become white silhouettes on the navy bars (transparent logos via CSS; white-background logos are converted)
+document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG"||!im.closest(".wl,#wlogo,#vname")||im.dataset.w)return;
+  try{const nw=im.naturalWidth||32,nh=im.naturalHeight||32,k=Math.min(1,300/Math.max(nw,nh)),w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
+    const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.drawImage(im,0,0,w,h);const img=x.getImageData(0,0,w,h),d=img.data;
+    const cs=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([a,b])=>{const o=(b*w+a)*4;return[d[o],d[o+1],d[o+2],d[o+3]]});
+    if(cs.every(p=>p[3]<40)){im.dataset.w=1;im.classList.add("wh");return}
+    if(cs.every(p=>p[3]>200&&(p[0]+p[1]+p[2])/3>225)){
+      for(let o=0;o<d.length;o+=4){const lum=0.3*d[o]+0.59*d[o+1]+0.11*d[o+2],a=Math.min(1,Math.max(0,(255-lum)/255*1.8))*(d[o+3]/255);d[o]=d[o+1]=d[o+2]=255;d[o+3]=Math.round(a*255)}
+      x.putImageData(img,0,0);im.dataset.w=1;im.src=c.toDataURL("image/png")}
+  }catch(err){}
 },true);
 // ---- Gantt: drag to move / resize / reassign ----
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
