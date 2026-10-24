@@ -358,7 +358,7 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=LV!=="full";$("#om").hidden=me.role!=="admin";
+  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;

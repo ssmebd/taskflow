@@ -253,12 +253,12 @@ case 'tl_del':
   if((int)$o!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
   $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);out(['ok'=>1]);
 case 'tl_report':
-  need_level('full');$f=(string)($in['from']??'');$t=(string)($in['to']??'');
+  admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $q=$db->prepare("SELECT l.user_id,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.kind,l.note,t.id AS task_id,t.order_no,t.title,t.customer,t.drawing_type,COALESCE(pg.name,g.name) AS top_name,COALESCE(pg.id,g.id) AS top_id,IF(pg.id IS NULL,NULL,g.name) AS sub_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$W,$f,$t]);
   out(['rows'=>$q->fetchAll(),'profiles'=>inv_profiles($db)]);
 case 'inv_set':
-  need_level('full');$slot=(int)($in['slot']??0);if($slot<1||$slot>9)out(['error'=>'Bad profile']);
+  admin();$slot=(int)($in['slot']??0);if($slot<1||$slot>9)out(['error'=>'Bad profile']);
   if(!empty($in['remove'])){$db->prepare("DELETE FROM invoice_profiles WHERE ws_id=? AND slot=?")->execute([$W,$slot]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);}
   $p=is_array($in['profile']??null)?$in['profile']:[];$d=inv_defaults();
   $s=fn($k,$n)=>mb_substr(trim((string)($p[$k]??$d[$k])),0,$n);
