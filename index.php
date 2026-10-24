@@ -119,9 +119,10 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 body.hdark #wlogo .wh,body.hdark #wlogo img[src^="data:"]{filter:brightness(0)}
 .sw{display:inline-block;width:46px;height:30px;border-radius:8px;border:2px solid var(--line);cursor:pointer;padding:0;font-size:11px;font-weight:700}.sw:hover{border-color:var(--pri)}
 #pprev{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}
-#side{background:#0b2150;border-right-color:#081a40}#side .sh{border-bottom-color:rgba(255,255,255,.18)}
-#side button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}#side button:hover{background:rgba(255,255,255,.24)}
-#side .wl{background:rgba(255,255,255,.1)}#side .wl:hover{border-color:rgba(255,255,255,.5)}#side .wl.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.28)}
+#side{--sb:color-mix(in srgb,var(--nv,#0f2a5c) 86%,#000);--sf:var(--hfg,#fff);background:var(--sb);border-right-color:color-mix(in srgb,var(--sb) 80%,#000)}#side .sh{border-bottom-color:color-mix(in srgb,var(--sf) 18%,transparent)}
+#side button{background:color-mix(in srgb,var(--sf) 12%,transparent);color:var(--sf);border-color:color-mix(in srgb,var(--sf) 30%,transparent)}#side button:hover{background:color-mix(in srgb,var(--sf) 24%,transparent)}
+#side .wl{background:color-mix(in srgb,var(--sf) 10%,transparent)}#side .wl:hover{border-color:color-mix(in srgb,var(--sf) 50%,transparent)}#side .wl.on{border-color:var(--sf);box-shadow:0 0 0 3px color-mix(in srgb,var(--sf) 28%,transparent)}
+body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightness(0)}
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
 .wh{filter:brightness(0) invert(1)}
