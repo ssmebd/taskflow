@@ -347,7 +347,11 @@ function completedHTML(list){
 }
 function sorted(l){const a=l.filter(t=>t.status!=="done"),d=l.filter(t=>t.status==="done");return a.concat(d)}
 function getGC(){try{return new Set(JSON.parse(localStorage.getItem("tf_gc_"+W)||"[]"))}catch(e){return new Set()}}
-function hiddenRow(t){if(t.status==="done")return dc;if(!groups.length)return false;const gc=getGC(),id=t.group_id?String(t.group_id):"none";return gc.has(id)||(gParent(id)!==""&&gc.has(gParent(id)))}
+function getCC(){try{return new Set(JSON.parse(localStorage.getItem("tf_cc_"+W)||"[]"))}catch(e){return new Set()}}
+function hiddenRow(t){if(!groups.length)return t.status==="done"?dc:false;const gc=getGC(),id=t.group_id?String(t.group_id):"none";
+  if(gc.has(id)||(gParent(id)!==""&&gc.has(gParent(id))))return true;return t.status==="done"&&getCC().has(id)}
+function toggleCC(id){const c=getCC();c.has(id)?c.delete(id):c.add(id);try{localStorage.setItem("tf_cc_"+W,JSON.stringify([...c]))}catch(e){}
+  for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
 function vis(){return filtered().filter(t=>!hiddenRow(t))}
 function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...g]))}catch(e){}
   for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
@@ -455,10 +459,12 @@ function render(){
         if(filt&&!tot&&!totd)continue;
         const col=gc.has(sc.id);
         rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
-        if(!col)rows+=items.map(rowHTML).join("")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
+        if(!col){rows+=items.map(rowHTML).join("")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
+          const dl=done_.filter(t=>inSec(t,sc));
+          if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
       }
     }else rows=act_.map(rowHTML).join("")+addRow("none",span);
-    if(nd)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
+    if(nd&&!groups.length)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
     $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
     $("#cr").disabled=!colOrderSaved();
@@ -536,6 +542,7 @@ $("#vg").onclick=()=>{view="gantt";syncViewBtns();render()};
 for(const id of ["q","fs","fp","fa"])$("#"+id).addEventListener("input",render);
 
 $("#main").addEventListener("click",e=>{
+  const sdh=e.target.closest(".dh[data-dh]");if(sdh){toggleCC(sdh.dataset.dh);return}
   if(e.target.closest(".dh")){toggleDone();return}
   const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)openDlg(null,ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
   if(e.target.classList.contains("cc"))return;
