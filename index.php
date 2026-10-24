@@ -148,7 +148,7 @@ header .brand{color:var(--hfg)}
 #side #smenu button{background:transparent;color:var(--ink);border:0;text-align:left;padding:8px 10px}#side #smenu button:hover{background:var(--col)}
 #uw{position:relative}#umenu{position:fixed;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px;z-index:60}#umenu[hidden]{display:none}
 #umenu a{display:block;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}#umenu a:hover{background:var(--col)}
-.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
+.gh.sub th{padding-left:28px}.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -273,7 +273,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=j.groups||[];try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -296,8 +296,12 @@ const fmtRange=t=>t.start_date&&t.end_date&&t.start_date===t.end_date?fmtD(t.sta
 const ov=t=>ovl[t.id]||[];
 const ovText=t=>"Overlaps with:\n"+ov(t).map(o=>"• "+o.t+" ("+(o.s||"?")+" → "+(o.e||"?")+")"+(o.w?" – "+o.w:"")).join("\n");
 const ovBadge=t=>ov(t).length?`<span class="ovb" title="${ea(ovText(t))}">⚠</span>`:"";
-const inGroup=t=>G===""||(G==="none"?!t.group_id:String(t.group_id)===G);
-const gname=id=>(groups.find(g=>g.id==id)||{}).name||"";
+function orderGroups(rows){const top=rows.filter(g=>!g.parent_id||!rows.some(p=>String(p.id)===String(g.parent_id))),out=[];
+  for(const g of top){out.push({...g,parent_id:null,level:0,full:g.name});for(const c of rows)if(String(c.parent_id)===String(g.id))out.push({...c,level:1,full:g.name+" › "+c.name})}return out}
+const gOpts=cur=>groups.map(g=>`<option value="${g.id}"${String(cur)===String(g.id)?" selected":""}>${g.level?"\u00a0\u00a0↳ ":""}${esc(g.name)}</option>`).join("");
+const gParent=id=>{const g=groups.find(x=>String(x.id)===String(id));return g&&g.parent_id?String(g.parent_id):""};
+const inGroup=t=>G===""||(G==="none"?!t.group_id:String(t.group_id)===G||gParent(t.group_id)===G);
+const gname=id=>(groups.find(g=>g.id==id)||{}).full||"";
 const scol=k=>{const c=(SL.find(x=>x.k===k)||{}).color||"";return /^#[0-9a-f]{6}$/i.test(c)?c:""};
 const stOpts=s=>ST.map(([k,n])=>`<option value="${k}"${(s||ST[0][0])===k?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`);
 async function addStatus(){const n=prompt("New status name:");if(!n||!n.trim())return null;const r=await api("st_add",{name:n});await load(true);return r.k}
@@ -343,14 +347,14 @@ function completedHTML(list){
 }
 function sorted(l){const a=l.filter(t=>t.status!=="done"),d=l.filter(t=>t.status==="done");return a.concat(d)}
 function getGC(){try{return new Set(JSON.parse(localStorage.getItem("tf_gc_"+W)||"[]"))}catch(e){return new Set()}}
-function hiddenRow(t){if(t.status==="done")return dc;return groups.length&&getGC().has(t.group_id?String(t.group_id):"none")}
+function hiddenRow(t){if(t.status==="done")return dc;if(!groups.length)return false;const gc=getGC(),id=t.group_id?String(t.group_id):"none";return gc.has(id)||(gParent(id)!==""&&gc.has(gParent(id)))}
 function vis(){return filtered().filter(t=>!hiddenRow(t))}
 function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...g]))}catch(e){}
   for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
 function lockView(){if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
-function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to workspace…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
+function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to workspace…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
@@ -359,7 +363,6 @@ const BASE_COLS=[
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
  {id:"status",label:"Status",cell:t=>`<select class="ed" data-f="status">${stOpts(t.status)}</select>`},
  {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
- {id:"group_id",label:"Group",cell:t=>`<select class="ed" data-f="group_id"><option value="">No group</option>${groups.map(g=>`<option value="${g.id}"${g.id==t.group_id?" selected":""}>${esc(g.name)}</option>`).join("")}</select>`},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
 const coKey=()=>"tf_co_"+W;
 const cwKey=()=>"tf_cw_"+W;
@@ -426,7 +429,7 @@ function render(){
     (gt.some(t=>ov(t).length)||ovOnly?`<div class="stat${ovOnly?" on":""}" data-ov="1" title="Show only tasks that overlap for the same person" style="border-top:4px solid #dc2626"><b>${gt.filter(t=>ov(t).length).length}</b><span>⚠ Overlaps</span></div>`:"");
   const gtb=$("#gtabs"),nn=tasks.filter(t=>!t.group_id).length;
   gtb.hidden=!groups.length;
-  gtb.innerHTML=`<a class="gt${G===""?" on":""}" data-g="">All <small>${tasks.length}</small></a>`+groups.map(g=>`<a class="gt${String(g.id)===G?" on":""}" data-g="${g.id}">${esc(g.name)} <small>${tasks.filter(t=>t.group_id==g.id).length}</small></a>`).join("")+(nn?`<a class="gt${G==="none"?" on":""}" data-g="none">No group <small>${nn}</small></a>`:"");
+  gtb.innerHTML=`<a class="gt${G===""?" on":""}" data-g="">All <small>${tasks.length}</small></a>`+groups.filter(g=>!g.level).map(g=>`<a class="gt${String(g.id)===G?" on":""}" data-g="${g.id}">${esc(g.name)} <small>${tasks.filter(t=>t.group_id==g.id||gParent(t.group_id)===String(g.id)).length}</small></a>`).join("")+(nn?`<a class="gt${G==="none"?" on":""}" data-g="none">No group <small>${nn}</small></a>`:"");
   if(view==="board"){
     $("#cr").disabled=true;
     $("#main").innerHTML=`<div class="board" style="grid-template-columns:repeat(${ST.length-1},minmax(220px,1fr))">`+ST.filter(s=>s[0]!=="done").map(([k,n])=>{
@@ -441,15 +444,18 @@ function render(){
     let rows="";
     if(groups.length){
       const filt=$("#q").value||$("#fs").value||$("#fp").value||$("#fa").value;
-      let secs=groups.map(g=>({id:String(g.id),name:g.name})).concat([{id:"none",name:"No group"}]);
-      if(G!=="")secs=secs.filter(x=>x.id===G);
+      let secs=groups.map(g=>({id:String(g.id),name:g.name,lv:g.level,parent:g.parent_id?String(g.parent_id):""})).concat([{id:"none",name:"No group",lv:0,parent:""}]);
+      if(G!=="")secs=secs.filter(x=>x.id===G||x.parent===G);
+      const inSec=(t,sc)=>sc.id==="none"?!t.group_id:String(t.group_id)===sc.id;
       for(const sc of secs){
-        const items=act_.filter(t=>sc.id==="none"?!t.group_id:String(t.group_id)===sc.id),dn=done_.filter(t=>sc.id==="none"?!t.group_id:String(t.group_id)===sc.id).length;
+        if(sc.parent&&gc.has(sc.parent))continue;
+        const kids=secs.filter(k=>k.parent===sc.id),items=act_.filter(t=>inSec(t,sc)),dn=done_.filter(t=>inSec(t,sc)).length;
+        const tot=items.length+kids.reduce((n,k)=>n+act_.filter(t=>inSec(t,k)).length,0),totd=dn+kids.reduce((n,k)=>n+done_.filter(t=>inSec(t,k)).length,0);
         if(sc.id==="none"&&!items.length&&!dn)continue;
-        if(filt&&!items.length&&!dn)continue;
+        if(filt&&!tot&&!totd)continue;
         const col=gc.has(sc.id);
-        rows+=`<tr class="gh" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} 📁 ${esc(sc.name)} <small style="font-weight:400">${items.length} open${dn?` · ${dn} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
-        if(!col)rows+=items.map(rowHTML).join("")+addRow(sc.id,span);
+        rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
+        if(!col)rows+=items.map(rowHTML).join("")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
       }
     }else rows=act_.map(rowHTML).join("")+addRow("none",span);
     if(nd)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
@@ -459,13 +465,13 @@ function render(){
   }
   lockView();
 }
-const addRow=(gid,span)=>LV==="view"?"":`<tr class="addrow"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a><a data-gnew="1">+ Group</a></td></tr>`;
+const addRow=(gid,span,top)=>LV==="view"?"":`<tr class="addrow"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a>${top?`<a data-gsub="${gid}">+ Sub-group</a>`:""}<a data-gnew="1">+ Group</a></td></tr>`;
 function openDlg(t,grp){
   editing=t?t.id:null;
   $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").innerHTML=dtOpts(t?t.drawing_type||"":"");$("#dt").value=t?t.drawing_type||"":"";
   $("#sd").value=t?t.start_date||"":"";$("#du").value=t?t.end_date||"":"";$("#st").innerHTML=stOpts(t?t.status:ST[0][0]);
   $("#as").innerHTML=asOpts(t?t.assigned_to:"");$("#nt").value=t?t.notes||"":"";
-  $("#gp").innerHTML=`<option value="">No group</option>`+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("");$("#gp").value=t?(t.group_id||""):(/^\d+$/.test(grp!==undefined?grp:G)?(grp!==undefined?grp:G):"");
+  $("#gp").innerHTML=`<option value="">No group</option>`+gOpts("");$("#gp").value=t?(t.group_id||""):(/^\d+$/.test(grp!==undefined?grp:G)?(grp!==undefined?grp:G):"");
   $("#xf").innerHTML=cols.map(c=>`<label>${esc(c.name)}</label>`+xCtl(c,t?xv(t,c):"","dlg")).join("");
   const on=$("#ovn");if(t&&ov(t).length){on.style.display="block";on.textContent="⚠ "+ovText(t)}else on.style.display="none";
   $("#del").style.display=t&&LV==="full"?"":"none";
@@ -534,6 +540,7 @@ $("#main").addEventListener("click",e=>{
   const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)openDlg(null,ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
   if(e.target.classList.contains("cc"))return;
   const ga=e.target.closest(".addrow [data-gadd]");if(ga){openDlg(null,ga.dataset.gadd);return}
+  const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=prompt("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
   if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
   const el=e.target.closest("[data-id]");if(!el)return;
@@ -756,7 +763,7 @@ $("#stats").addEventListener("click",e=>{if(e.target.closest("[data-ov]")){ovOnl
 $("#gtabs").addEventListener("click",e=>{const a=e.target.closest("[data-g]");if(!a)return;G=a.dataset.g;try{localStorage.setItem("tf_g_"+W,G)}catch(x){}sel.clear();render()});
 function renderGr(){
   const full=LV==="full";
-  $("#glist").innerHTML=groups.map(g=>`<div class="acts"><span style="flex:1">📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${full?`<button data-gr="${g.id}">Rename</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
+  $("#glist").innerHTML=groups.map(g=>`<div class="acts" style="${g.level?"margin-left:26px":""}"><span style="flex:1">${g.level?"↳ ":""}📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${LV!=="view"&&!g.level?`<button data-gs="${g.id}">+ Sub-group</button>`:""}${full?`<button data-gr="${g.id}">Rename</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
 }
 function renderDt(){const full=LV==="full";
   $("#dlist").innerHTML=dtypes.map(d=>`<div class="acts"><span style="flex:1">${esc(d.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.drawing_type===d.name).length} task(s)</small></span>${full?`<button data-dr="${d.id}">Rename</button><button data-dd="${d.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No drawing types yet</div>'}
@@ -784,8 +791,9 @@ $("#gc").onclick=()=>$("#gdlg").close();
 $("#ga").onclick=async()=>{try{const r=await api("gr_add",{name:$("#gn").value});$("#gn").value="";await load(true);G=String(r.id);try{localStorage.setItem("tf_g_"+W,G)}catch(x){}render();renderGr()}catch(e){alert(e.message)}};
 $("#glist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
+    if(d.gs){const n=prompt("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
     if(d.gr){const cur=groups.find(g=>g.id==d.gr),n=prompt("New name for this group:",cur.name);if(n&&n.trim()){await api("gr_ren",{id:d.gr,name:n});await load(true);renderGr()}}
-    if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\"? Its tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
+    if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
   }catch(err){alert(err.message)}
 });
 const DAYMS=86400000;
@@ -831,7 +839,7 @@ function renderGantt(list){
       return `<div class="glane" style="height:42px"><div class="gname tk" data-id="${t.id}" style="height:42px;cursor:pointer">${o?"⚠ ":""}${esc((t.order_no?t.order_no+" · ":"")+t.title)}<small>${esc(who)} · ${esc(st)}${x?"":" · no dates"}</small></div><div class="gtrack" style="width:${width}px;${grid}">${bar}</div></div>`};
     const sortT=l=>l.slice().sort((p,q)=>key(p)-key(q)||String(p.title).localeCompare(String(q.title)));
     if(!groups.length)return sortT(open).map(row).join("")||"";
-    const secs=groups.map(g=>({name:g.name,l:open.filter(t=>t.group_id==g.id)})).concat([{name:"No group",l:open.filter(t=>!t.group_id)}]).filter(z=>z.l.length);
+    const secs=groups.map(g=>({name:g.full,l:open.filter(t=>t.group_id==g.id)})).concat([{name:"No group",l:open.filter(t=>!t.group_id)}]).filter(z=>z.l.length);
     return secs.map(z=>`<div class="glane" style="height:26px;background:var(--col)"><div class="gname tk" style="height:26px;background:var(--col)">📁 ${esc(z.name)} <small style="display:inline">${z.l.length}</small></div><div class="gtrack" style="width:${width}px"></div></div>`+sortT(z.l).map(row).join("")).join("");
   };
   const built=gMode==="task"?(taskRows()||'<div class="empty">No tasks to show</div>'):lanes.map(laneHTML).filter((b,i)=>lanes[i].id!==""||b.n>0).map(b=>b.html).join("");

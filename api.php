@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v14']))return;
+  if(!empty($_SESSION['schema_v15']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -26,6 +26,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'logo'")->fetch())$db->exec("ALTER TABLE workspaces ADD logo MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'parent_id'")->fetch())$db->exec("ALTER TABLE task_groups ADD parent_id INT NULL");
   if(!$db->query("SHOW COLUMNS FROM users LIKE 'pref_theme'")->fetch())$db->exec("ALTER TABLE users ADD pref_theme VARCHAR(20) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'sort_no'")->fetch())$db->exec("ALTER TABLE tasks ADD sort_no INT NOT NULL DEFAULT 0");
   $db->exec("CREATE TABLE IF NOT EXISTS drawing_types(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,name VARCHAR(100) NOT NULL,sort_no INT NOT NULL DEFAULT 0,UNIQUE KEY u(ws_id,name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -42,7 +43,7 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v14']=1;
+  $_SESSION['schema_v15']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -138,7 +139,7 @@ case 'list':
     $res['cmeta']=(object)$cm;
     $res['overlaps']=(object)$ov;$res['ovset']=$ovs;
     $res['tasks']=$tasks;$res['statuses']=get_statuses($db);
-    $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
+    $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
     $sk="dt_seed_$W";$q=$db->prepare("SELECT v FROM meta WHERE k=?");$q->execute([$sk]);
     if($q->fetchColumn()===false){
       $db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name,sort_no) SELECT ?,TRIM(drawing_type),0 FROM tasks WHERE ws_id=? AND drawing_type IS NOT NULL AND TRIM(drawing_type)<>'' GROUP BY TRIM(drawing_type)")->execute([$W,$W]);
@@ -267,20 +268,27 @@ case 'pref_view':
   $v=in_array($in['v']??'',['board','gantt'],true)?$in['v']:'list';$db->prepare("UPDATE users SET pref_view=? WHERE id=?")->execute([$v,$uid]);out(['ok'=>1]);
 case 'gr_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,80);if($n==='')out(['error'=>'Enter a group name']);
-  $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=?");$q->execute([$W]);$all=$q->fetchAll();
-  if(count($all)>=50)out(['error'=>'Maximum 50 groups']);
-  foreach($all as $x)if(mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'A group with that name already exists']);
+  $par=(int)($in['parent_id']??0);
+  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);$all=$q->fetchAll();
+  if(count($all)>=80)out(['error'=>'Maximum 80 groups and sub-groups']);
+  if($par){$ok=false;foreach($all as $x)if((int)$x['id']===$par&&empty($x['parent_id']))$ok=true;if(!$ok)out(['error'=>'Sub-groups can only be added under a main group']);}
+  foreach($all as $x)if((int)($x['parent_id']??0)===$par&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
   $mx=$db->prepare("SELECT COALESCE(MAX(sort_no),0)+1 FROM task_groups WHERE ws_id=?");$mx->execute([$W]);
-  $db->prepare("INSERT INTO task_groups(ws_id,name,sort_no) VALUES(?,?,?)")->execute([$W,$n,(int)$mx->fetchColumn()]);out(['ok'=>1,'id'=>(int)$db->lastInsertId()]);
+  $db->prepare("INSERT INTO task_groups(ws_id,name,sort_no,parent_id) VALUES(?,?,?,?)")->execute([$W,$n,(int)$mx->fetchColumn(),$par?:null]);out(['ok'=>1,'id'=>(int)$db->lastInsertId()]);
 case 'gr_ren':
   need_level('full');$n=mb_substr(trim($in['name']??''),0,80);$id=(int)($in['id']??0);if($n==='')out(['error'=>'Enter a name']);
-  $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=?");$q->execute([$W]);
-  foreach($q->fetchAll() as $x)if($x['id']!=$id&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'A group with that name already exists']);
+  $q=$db->prepare("SELECT parent_id FROM task_groups WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$pp=(int)$q->fetchColumn();
+  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);
+  foreach($q->fetchAll() as $x)if($x['id']!=$id&&(int)($x['parent_id']??0)===$pp&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
   $db->prepare("UPDATE task_groups SET name=? WHERE id=? AND ws_id=?")->execute([$n,$id,$W]);out(['ok'=>1]);
 case 'gr_del':
   need_level('full');$id=(int)($in['id']??0);
-  $db->prepare("UPDATE tasks SET group_id=NULL WHERE group_id=? AND ws_id=?")->execute([$id,$W]);
-  $db->prepare("DELETE FROM task_groups WHERE id=? AND ws_id=?")->execute([$id,$W]);out(['ok'=>1]);
+  $q=$db->prepare("SELECT id FROM task_groups WHERE parent_id=? AND ws_id=?");$q->execute([$id,$W]);$all=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$all[]=$id;
+  foreach($all as $g){
+    $db->prepare("UPDATE tasks SET group_id=NULL WHERE group_id=? AND ws_id=?")->execute([$g,$W]);
+    $db->prepare("DELETE FROM task_groups WHERE id=? AND ws_id=?")->execute([$g,$W]);
+  }
+  out(['ok'=>1]);
 case 'st_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,40);if($n==='')out(['error'=>'Enter a status name']);
   $all=get_statuses($db);if(count($all)>=13)out(['error'=>'Maximum 12 statuses plus Completed']);
