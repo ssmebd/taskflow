@@ -461,7 +461,7 @@ function render(){
         rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
         if(!col){rows+=items.map(rowHTML).join("")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
           const dl=done_.filter(t=>inSec(t,sc));
-          if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
+          if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
       }
     }else rows=act_.map(rowHTML).join("")+addRow("none",span);
     if(nd&&!groups.length)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
