@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v11']))return;
+  if(!empty($_SESSION['schema_v12']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -26,6 +26,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'logo'")->fetch())$db->exec("ALTER TABLE workspaces ADD logo MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS drawing_types(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,name VARCHAR(100) NOT NULL,sort_no INT NOT NULL DEFAULT 0,UNIQUE KEY u(ws_id,name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS meta(k VARCHAR(20) PRIMARY KEY,v BIGINT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("INSERT IGNORE INTO meta(k,v) VALUES('ver',1)");
   if(!$db->query("SHOW COLUMNS FROM users LIKE 'pref_view'")->fetch())$db->exec("ALTER TABLE users ADD pref_view VARCHAR(10) NOT NULL DEFAULT 'list'");
@@ -39,7 +40,7 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v11']=1;
+  $_SESSION['schema_v12']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -134,7 +135,13 @@ case 'list':
     $res['cmeta']=(object)$cm;
     $res['overlaps']=(object)$ov;$res['ovset']=$ovs;
     $res['tasks']=$tasks;$res['statuses']=get_statuses($db);
-    $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();$res['cols']=get_cols($db);
+    $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
+    $sk="dt_seed_$W";$q=$db->prepare("SELECT v FROM meta WHERE k=?");$q->execute([$sk]);
+    if($q->fetchColumn()===false){
+      $db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name,sort_no) SELECT ?,TRIM(drawing_type),0 FROM tasks WHERE ws_id=? AND drawing_type IS NOT NULL AND TRIM(drawing_type)<>'' GROUP BY TRIM(drawing_type)")->execute([$W,$W]);
+      $db->prepare("INSERT INTO meta(k,v) VALUES(?,1) ON DUPLICATE KEY UPDATE v=1")->execute([$sk]);
+    }
+    $q=$db->prepare("SELECT id,name FROM drawing_types WHERE ws_id=? ORDER BY name");$q->execute([$W]);$res['dtypes']=$q->fetchAll();$res['cols']=get_cols($db);
   }
   if($me['role']==='admin'){
     $res['allUsers']=$db->query("SELECT id,name,username,role FROM users ORDER BY name")->fetchAll();
@@ -196,14 +203,28 @@ case 'task_move':
   $acc=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");
   $n=0;
   foreach($ids as $i){
-    $q=$db->prepare("SELECT status,assigned_to,extra FROM tasks WHERE id=? AND ws_id=?");$q->execute([$i,$W]);$t=$q->fetch();if(!$t)continue;
+    $q=$db->prepare("SELECT status,assigned_to,extra,drawing_type FROM tasks WHERE id=? AND ws_id=?");$q->execute([$i,$W]);$t=$q->fetch();if(!$t)continue;
     $st=in_array($t['status'],$dk,true)?$t['status']:$dk[0];
     $as=$t['assigned_to'];if($as){$acc->execute([$as,$to]);if(!$acc->fetchColumn())$as=null;}
     $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($map[$k]))$nx[$map[$k]]=$v;
     $db->prepare("UPDATE tasks SET ws_id=?,group_id=NULL,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$st,$as,$nx?json_encode($nx):null,$i,$W]);
-    $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$i]);$n++;
+    $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
+    if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;
   }
   out(['ok'=>1,'moved'=>$n]);
+case 'dt_add':
+  need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
+  $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=?");$q->execute([$W]);if((int)$q->fetchColumn()>=200)out(['error'=>'Maximum 200 drawing types']);
+  $db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$W,$n]);
+  $q=$db->prepare("SELECT name FROM drawing_types WHERE ws_id=? AND name=?");$q->execute([$W,$n]);out(['ok'=>1,'name'=>$q->fetchColumn()?:$n]);
+case 'dt_ren':
+  need_level('full');$n=mb_substr(trim($in['name']??''),0,100);$id=(int)($in['id']??0);if($n==='')out(['error'=>'Enter a name']);
+  $q=$db->prepare("SELECT name FROM drawing_types WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$old=$q->fetchColumn();if($old===false)out(['error'=>'Not found']);
+  $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=? AND name=? AND id<>?");$q->execute([$W,$n,$id]);if($q->fetchColumn())out(['error'=>'That drawing type already exists']);
+  $db->prepare("UPDATE drawing_types SET name=? WHERE id=?")->execute([$n,$id]);
+  $db->prepare("UPDATE tasks SET drawing_type=?,updated_at=NOW() WHERE ws_id=? AND drawing_type=?")->execute([$n,$W,$old]);out(['ok'=>1]);
+case 'dt_del':
+  need_level('full');$db->prepare("DELETE FROM drawing_types WHERE id=? AND ws_id=?")->execute([(int)($in['id']??0),$W]);out(['ok'=>1]);
 case 'col_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
   if($n==='')out(['error'=>'Enter a column name']);
@@ -321,6 +342,7 @@ case 'ws_del':
   $db->prepare("DELETE FROM tasks WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM custom_cols WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_comments WHERE ws_id=?")->execute([$id]);
+  $db->prepare("DELETE FROM drawing_types WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_groups WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM statuses WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM ws_users WHERE ws_id=?")->execute([$id]);

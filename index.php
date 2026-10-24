@@ -144,6 +144,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
    <button id="cm">➕ Column</button>
+   <button id="dm">✏ Drawing types</button>
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
@@ -160,7 +161,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
  <label>Title</label><input id="t">
  <label>Order number</label><input id="on">
  <label>Customer name</label><input id="pj" list="pjl"><datalist id="pjl"></datalist>
- <label>Drawing type</label><input id="dt" list="dtl"><datalist id="dtl"></datalist>
+ <label>Drawing type</label><select id="dt"></select>
  <label>Start date</label><input id="sd" type="date">
  <label>End date</label><input id="du" type="date">
  <label>Status</label><select id="st"></select>
@@ -203,6 +204,10 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
  <div class="acts"><span class="sp"></span><button id="gc">Close</button><button class="p" id="ga">Add group</button></div>
 </dialog>
 
+<dialog id="ddlg"><b>Drawing types</b><div id="dlist"></div>
+ <label>New drawing type</label><input id="dn" placeholder="e.g. Shop drawing, Fabrication drawing">
+ <div class="acts"><span class="sp"></span><button id="dc">Close</button><button class="p" id="da">Add</button></div>
+</dialog>
 <dialog id="sdlg"><b>Statuses</b><div id="slist"></div>
  <label>New status</label><input id="sn" placeholder="e.g. Waiting for client, Drafting, Checking">
  <div class="acts"><span class="sp"></span><button id="sc">Close</button><button class="p" id="sa">Add status</button></div>
@@ -224,7 +229,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -240,7 +245,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=j.groups||[];try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=j.groups||[];try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -248,6 +253,9 @@ async function load(force){
 }
 const cmBadge=t=>{const m=cmeta[t.id];if(!m)return"";return `<span class="cmb o${m[2]?" me":m[1]?" un":""}" title="${m[2]?"Message for you":m[1]?"New messages":"Messages"}">💬${m[0]}</span>`};
 function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const cur=(wss.find(w=>w.id==W)||{}).name;document.title=(inboxN?"("+inboxN+") ":"")+(cur?cur+" – ":"")+"TaskFlow"}
+const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
+  return `<option value="">—</option>`+names.map(n=>`<option value="${ea(n)}"${n===cur?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`)};
+async function addDtype(){const n=prompt("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
 const ov=t=>ovl[t.id]||[];
 const ovText=t=>"Overlaps with:\n"+ov(t).map(o=>"• "+o.t+" ("+(o.s||"?")+" → "+(o.e||"?")+")"+(o.w?" – "+o.w:"")).join("\n");
 const ovBadge=t=>ov(t).length?`<span class="ovb" title="${ea(ovText(t))}">⚠</span>`:"";
@@ -274,7 +282,6 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#dtl").innerHTML=uniq("drawing_type").map(v=>`<option value="${ea(v)}">`).join("");
   $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
 }
 function filtered(){
@@ -309,7 +316,7 @@ const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
  {id:"customer",label:"Customer",cell:t=>`<input class="ed" data-f="customer" list="pjl" value="${ea(t.customer)}">`},
- {id:"drawing_type",label:"Drawing type",cell:t=>`<input class="ed" data-f="drawing_type" list="dtl" value="${ea(t.drawing_type)}">`},
+ {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed" data-f="drawing_type">${dtOpts(t.drawing_type)}</select>`},
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<input class="ed" type="date" data-f="start_date" value="${ea(t.start_date)}"> → <input class="ed ${late(t)?"late":""}" type="date" data-f="end_date" value="${ea(t.end_date)}">`},
  {id:"status",label:"Status",cell:t=>`<select class="ed" data-f="status">${stOpts(t.status)}</select>`},
  {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
@@ -415,7 +422,7 @@ function render(){
 }
 function openDlg(t,grp){
   editing=t?t.id:null;
-  $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").value=t?t.drawing_type||"":"";
+  $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").innerHTML=dtOpts(t?t.drawing_type||"":"");$("#dt").value=t?t.drawing_type||"":"";
   $("#sd").value=t?t.start_date||"":"";$("#du").value=t?t.end_date||"":"";$("#st").innerHTML=stOpts(t?t.status:ST[0][0]);
   $("#as").innerHTML=asOpts(t?t.assigned_to:"");$("#nt").value=t?t.notes||"":"";
   $("#gp").innerHTML=`<option value="">No group</option>`+groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("");$("#gp").value=t?(t.group_id||""):(/^\d+$/.test(grp!==undefined?grp:G)?(grp!==undefined?grp:G):"");
@@ -455,6 +462,8 @@ $("#icl").onclick=()=>$("#idlg").close();
 $("#iall").onclick=async()=>{try{await api("inbox_read");$("#idlg").close();await load(true)}catch(e){alert(e.message)}};
 $("#ilist").addEventListener("click",e=>{const b=e.target.closest(".ib");if(!b)return;const w=+b.dataset.w,t=+b.dataset.t;$("#idlg").close();
   if(w===W){const x=tasks.find(z=>z.id==t);if(x)openDlg(x)}else location.href="index.php?w="+w+"&t="+t});
+$("#dt").addEventListener("change",async e=>{if(e.target.value!=="__new")return;const prev=editing?((tasks.find(x=>x.id==editing)||{}).drawing_type||""):"";
+  try{const n=await addDtype();$("#dt").innerHTML=dtOpts(n||prev);$("#dt").value=n||prev}catch(err){alert(err.message);$("#dt").innerHTML=dtOpts(prev);$("#dt").value=prev}});
 $("#add").onclick=()=>openDlg(null);
 $("#cx").onclick=()=>$("#dlg").close();
 $("#sv").onclick=async()=>{
@@ -480,6 +489,7 @@ $("#main").addEventListener("click",e=>{
 });
 $("#main").addEventListener("change",e=>{
   const f=e.target.dataset.f,tr=e.target.closest("tr[data-id]");
+  if(f&&tr&&e.target.value==="__new"&&f==="drawing_type"){const el=e.target,id=tr.dataset.id;(async()=>{try{const n=await addDtype();if(n)await api("field",{id,f,v:n});await load(true)}catch(err){alert(err.message);await load(true)}})();return}
   if(f&&tr){const v=e.target.value;e.target.blur();act("field",{id:tr.dataset.id,f,v});return}
   if(e.target.id==="all"){vis().forEach(t=>e.target.checked?sel.add(t.id):sel.delete(t.id));render()}
   else if(e.target.classList.contains("cc")){const id=+e.target.closest(".card").dataset.id;e.target.checked?sel.add(id):sel.delete(id);updBar()}
@@ -632,6 +642,15 @@ function renderGr(){
   const full=LV==="full";
   $("#glist").innerHTML=groups.map(g=>`<div class="acts"><span style="flex:1">📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${full?`<button data-gr="${g.id}">Rename</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
 }
+function renderDt(){const full=LV==="full";
+  $("#dlist").innerHTML=dtypes.map(d=>`<div class="acts"><span style="flex:1">${esc(d.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.drawing_type===d.name).length} task(s)</small></span>${full?`<button data-dr="${d.id}">Rename</button><button data-dd="${d.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No drawing types yet</div>'}
+$("#dm").onclick=()=>{renderDt();$("#ddlg").showModal()};
+$("#dc").onclick=()=>$("#ddlg").close();
+$("#da").onclick=async()=>{try{await api("dt_add",{name:$("#dn").value});$("#dn").value="";await load(true);renderDt()}catch(e){alert(e.message)}};
+$("#dlist").addEventListener("click",async e=>{try{
+  if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=prompt("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
+  if(e.target.dataset.dd&&confirm("Delete this drawing type? Tasks that already use it keep their value."))await api("dt_del",{id:e.target.dataset.dd}).then(async()=>{await load(true);renderDt()})
+}catch(err){alert(err.message)}});
 $("#om").onclick=()=>{$("#oh").checked=!!+ovset.hand;$("#oo").checked=!!+ovset.one;$("#odlg").showModal()};
 $("#oc").onclick=()=>$("#odlg").close();
 $("#os").onclick=async()=>{try{await api("ov_set",{hand:$("#oh").checked,one:$("#oo").checked});$("#odlg").close();await load(true)}catch(e){alert(e.message)}};
