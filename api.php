@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v15']))return;
+  if(!empty($_SESSION['schema_v16']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -26,6 +26,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'logo'")->fetch())$db->exec("ALTER TABLE workspaces ADD logo MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS time_logs(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,work_date DATE NOT NULL,hours DECIMAL(5,2) NOT NULL,note VARCHAR(255) NOT NULL DEFAULT '',created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id,work_date),INDEX(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'parent_id'")->fetch())$db->exec("ALTER TABLE task_groups ADD parent_id INT NULL");
   if(!$db->query("SHOW COLUMNS FROM users LIKE 'pref_theme'")->fetch())$db->exec("ALTER TABLE users ADD pref_theme VARCHAR(20) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'sort_no'")->fetch())$db->exec("ALTER TABLE tasks ADD sort_no INT NOT NULL DEFAULT 0");
@@ -43,7 +44,7 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v15']=1;
+  $_SESSION['schema_v16']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -137,6 +138,7 @@ case 'list':
     $cm=[];$q=$db->prepare("SELECT c.task_id,COUNT(*) n,SUM(c.id>COALESCE(r.last_id,0) AND c.user_id<>?) un,SUM(c.id>COALESCE(r.last_id,0) AND c.to_user_id=? AND c.user_id<>?) tm FROM task_comments c LEFT JOIN comment_reads r ON r.task_id=c.task_id AND r.user_id=? WHERE c.ws_id=? GROUP BY c.task_id");
     $q->execute([$me['id'],$me['id'],$me['id'],$me['id'],$W]);foreach($q->fetchAll() as $r)$cm[$r['task_id']]=[(int)$r['n'],(int)$r['un'],(int)$r['tm']];
     $res['cmeta']=(object)$cm;
+    $hq=$db->prepare("SELECT task_id,SUM(hours) h FROM time_logs WHERE ws_id=? GROUP BY task_id");$hq->execute([$W]);$hm=[];foreach($hq->fetchAll() as $r)$hm[$r['task_id']]=(float)$r['h'];$res['hours']=(object)$hm;
     $res['overlaps']=(object)$ov;$res['ovset']=$ovs;
     $res['tasks']=$tasks;$res['statuses']=get_statuses($db);
     $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
@@ -178,7 +180,7 @@ case 'field':
   $v=clean($f,$in['v']??'');if($f==='title'&&$v==='')out(['ok'=>1]);
   $db->prepare("UPDATE tasks SET $f=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$v,(int)($in['id']??0),$W]);out(['ok'=>1]);
 case 'delete':
-  need_level('full');foreach($in['ids']??[] as $i){$db->prepare("DELETE FROM tasks WHERE id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM task_comments WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);}out(['ok'=>1]);
+  need_level('full');foreach($in['ids']??[] as $i){$db->prepare("DELETE FROM tasks WHERE id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM task_comments WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM time_logs WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);}out(['ok'=>1]);
 case 'dup':
   need_level('edit');foreach($in['ids']??[] as $i)$db->prepare("INSERT INTO tasks(title,order_no,customer,drawing_type,start_date,end_date,status,assigned_to,notes,group_id,extra,ws_id,updated_at) SELECT CONCAT(title,' (copy)'),order_no,customer,drawing_type,start_date,end_date,IF(status='done',?,status),assigned_to,notes,group_id,extra,ws_id,NOW() FROM tasks WHERE id=? AND ws_id=?")->execute([status_keys($db)[0],(int)$i,$W]);
   out(['ok'=>1]);
@@ -213,6 +215,7 @@ case 'task_move':
     $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($map[$k]))$nx[$map[$k]]=$v;
     $db->prepare("UPDATE tasks SET ws_id=?,group_id=NULL,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$st,$as,$nx?json_encode($nx):null,$i,$W]);
     $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
+    $db->prepare("UPDATE time_logs SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
     if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;
   }
   out(['ok'=>1,'moved'=>$n]);
@@ -229,6 +232,27 @@ case 'task_order':
   }
   if(array_key_exists('g',$in)){$g=clean('group_id',$in['g']);$db->prepare("UPDATE tasks SET group_id=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$g,$id,$W]);}
   out(['ok'=>1]);
+case 'tl_list':
+  need_ws();$tid=(int)($in['task_id']??0);
+  $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
+  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
+  out(['logs'=>$q->fetchAll(),'me'=>(int)$uid]);
+case 'tl_add':
+  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);
+  if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
+  if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
+  $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
+  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,work_date,hours,note,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$tid,$W,$uid,$d,$h,$n]);out(['ok'=>1]);
+case 'tl_del':
+  need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetchColumn();
+  if($o===false)out(['error'=>'Entry not found']);
+  if((int)$o!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
+  $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);out(['ok'=>1]);
+case 'tl_report':
+  need_level('full');$f=(string)($in['from']??'');$t=(string)($in['to']??'');
+  if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
+  $q=$db->prepare("SELECT t.customer,t.order_no,t.title,t.drawing_type,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.note FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY t.customer,t.order_no,t.id,l.work_date,l.id");$q->execute([$W,$f,$t]);
+  out(['rows'=>$q->fetchAll()]);
 case 'dt_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
   $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=?");$q->execute([$W]);if((int)$q->fetchColumn()>=200)out(['error'=>'Maximum 200 drawing types']);
@@ -369,6 +393,7 @@ case 'ws_del':
   $db->prepare("DELETE FROM tasks WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM custom_cols WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_comments WHERE ws_id=?")->execute([$id]);
+  $db->prepare("DELETE FROM time_logs WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM drawing_types WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_groups WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM statuses WHERE ws_id=?")->execute([$id]);

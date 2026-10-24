@@ -149,6 +149,13 @@ header .brand{color:var(--hfg)}
 #uw{position:relative}#umenu{position:fixed;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px;z-index:60}#umenu[hidden]{display:none}
 #umenu a{display:block;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}#umenu a:hover{background:var(--col)}
 .gh.sub th{padding-left:28px}.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
+.hbtn{width:100%;background:transparent;border:1px solid transparent;padding:5px 6px;white-space:nowrap;color:var(--ink)}.hbtn:hover{border-color:var(--line);background:var(--card)}
+#tldg{width:min(620px,94vw)}.tlt{width:100%;border-collapse:collapse;font-size:13px}.tlt td,.tlt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}.tlt td.n{text-align:right}.tlt th{font-size:11px;color:var(--mut);text-transform:uppercase}
+.tlf{display:grid;grid-template-columns:150px 90px 1fr auto;gap:6px;margin-top:10px;align-items:center}
+#rdlg{width:min(1000px,96vw);max-height:92vh;overflow:auto}#rdlg .rctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#rdlg .rctl input,#rdlg .rctl select{width:auto}
+.rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
+.rcust{margin:16px 0 4px;font-size:16px}
+@media print{body *{visibility:hidden!important}#rdlg,#rdlg *{visibility:visible!important}#rdlg{position:absolute;left:0;top:0;width:100%;max-height:none;overflow:visible;border:0;box-shadow:none}.noprint{display:none!important}}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -171,6 +178,7 @@ header .brand{color:var(--hfg)}
    <button id="pm">🎨 Colours</button>
    <button id="cm">➕ Column</button>
    <button id="dm">✏ Drawing types</button>
+   <button id="rm" hidden>🧾 Invoice report</button>
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
@@ -195,7 +203,7 @@ header .brand{color:var(--hfg)}
   <div style="display:flex;gap:6px;margin-bottom:6px"><select id="cto"></select><select id="ckind"><option value="comment">Comment</option><option value="instruction">📌 Instruction</option></select></div>
   <textarea id="cbody" rows="2" placeholder="Write a message… (Ctrl+Enter to send)"></textarea>
   <div class="acts"><span class="sp"></span><button type="button" id="csend" class="p">Send</button></div></div>
- <div class="acts"><button id="del" style="display:none">Delete</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
+ <div class="acts"><button id="del" style="display:none">Delete</button><button id="tlb" type="button" title="Log hours for this task">⏱ Hours</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
 <dialog id="tdlg" style="width:min(780px,94vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b><button class="p" id="tnew">+ New user</button></div>
@@ -217,6 +225,16 @@ header .brand{color:var(--hfg)}
  <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center;margin:0">Bar <input type="color" id="pbg" style="width:52px;height:34px;padding:2px"></label><label style="display:flex;gap:8px;align-items:center;margin:0">Text <input type="color" id="pfg" style="width:52px;height:34px;padding:2px"></label></div>
  <div id="psw" style="display:flex;gap:8px;flex-wrap:wrap"></div>
  <div class="acts"><button id="prs">Reset to default</button><span class="sp"></span><button id="pcx">Cancel</button><button class="p" id="psv">Save</button></div>
+</dialog>
+<dialog id="tldg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="tlord" style="color:var(--pri)"></b><div id="tltit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="tlcl">Close</button></div>
+ <div id="tll"></div>
+ <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
+ <small style="color:var(--mut)">Hours are logged under your name. Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
+</dialog>
+<dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Invoice report</b><button id="rcl">Close</button></div>
+ <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><button id="r14">Last 14 days</button><button id="rp14">Previous 14 days</button></div>
+ <div class="rctl noprint"><select id="rc2"><option value="">All customers</option></select><label style="margin:0">Rate / hour</label><input type="number" id="rr" min="0" step="0.01" placeholder="optional" style="width:110px"><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div id="rout"></div>
 </dialog>
 <dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
@@ -257,7 +275,7 @@ header .brand{color:var(--hfg)}
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let hoursMap={},draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -273,7 +291,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -325,7 +343,7 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
+  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=LV!=="full";$("#om").hidden=me.role!=="admin";
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
@@ -359,6 +377,7 @@ function lockView(){if(LV!=="view")return;document.querySelectorAll("#main .ed")
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
 function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to workspace…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
+const fmtH=n=>{n=+n||0;return n.toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1")};
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
@@ -367,10 +386,11 @@ const BASE_COLS=[
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
  {id:"status",label:"Status",cell:t=>`<select class="ed" data-f="status">${stOpts(t.status)}</select>`},
  {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
+ {id:"hours",label:"Hours",cell:t=>t.id?`<button type="button" class="hbtn" data-hrs="${t.id}" title="Log or see hours">⏱ ${hoursMap[t.id]?fmtH(hoursMap[t.id]):"Log"}</button>`:""},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
 const coKey=()=>"tf_co_"+W;
 const cwKey=()=>"tf_cw_"+W;
-const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:170,status:140,assigned_to:150,group_id:140,notes:220};
+const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:170,status:140,assigned_to:150,group_id:140,hours:90,notes:220};
 function cwSaved(){try{return JSON.parse(localStorage.getItem(cwKey())||"{}")||{}}catch(e){return {}}}
 const colW=id=>Math.max(50,cwSaved()[id]||DEFW[id]||150);
 function colOrderSaved(){try{return !!localStorage.getItem(coKey())||!!localStorage.getItem(cwKey())}catch(e){return false}}
@@ -473,6 +493,50 @@ function render(){
   }
   lockView();
 }
+// ---- Hours log ----
+let tlId=0;
+async function openTL(id){const t=tasks.find(x=>x.id==id);if(!t)return;tlId=id;
+  $("#tlord").textContent=t.order_no?"Order #"+t.order_no:"";$("#tltit").textContent=t.title||"";$("#tld").value=today();$("#tlh").value="";$("#tln").value="";
+  document.querySelectorAll("#tldg .tlf input,#tldg .tlf button").forEach(x=>x.disabled=LV==="view");$("#tll").innerHTML="";$("#tldg").showModal();await tlLoad()}
+async function tlLoad(){try{const r=await api("tl_list",{task_id:tlId});let tot=0;r.logs.forEach(l=>tot+=+l.hours);
+  $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th><th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}</td><td class="n">${fmtH(l.hours)}</td><td>${esc(l.note)}</td><td>${l.user_id==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="2"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
+$("#tla").onclick=async()=>{const h=parseFloat($("#tlh").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
+  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,note:$("#tln").value});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}};
+$("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!id)return;try{await api("tl_del",{id});await tlLoad();await load(true)}catch(err){alert(err.message)}});
+$("#tlcl").onclick=()=>$("#tldg").close();
+$("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
+// ---- Invoice report ----
+let rrows=[];
+const rcust=x=>x.customer||"(No customer)";
+function rShift(n){const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")}
+function rPreset(a,b){$("#rf").value=rShift(a);$("#rt").value=rShift(b);runReport()}
+async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
+  try{const r=await api("tl_report",{from,to});rrows=r.rows;const cur=$("#rc2").value,cs=[...new Set(rrows.map(rcust))].sort();
+    $("#rc2").innerHTML=`<option value="">All customers</option>`+cs.map(c=>`<option>${esc(c)}</option>`).join("");$("#rc2").value=cs.includes(cur)?cur:"";drawReport()}catch(e){alert(e.message)}}
+const rFiltered=()=>{const cf=$("#rc2").value;return rrows.filter(x=>!cf||rcust(x)===cf)};
+const money=n=>(+n).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+function drawReport(){
+  const rate=parseFloat($("#rr").value)||0,rows=rFiltered(),cur=(wss.find(w=>w.id==W)||{}).name||"",by=new Map();
+  for(const x of rows){const c=rcust(x);if(!by.has(c))by.set(c,[]);by.get(c).push(x)}
+  let h=`<div style="margin:6px 0"><b style="font-size:18px">Invoice report</b><div style="color:var(--mut)">${esc(cur)} · ${esc($("#rf").value)} to ${esc($("#rt").value)}${$("#rc2").value?" · "+esc($("#rc2").value):""}</div></div>`,grand=0;
+  if(!rows.length)h+='<div class="empty">No hours logged in this period.</div>';
+  for(const [c,list] of by){let ct=0;h+=`<h3 class="rcust">${esc(c)}</h3><table class="rt"><tr><th>Order No.</th><th>Task</th><th>Drawing type</th><th>Person</th><th>Date</th><th class="n">Hours</th>${rate?'<th class="n">Amount</th>':""}</tr>`;
+    const orders=new Map();for(const x of list){const o=x.order_no||"—";if(!orders.has(o))orders.set(o,[]);orders.get(o).push(x)}
+    for(const [o,l] of orders){let ot=0;for(const x of l){ot+=+x.hours;h+=`<tr><td>${esc(o)}</td><td>${esc(x.title)}</td><td>${esc(x.drawing_type||"")}</td><td>${esc(x.person)}</td><td>${esc(x.work_date)}</td><td class="n">${fmtH(x.hours)}</td>${rate?`<td class="n">${money(x.hours*rate)}</td>`:""}</tr>`}
+      ct+=ot;if(l.length>1||orders.size>1)h+=`<tr class="sub"><td colspan="5">Order ${esc(o)} total</td><td class="n">${fmtH(ot)}</td>${rate?`<td class="n">${money(ot*rate)}</td>`:""}</tr>`}
+    grand+=ct;h+=`<tr class="tot"><td colspan="5">${esc(c)} total</td><td class="n">${fmtH(ct)}</td>${rate?`<td class="n">${money(ct*rate)}</td>`:""}</tr></table>`}
+  if(by.size>1)h+=`<div style="font-weight:700;font-size:15px;margin-top:10px">All customers: ${fmtH(grand)} h${rate?" · "+money(grand*rate):""}</div>`;
+  $("#rout").innerHTML=h}
+$("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}try{$("#rr").value=localStorage.getItem("tf_rate_"+W)||""}catch(e){}$("#rdlg").showModal();runReport()};
+$("#rcl").onclick=()=>$("#rdlg").close();
+$("#r14").onclick=()=>rPreset(-13,0);$("#rp14").onclick=()=>rPreset(-27,-14);
+$("#rf").addEventListener("change",runReport);$("#rt").addEventListener("change",runReport);$("#rc2").addEventListener("change",drawReport);
+$("#rr").addEventListener("input",()=>{try{localStorage.setItem("tf_rate_"+W,$("#rr").value)}catch(e){}drawReport()});
+$("#rpr").onclick=()=>window.print();
+$("#rcsv").onclick=()=>{const rate=parseFloat($("#rr").value)||0,rows=rFiltered();
+  const head=["Customer","Order No.","Task","Drawing type","Person","Date","Hours","Note"].concat(rate?["Rate","Amount"]:[]);
+  const csv="\uFEFF"+[head].concat(rows.map(x=>[rcust(x),x.order_no,x.title,x.drawing_type,x.person,x.work_date,+x.hours,x.note].concat(rate?[rate,+(x.hours*rate).toFixed(2)]:[]))).map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="invoice_hours_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
 function startDraft(gid){if(LV==="view")return;const g=/^\d+$/.test(String(gid))?String(gid):"";
   if(g){const c=getGC();let ch=c.delete(g);if(gParent(g))ch=c.delete(gParent(g))||ch;if(ch)try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(e){}}
   draft={grp:g,t:{id:0,title:"",order_no:"",customer:"",drawing_type:"",start_date:"",end_date:"",status:ST[0][0],assigned_to:"",notes:"",group_id:g,x:{}}};
@@ -563,6 +627,7 @@ $("#main").addEventListener("click",e=>{
   if(e.target.closest("[data-dcancel]")){draft=null;render();return}
   const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=prompt("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
   if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
+  const hb=e.target.closest("[data-hrs]");if(hb){openTL(+hb.dataset.hrs);return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
   const el=e.target.closest("[data-id]");if(!el)return;
   if(el.tagName==="TR"&&!e.target.closest(".o"))return;
