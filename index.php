@@ -257,7 +257,7 @@ header .brand{color:var(--hfg)}
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -445,6 +445,7 @@ function render(){
     const defs=colDefs(),span=defs.length+2,gc=getGC();
     const act_=list.filter(t=>t.status!=="done"),done_=list.filter(t=>t.status==="done"),nd=done_.length;
     const rowHTML=t=>`<tr class="row" data-id="${t.id}"${scol(t.status)?` style="--sc:${scol(t.status)}"`:""}><td style="white-space:nowrap">${LV==="view"?"":`<span class="hd" title="Drag to reorder">⋮⋮</span>`}<input type="checkbox" class="rc"${sel.has(t.id)?" checked":""}></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(t)}</td>`).join("")}<td><button class="o" title="Open details">⋯</button></td></tr>`;
+    const draftHTML=()=>`<tr class="row draft" data-id="0"><td></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(draft.t)}</td>`).join("")}<td style="white-space:nowrap"><button class="o" data-dsave title="Add task (Enter)">✔</button><button class="o" data-dcancel title="Cancel (Esc)">✕</button></td></tr>`;
     let rows="";
     if(groups.length){
       const filt=$("#q").value||$("#fs").value||$("#fp").value||$("#fa").value;
@@ -455,15 +456,16 @@ function render(){
         if(sc.parent&&gc.has(sc.parent))continue;
         const kids=secs.filter(k=>k.parent===sc.id),items=act_.filter(t=>inSec(t,sc)),dn=done_.filter(t=>inSec(t,sc)).length;
         const tot=items.length+kids.reduce((n,k)=>n+act_.filter(t=>inSec(t,k)).length,0),totd=dn+kids.reduce((n,k)=>n+done_.filter(t=>inSec(t,k)).length,0);
-        if(sc.id==="none"&&!items.length&&!dn)continue;
-        if(filt&&!tot&&!totd)continue;
+        const hasD=draft&&draft.grp===(sc.id==="none"?"":sc.id);
+        if(sc.id==="none"&&!items.length&&!dn&&!hasD)continue;
+        if(filt&&!tot&&!totd&&!hasD)continue;
         const col=gc.has(sc.id);
         rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
-        if(!col){rows+=items.map(rowHTML).join("")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
+        if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
           const dl=done_.filter(t=>inSec(t,sc));
           if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
       }
-    }else rows=act_.map(rowHTML).join("")+addRow("none",span);
+    }else rows=act_.map(rowHTML).join("")+(draft&&draft.grp===""?draftHTML():"")+addRow("none",span);
     if(nd&&!groups.length)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
     $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
@@ -471,6 +473,16 @@ function render(){
   }
   lockView();
 }
+function startDraft(gid){if(LV==="view")return;const g=/^\d+$/.test(String(gid))?String(gid):"";
+  if(g){const c=getGC();let ch=c.delete(g);if(gParent(g))ch=c.delete(gParent(g))||ch;if(ch)try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(e){}}
+  draft={grp:g,t:{id:0,title:"",order_no:"",customer:"",drawing_type:"",start_date:"",end_date:"",status:ST[0][0],assigned_to:"",notes:"",group_id:g,x:{}}};
+  render();const i=document.querySelector("tr.draft input[data-f=title]");if(i){i.focus();try{i.scrollIntoView({block:"center"})}catch(e){}}}
+const setDraft=(f,v)=>{if(!draft)return;if(f.indexOf("x_")===0)draft.t.x[f]=v;else draft.t[f]=v};
+async function draftSave(){const d=draft;if(!d)return;const t=d.t;
+  if(!String(t.title).trim()){const i=document.querySelector("tr.draft input[data-f=title]");if(i)i.focus();return}
+  try{const r=await api("save",{title:t.title,order_no:t.order_no,customer:t.customer,drawing_type:t.drawing_type,start_date:t.start_date,end_date:t.end_date,status:t.status,assigned_to:t.assigned_to,notes:"",group_id:t.group_id,x:t.x});
+    if(r&&r.id)await api("task_order",{id:+r.id,before:0});draft=null;await load(true)}catch(e){alert(e.message)}}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&draft&&!document.querySelector("dialog[open],#rpop")){draft=null;render()}});
 const addRow=(gid,span,top)=>LV==="view"?"":`<tr class="addrow"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a>${top?`<a data-gsub="${gid}">+ Sub-group</a>`:""}<a data-gnew="1">+ Group</a></td></tr>`;
 function openDlg(t,grp){
   editing=t?t.id:null;
@@ -535,7 +547,7 @@ $("#sv").onclick=async()=>{
 };
 $("#del").onclick=()=>{if(editing&&confirm("Delete this task?")){$("#dlg").close();act("delete",{ids:[editing]})}};
 $("#dv").onclick=async()=>{try{await api("pref_view",{v:view});me.pref_view=view;render()}catch(e){alert(e.message)}};
-function syncViewBtns(){$("#add").style.display=view==="list"?"none":"";for(const [id,v] of [["vl","list"],["vb","board"],["vg","gantt"]])$("#"+id).classList.toggle("on",view===v)}
+function syncViewBtns(){if(view!=="list")draft=null;$("#add").style.display=view==="list"?"none":"";for(const [id,v] of [["vl","list"],["vb","board"],["vg","gantt"]])$("#"+id).classList.toggle("on",view===v)}
 $("#vb").onclick=()=>{view="board";syncViewBtns();render()};
 $("#vl").onclick=()=>{view="list";syncViewBtns();render()};
 $("#vg").onclick=()=>{view="gantt";syncViewBtns();render()};
@@ -544,9 +556,11 @@ for(const id of ["q","fs","fp","fa"])$("#"+id).addEventListener("input",render);
 $("#main").addEventListener("click",e=>{
   const sdh=e.target.closest(".dh[data-dh]");if(sdh){toggleCC(sdh.dataset.dh);return}
   if(e.target.closest(".dh")){toggleDone();return}
-  const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)openDlg(null,ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
+  const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)startDraft(ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
   if(e.target.classList.contains("cc"))return;
-  const ga=e.target.closest(".addrow [data-gadd]");if(ga){openDlg(null,ga.dataset.gadd);return}
+  const ga=e.target.closest(".addrow [data-gadd]");if(ga){startDraft(ga.dataset.gadd);return}
+  if(e.target.closest("[data-dsave]")){draftSave();return}
+  if(e.target.closest("[data-dcancel]")){draft=null;render();return}
   const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=prompt("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
   if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
@@ -556,6 +570,9 @@ $("#main").addEventListener("click",e=>{
 });
 $("#main").addEventListener("change",e=>{
   const f=e.target.dataset.f,tr=e.target.closest("tr[data-id]");
+  if(draft&&f&&tr&&tr.dataset.id==="0"){const v=e.target.value;
+    if(v==="__new"){(async()=>{try{let n=null;if(f==="status")n=await addStatus();else if(f==="drawing_type")n=await addDtype();if(n)setDraft(f,n)}catch(err){alert(err.message)}render()})();return}
+    setDraft(f,v);return}
   if(f==="status"&&tr&&e.target.value==="__new"){const id=tr.dataset.id;(async()=>{try{const k=await addStatus();if(k)await api("field",{id,f,v:k});await load(true)}catch(err){alert(err.message);await load(true)}})();return}
   if(f&&tr&&e.target.value==="__new"&&f==="drawing_type"){const el=e.target,id=tr.dataset.id;(async()=>{try{const n=await addDtype();if(n)await api("field",{id,f,v:n});await load(true)}catch(err){alert(err.message);await load(true)}})();return}
   if(f&&tr){const v=e.target.value;e.target.blur();act("field",{id:tr.dataset.id,f,v});return}
@@ -563,7 +580,7 @@ $("#main").addEventListener("change",e=>{
   else if(e.target.classList.contains("cc")){const id=+e.target.closest(".card").dataset.id;e.target.checked?sel.add(id):sel.delete(id);updBar()}
   else if(e.target.classList.contains("rc")){const id=+e.target.closest("tr").dataset.id;e.target.checked?sel.add(id):sel.delete(id);render()}
 });
-$("#main").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f)e.target.blur()});
+$("#main").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.f){const dr=e.target.closest("tr.draft");e.target.blur();if(dr)draftSave()}});
 $("#main").addEventListener("focusout",()=>setTimeout(()=>{if(pend)render()},0));
 $("#bar").addEventListener("change",async e=>{
   if(e.target.id!=="bmv"||e.target.value==="")return;const ids=[...sel],g=e.target.value;sel.clear();
@@ -600,7 +617,7 @@ function rpDraw(){
   h+=`</div><div class="rf"><span>${rp.single?"Pick a date":rp.s&&!rp.e?"Now pick the end date (click the same day for a one-day task)":"Pick the start date"}</span><span class="sp"></span><button type="button" data-rclear>Clear dates</button></div>`;
   p.innerHTML=h}
 function rpOpen(btn){
-  const tid=btn.dataset.rng||(btn.closest("[data-id]")||{dataset:{}}).dataset.id,t=tasks.find(x=>x.id==tid);if(!t||LV==="view")return;rpClose();
+  const tid=btn.dataset.rng||(btn.closest("[data-id]")||{dataset:{}}).dataset.id,t=+tid===0?(draft&&draft.t):tasks.find(x=>x.id==tid);if(!t||LV==="view")return;rpClose();
   if(btn.dataset.rngx){const v=xv(t,{id:btn.dataset.rngx.slice(2)})||"",ref=v||today();
     rp={id:t.id,f:btn.dataset.rngx,single:true,s:v||null,e:v||null,y:+ref.slice(0,4),m:+ref.slice(5,7)-1,hover:null}}
   else{const [s0,e0]=[t.start_date||"",t.end_date||""],ref=s0||e0||today();
@@ -609,7 +626,8 @@ function rpOpen(btn){
   const r=btn.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
   p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+"px";p.style.top=Math.max(8,Math.min(r.bottom+6+h>window.innerHeight&&r.top-h-6>8?r.top-h-6:r.bottom+6,window.innerHeight-h-8))+"px";
 }
-async function rpApply(s,e){const id=rp.id,f=rp.single?rp.f:null;rpClose();try{if(f)await api("field",{id,f,v:s});else await api("gantt_set",{id,s,e})}catch(err){alert(err.message)}await load(true)}
+async function rpApply(s,e){const id=rp.id,f=rp.single?rp.f:null;rpClose();
+  if(id===0&&draft){if(f)setDraft(f,s);else{draft.t.start_date=s;draft.t.end_date=e}render();return}try{if(f)await api("field",{id,f,v:s});else await api("gantt_set",{id,s,e})}catch(err){alert(err.message)}await load(true)}
 document.addEventListener("click",e=>{
   const p=$("#rpop");
   if(p&&p.contains(e.target)){
@@ -907,7 +925,7 @@ $("#tlist").addEventListener("click",async e=>{
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
-function busy(){return document.querySelector("dialog[open]")||rp||rowDrag||dragId||dragCol||rz||gdrag}
+function busy(){return document.querySelector("dialog[open]")||draft||rp||rowDrag||dragId||dragCol||rz||gdrag}
 async function poll(){
   if(document.hidden)return;
   try{

@@ -167,7 +167,7 @@ case 'save':
     $vals=[];foreach(get_cols($db) as $c){$k='x_'.$c['id'];if(array_key_exists($k,$in['x']))$vals[$k]=clean_x($c,$in['x'][$k]);}
     if($vals)set_x($db,(int)$in['id'],$vals);
   }
-  out(['ok'=>1]);
+  out(['ok'=>1,'id'=>(int)$in['id']]);
 case 'field':
   need_level('edit');$f=$in['f']??'';
   if(preg_match('/^x_(\d+)$/',$f,$m)){
