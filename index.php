@@ -142,6 +142,7 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
 #mdlg{width:min(580px,94vw)}#mdlg #thr{margin-top:0;border-top:1px solid var(--line)}#mdlg #thl{max-height:46vh;min-height:120px}
 .brand{display:flex;flex-direction:column;line-height:1.05;margin-right:6px;padding-right:14px;border-right:1px solid color-mix(in srgb,var(--hfg) 28%,transparent)}.brand b{font-size:23px;letter-spacing:.2px}.brand small{font-size:9px;opacity:.75;letter-spacing:.6px;margin-top:3px;text-transform:uppercase}
 header .brand{color:var(--hfg)}
+#hrow th{border-right:1px solid color-mix(in srgb,var(--line) 70%,var(--mut))}#hrow th:last-child{border-right:0}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
