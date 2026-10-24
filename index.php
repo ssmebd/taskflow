@@ -1,4 +1,4 @@
-<?php require 'config.php'; if(empty($_SESSION['uid'])){header('Location: login.php');exit;} ?>
+<?php require 'config.php';require 'remember.php'; if(empty($_SESSION['uid'])){header('Location: login.php');exit;} ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

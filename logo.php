@@ -1,5 +1,5 @@
 <?php
-require 'config.php';
+require 'config.php';require 'remember.php';
 if(empty($_SESSION['uid'])){http_response_code(401);exit;}
 $id=(int)($_GET['id']??0);$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT role FROM users WHERE id=?");$q->execute([$uid]);$role=$q->fetchColumn();

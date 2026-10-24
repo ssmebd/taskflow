@@ -14,7 +14,7 @@ if(!function_exists('shell_exec')||in_array('shell_exec',array_map('trim',explod
 $repo=escapeshellarg($cfg['repo']);
 $out=shell_exec("cd $repo && git fetch origin 2>&1 && git reset --hard origin/main 2>&1");
 $ok=true;
-foreach(['index.php','api.php','login.php','logo.php'] as $f){
+foreach(['index.php','api.php','login.php','logo.php','remember.php'] as $f){
   if(!copy($cfg['repo'].'/'.$f,$cfg['live'].'/'.$f)){$ok=false;$out.="copy failed: $f\n";}
 }
 if(function_exists('opcache_reset'))@opcache_reset();

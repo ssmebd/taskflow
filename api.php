@@ -1,5 +1,5 @@
 <?php
-require 'config.php';
+require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del'];
 function out($d){
@@ -307,11 +307,12 @@ case 'user_add':
   out(['ok'=>1]);
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
-  $db->prepare("UPDATE users SET pass_hash=? WHERE id=?")->execute([password_hash($in['password'],PASSWORD_DEFAULT),(int)$in['id']]);out(['ok'=>1]);
+  $db->prepare("UPDATE users SET pass_hash=? WHERE id=?")->execute([password_hash($in['password'],PASSWORD_DEFAULT),(int)$in['id']]);try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([(int)$in['id']]);}catch(Throwable $e){}out(['ok'=>1]);
 case 'user_del':
   admin();$id=(int)($in['id']??0);if($id===$uid)out(['error'=>'You cannot remove yourself']);
   $db->prepare("UPDATE tasks SET assigned_to=NULL WHERE assigned_to=?")->execute([$id]);
   $db->prepare("DELETE FROM ws_users WHERE user_id=?")->execute([$id]);
+  try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([$id]);}catch(Throwable $e){}
   $db->prepare("DELETE FROM users WHERE id=?")->execute([$id]);out(['ok'=>1]);
 }
 out(['error'=>'unknown action']);
