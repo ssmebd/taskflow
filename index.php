@@ -159,7 +159,6 @@ header .brand{color:var(--hfg)}
  <span class="sp"></span>
  <span id="live" style="font-size:12px;color:var(--mut)">○ …</span>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
- <button id="cr" hidden title="Restore the original column order and widths">Reset columns</button>
  <button class="p" id="add">+ New task</button>
  <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="login.php?logout=1">⎋ Log out</a></div></span>
 </header>
@@ -246,7 +245,7 @@ header .brand{color:var(--hfg)}
  <label>New column name</label><input id="cn" placeholder="e.g. Revision, Sheet size, Priority">
  <label>Type</label><select id="ct"><option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="dropdown">Dropdown</option></select>
  <input id="co" placeholder="Options, separated by commas" style="display:none;margin-top:6px">
- <div class="acts"><span class="sp"></span><button id="cc">Close</button><button class="p" id="ca">Add column</button></div>
+ <div class="acts"><button id="cr" disabled title="Put columns back in the original order and width (only for you, on this device)">↺ Reset column order &amp; widths</button><span class="sp"></span><button id="cc">Close</button><button class="p" id="ca">Add column</button></div>
 </dialog>
 
 <input type="file" id="wf" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
@@ -383,7 +382,7 @@ document.addEventListener("pointermove",e=>{
 });
 function endRz(){
   if(!rz)return;const r=rz;rz=null;r.h.classList.remove("on");r.th.draggable=true;
-  if(r.cur){const m=cwSaved();m[r.id]=r.cur;try{localStorage.setItem(cwKey(),JSON.stringify(m))}catch(x){}$("#cr").hidden=false}
+  if(r.cur){const m=cwSaved();m[r.id]=r.cur;try{localStorage.setItem(cwKey(),JSON.stringify(m))}catch(x){}$("#cr").disabled=false}
 }
 document.addEventListener("pointerup",endRz);document.addEventListener("pointercancel",endRz);
 function colOrder(){try{return JSON.parse(localStorage.getItem(coKey())||"[]")}catch(e){return []}}
@@ -429,12 +428,12 @@ function render(){
   gtb.hidden=!groups.length;
   gtb.innerHTML=`<a class="gt${G===""?" on":""}" data-g="">All <small>${tasks.length}</small></a>`+groups.map(g=>`<a class="gt${String(g.id)===G?" on":""}" data-g="${g.id}">${esc(g.name)} <small>${tasks.filter(t=>t.group_id==g.id).length}</small></a>`).join("")+(nn?`<a class="gt${G==="none"?" on":""}" data-g="none">No group <small>${nn}</small></a>`:"");
   if(view==="board"){
-    $("#cr").hidden=true;
+    $("#cr").disabled=true;
     $("#main").innerHTML=`<div class="board" style="grid-template-columns:repeat(${ST.length-1},minmax(220px,1fr))">`+ST.filter(s=>s[0]!=="done").map(([k,n])=>{
       const c=list.filter(t=>t.status===k);
       return `<div class="col" data-s="${k}"><h3><span>${scol(k)?`<i class="dot" style="background:${scol(k)}"></i>`:""}${n}</span><em>${c.length}</em></h3>${c.map(cardHTML).join("")||'<div class="empty">No tasks</div>'}</div>`}).join("")+`</div>`+completedHTML(list);
   }else if(view==="gantt"){
-    $("#cr").hidden=true;renderGantt(list);
+    $("#cr").disabled=true;renderGantt(list);
   }else{
     const defs=colDefs(),span=defs.length+2,gc=getGC();
     const act_=list.filter(t=>t.status!=="done"),done_=list.filter(t=>t.status==="done"),nd=done_.length;
@@ -456,7 +455,7 @@ function render(){
     if(nd)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
     $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
-    $("#cr").hidden=!colOrderSaved();
+    $("#cr").disabled=!colOrderSaved();
   }
   lockView();
 }
