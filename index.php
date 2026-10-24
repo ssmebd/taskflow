@@ -126,6 +126,13 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 .ur2{margin:4px 0}.ur2 input,.ur2 select{min-width:0}.pw{display:flex;gap:4px}.pw input{flex:1}.eye{padding:4px 8px;width:auto;flex:none}
 .urow{display:grid;grid-template-columns:1.2fr 1fr 1.5fr .9fr 70px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}
 @media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
+.drng{width:100%;text-align:center;background:transparent;border:1px solid transparent;padding:6px 8px;white-space:nowrap}.drng:hover{border-color:var(--line);background:var(--card)}.drng.empty{color:var(--mut);border:1px dashed var(--line)}.drng.late{color:var(--hi)}.ro .drng{pointer-events:none}
+#rpop{position:fixed;z-index:70;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:14px 16px}
+#rpop .rm{display:flex;gap:26px}#rpop .rh{display:flex;align-items:center;justify-content:space-between;font-weight:600;margin-bottom:8px;min-height:26px}#rpop .rh button{border:0;background:transparent;padding:2px 10px;font-size:18px;line-height:1}
+#rpop .rg{display:grid;grid-template-columns:repeat(7,34px);row-gap:2px}#rpop .rw{font-size:11px;color:var(--mut);text-align:center;padding:4px 0}
+#rpop .rd{height:34px;border:0;border-radius:8px;background:transparent;padding:0;font-size:13px;cursor:pointer}#rpop .rd:hover{background:var(--col)}
+#rpop .rd.in{background:color-mix(in srgb,var(--pri) 16%,transparent);border-radius:0}#rpop .rd.on{background:var(--pri);color:var(--priInk);border-radius:8px}#rpop .rd.td{box-shadow:inset 0 0 0 1.5px var(--pri)}
+#rpop .rf{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--mut)}#rpop .rf .sp{flex:1}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -256,6 +263,9 @@ function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const 
 const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
   return `<option value="">—</option>`+names.map(n=>`<option value="${ea(n)}"${n===cur?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`)};
 async function addDtype(){const n=prompt("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const fmtD=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||"");if(!m)return"?";return MON[+m[2]-1]+" "+(+m[3])+(+m[1]!==new Date().getFullYear()?", "+m[1]:"")};
+const fmtRange=t=>t.start_date&&t.end_date&&t.start_date===t.end_date?fmtD(t.start_date):fmtD(t.start_date)+" – "+fmtD(t.end_date);
 const ov=t=>ovl[t.id]||[];
 const ovText=t=>"Overlaps with:\n"+ov(t).map(o=>"• "+o.t+" ("+(o.s||"?")+" → "+(o.e||"?")+")"+(o.w?" – "+o.w:"")).join("\n");
 const ovBadge=t=>ov(t).length?`<span class="ovb" title="${ea(ovText(t))}">⚠</span>`:"";
@@ -296,7 +306,7 @@ function cardHTML(t){
   ${t.drawing_type?`<span class="tag">${esc(t.drawing_type)}</span>`:""}
   ${t.assigned_to?`<span>${esc(uname(t.assigned_to))}</span>`:""}
   ${cols.map(c=>{const v=xv(t,c);return v?`<span class="tag">${esc(c.name)}: ${esc(v)}</span>`:""}).join("")}
-  ${(t.start_date||t.end_date)?`<span class="${late(t)?"late":""}">${esc(t.start_date||"?")} → ${esc(t.end_date||"?")}</span>`:""}</div></div>`;
+  ${(t.start_date||t.end_date)?`<span class="${late(t)?"late":""}">${esc(fmtRange(t))}</span>`:""}</div></div>`;
 }
 function completedHTML(list){
   const c=list.filter(t=>t.status==="done");
@@ -317,14 +327,14 @@ const BASE_COLS=[
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
  {id:"customer",label:"Customer",cell:t=>`<input class="ed" data-f="customer" list="pjl" value="${ea(t.customer)}">`},
  {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed" data-f="drawing_type">${dtOpts(t.drawing_type)}</select>`},
- {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<input class="ed" type="date" data-f="start_date" value="${ea(t.start_date)}"> → <input class="ed ${late(t)?"late":""}" type="date" data-f="end_date" value="${ea(t.end_date)}">`},
+ {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
  {id:"status",label:"Status",cell:t=>`<select class="ed" data-f="status">${stOpts(t.status)}</select>`},
  {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
  {id:"group_id",label:"Group",cell:t=>`<select class="ed" data-f="group_id"><option value="">No group</option>${groups.map(g=>`<option value="${g.id}"${g.id==t.group_id?" selected":""}>${esc(g.name)}</option>`).join("")}</select>`},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
 const coKey=()=>"tf_co_"+W;
 const cwKey=()=>"tf_cw_"+W;
-const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:290,status:140,assigned_to:150,group_id:140,notes:220};
+const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:170,status:140,assigned_to:150,group_id:140,notes:220};
 function cwSaved(){try{return JSON.parse(localStorage.getItem(cwKey())||"{}")||{}}catch(e){return {}}}
 const colW=id=>Math.max(50,cwSaved()[id]||DEFW[id]||150);
 function colOrderSaved(){try{return !!localStorage.getItem(coKey())||!!localStorage.getItem(cwKey())}catch(e){return false}}
@@ -518,6 +528,42 @@ document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG
       x.putImageData(img,0,0);im.dataset.w=1;im.src=c.toDataURL("image/png")}
   }catch(err){}
 },true);
+// ---- Date range picker (click the Start / End cell) ----
+let rp=null;
+const ISO=(y,m,d)=>y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+function rpClose(){const p=$("#rpop");if(p)p.remove();rp=null}
+function rpDraw(){
+  const p=$("#rpop");if(!p||!rp)return;const n=window.innerWidth<640?1:2,td=today(),lo=rp.s&&rp.e?(rp.s<rp.e?rp.s:rp.e):rp.s,hi=rp.s&&rp.e?(rp.s<rp.e?rp.e:rp.s):(rp.s&&rp.hover?rp.hover:rp.s),a=hi&&lo&&hi<lo?hi:lo,b=hi&&lo&&hi<lo?lo:hi;
+  let h='<div class="rm">';
+  for(let k=0;k<n;k++){const d0=new Date(Date.UTC(rp.y,rp.m+k,1)),y=d0.getUTCFullYear(),m=d0.getUTCMonth(),dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(),off=(d0.getUTCDay()+6)%7;
+    h+=`<div><div class="rh">${k===0?'<button data-rn="-1">‹</button>':"<span></span>"}<span>${MON[m]} ${y}</span>${k===n-1?'<button data-rn="1">›</button>':"<span></span>"}</div><div class="rg">`+["Mo","Tu","We","Th","Fr","Sa","Su"].map(x=>`<div class="rw">${x}</div>`).join("")+'<div></div>'.repeat(off);
+    for(let d=1;d<=dim;d++){const iso=ISO(y,m,d),on=iso===a||iso===b,inr=a&&b&&iso>a&&iso<b;h+=`<button type="button" class="rd${on?" on":inr?" in":""}${iso===td?" td":""}" data-rd="${iso}">${d}</button>`}
+    h+="</div></div>"}
+  h+=`</div><div class="rf"><span>${rp.s&&!rp.e?"Now pick the end date (click the same day for a one-day task)":"Pick the start date"}</span><span class="sp"></span><button type="button" data-rclear>Clear dates</button></div>`;
+  p.innerHTML=h}
+function rpOpen(btn){
+  const t=tasks.find(x=>x.id==btn.dataset.rng);if(!t||LV==="view")return;rpClose();
+  const [s0,e0]=[t.start_date||"",t.end_date||""],ref=s0||e0||today();
+  rp={id:t.id,s:null,e:null,y:+ref.slice(0,4),m:+ref.slice(5,7)-1,hover:null,old:[s0,e0]};
+  const p=document.createElement("div");p.id="rpop";document.body.appendChild(p);rpDraw();
+  const r=btn.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
+  p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+"px";p.style.top=Math.max(8,Math.min(r.bottom+6+h>window.innerHeight&&r.top-h-6>8?r.top-h-6:r.bottom+6,window.innerHeight-h-8))+"px";
+}
+async function rpApply(s,e){const id=rp.id;rpClose();try{await api("gantt_set",{id,s,e})}catch(err){alert(err.message)}await load(true)}
+document.addEventListener("click",e=>{
+  const p=$("#rpop");
+  if(p&&p.contains(e.target)){
+    const n=e.target.dataset.rn,d=e.target.dataset.rd;
+    if(n){const x=new Date(Date.UTC(rp.y,rp.m+ +n,1));rp.y=x.getUTCFullYear();rp.m=x.getUTCMonth();rpDraw()}
+    else if(d){if(!rp.s||rp.e){rp.s=d;rp.e=null;rpDraw()}else{const a=rp.s<d?rp.s:d,b=rp.s<d?d:rp.s;rpApply(a,b)}}
+    else if(e.target.hasAttribute("data-rclear"))rpApply("","");
+    return}
+  const b=e.target.closest&&e.target.closest("[data-rng]");
+  if(b){e.stopPropagation();rpOpen(b);return}
+  if(p)rpClose();
+},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")rpClose()});
+document.addEventListener("mouseover",e=>{if(!rp||!rp.s||rp.e)return;const d=e.target.dataset&&e.target.dataset.rd;if(d&&d!==rp.hover){rp.hover=d;rpDraw()}});
 // ---- Gantt: drag to move / resize / reassign ----
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
 function gTipShow(e,txt){let g=$("#gtip");if(!g){g=document.createElement("div");g.id="gtip";document.body.appendChild(g)}g.textContent=txt;g.style.left=(e.clientX+14)+"px";g.style.top=(e.clientY+14)+"px"}
@@ -767,7 +813,7 @@ $("#tlist").addEventListener("click",async e=>{
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
-function busy(){return document.querySelector("dialog[open]")||dragId||dragCol||rz||gdrag}
+function busy(){return document.querySelector("dialog[open]")||rp||dragId||dragCol||rz||gdrag}
 async function poll(){
   if(document.hidden)return;
   try{
