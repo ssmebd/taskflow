@@ -67,7 +67,7 @@ body.sc #side{width:44px}
 #side .sf{padding:8px;margin-top:auto}#side .sf button{width:100%;padding:6px 4px;font-size:12px}
 #vname{display:none;width:32px;height:32px;margin:12px auto}#vname .ini{font-size:13px;border-radius:8px}
 #wlogo{width:40px;height:40px;margin-right:4px;flex:none}#wlogo .ini{font-size:15px;border-radius:9px}
-body.sc #wlinks,body.sc .sf{display:none}body.sc #vname{display:block}
+body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:none}body.sc .sf button{padding:6px 0}body.sc #vname{display:block}
 @media(max-width:700px){body{padding-left:44px}body:not(.sc) #side{box-shadow:8px 0 24px rgba(0,0,0,.3)}}
 .wtabs{display:flex;gap:6px;padding:8px 16px;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line)}
 .wt{padding:5px 14px;border-radius:999px;text-decoration:none;color:var(--ink);border:1px solid var(--line);white-space:nowrap}
@@ -143,6 +143,12 @@ tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{bo
 .brand{display:flex;flex-direction:column;line-height:1.05;margin-right:6px;padding-right:14px;border-right:1px solid color-mix(in srgb,var(--hfg) 28%,transparent)}.brand b{font-size:23px;letter-spacing:.2px}.brand small{font-size:9px;opacity:.75;letter-spacing:.6px;margin-top:3px;text-transform:uppercase}
 header .brand{color:var(--hfg)}
 #hrow th{border-right:1px solid color-mix(in srgb,var(--line) 70%,var(--mut))}#hrow th:last-child{border-right:0}
+#smenu{position:fixed;right:auto;top:auto;max-height:calc(100vh - 16px);overflow:auto}
+#side .sf{display:flex;flex-direction:column;gap:6px}#side .sf #setw{display:block}
+#side #smenu button{background:transparent;color:var(--ink);border:0;text-align:left;padding:8px 10px}#side #smenu button:hover{background:var(--col)}
+#uw{position:relative}#umenu{position:fixed;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px;z-index:60}#umenu[hidden]{display:none}
+#umenu a{display:block;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}#umenu a:hover{background:var(--col)}
+.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -152,11 +158,14 @@ header .brand{color:var(--hfg)}
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
  <span class="sp"></span>
  <span id="live" style="font-size:12px;color:var(--mut)">○ …</span>
- <span id="who" style="color:var(--mut)"></span>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
  <button id="cr" hidden title="Restore the original column order and widths">Reset columns</button>
  <button class="p" id="add">+ New task</button>
- <span id="setw"><button id="sbtn" aria-haspopup="true">⚙ Settings ▾</button>
+ <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="login.php?logout=1">⎋ Log out</a></div></span>
+</header>
+<nav class="gtabs" id="gtabs" hidden></nav>
+<div class="stats" id="stats"></div>
+<aside id="side"><div class="sh"><button id="stg" title="Collapse or expand the sidebar">◀</button></div><div id="vname"></div><nav id="wlinks"></nav><div class="sf"><span id="setw"><button id="sbtn" aria-haspopup="true" title="Settings"><span class="ic">⚙</span><span class="lbl"> Settings</span></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
@@ -166,12 +175,7 @@ header .brand{color:var(--hfg)}
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
-  </div></span>
- <a class="out" href="login.php?logout=1">Log out</a>
-</header>
-<nav class="gtabs" id="gtabs" hidden></nav>
-<div class="stats" id="stats"></div>
-<aside id="side"><div class="sh"><button id="stg" title="Collapse or expand the sidebar">◀</button></div><div id="vname"></div><nav id="wlinks"></nav><div class="sf"><button id="wm" hidden title="Manage workspaces and logos">⚙ Manage</button></div></aside>
+  </div></span><button id="wm" hidden title="Manage workspaces and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
 <div id="bar" hidden></div>
 <div id="main"></div>
 
@@ -446,9 +450,9 @@ function render(){
         if(filt&&!items.length&&!dn)continue;
         const col=gc.has(sc.id);
         rows+=`<tr class="gh" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} 📁 ${esc(sc.name)} <small style="font-weight:400">${items.length} open${dn?` · ${dn} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
-        if(!col)rows+=items.map(rowHTML).join("");
+        if(!col)rows+=items.map(rowHTML).join("")+addRow(sc.id,span);
       }
-    }else rows=act_.map(rowHTML).join("");
+    }else rows=act_.map(rowHTML).join("")+addRow("none",span);
     if(nd)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
     $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
@@ -456,6 +460,7 @@ function render(){
   }
   lockView();
 }
+const addRow=(gid,span)=>LV==="view"?"":`<tr class="addrow"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a><a data-gnew="1">+ Group</a></td></tr>`;
 function openDlg(t,grp){
   editing=t?t.id:null;
   $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").innerHTML=dtOpts(t?t.drawing_type||"":"");$("#dt").value=t?t.drawing_type||"":"";
@@ -519,7 +524,7 @@ $("#sv").onclick=async()=>{
 };
 $("#del").onclick=()=>{if(editing&&confirm("Delete this task?")){$("#dlg").close();act("delete",{ids:[editing]})}};
 $("#dv").onclick=async()=>{try{await api("pref_view",{v:view});me.pref_view=view;render()}catch(e){alert(e.message)}};
-function syncViewBtns(){for(const [id,v] of [["vl","list"],["vb","board"],["vg","gantt"]])$("#"+id).classList.toggle("on",view===v)}
+function syncViewBtns(){$("#add").style.display=view==="list"?"none":"";for(const [id,v] of [["vl","list"],["vb","board"],["vg","gantt"]])$("#"+id).classList.toggle("on",view===v)}
 $("#vb").onclick=()=>{view="board";syncViewBtns();render()};
 $("#vl").onclick=()=>{view="list";syncViewBtns();render()};
 $("#vg").onclick=()=>{view="gantt";syncViewBtns();render()};
@@ -529,6 +534,8 @@ $("#main").addEventListener("click",e=>{
   if(e.target.closest(".dh")){toggleDone();return}
   const gh=e.target.closest(".gh");if(gh){const ad=e.target.closest("[data-gadd]");if(ad)openDlg(null,ad.dataset.gadd);else toggleGroup(gh.dataset.gh);return}
   if(e.target.classList.contains("cc"))return;
+  const ga=e.target.closest(".addrow [data-gadd]");if(ga){openDlg(null,ga.dataset.gadd);return}
+  if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
   const el=e.target.closest("[data-id]");if(!el)return;
   if(el.tagName==="TR"&&!e.target.closest(".o"))return;
@@ -708,10 +715,11 @@ function renderWs(){
     <div class="acts"><span class="sp"></span><button class="p" data-wsave="${w.id}">Save access</button></div></div></div>`).join("");
 }
 $("#wm").onclick=()=>{renderWs();$("#wdlg").showModal()};
-$("#sbtn").onclick=e=>{e.stopPropagation();$("#smenu").hidden=!$("#smenu").hidden};
+$("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px"};
+$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#ubtn").getBoundingClientRect();m.style.top=(r.bottom+6)+"px";m.style.right=Math.max(8,window.innerWidth-r.right)+"px"};
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
-document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#smenu").hidden=true});
+document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#smenu").hidden=true;$("#umenu").hidden=true}});
 $("#stg").onclick=()=>{const c=document.body.classList.toggle("sc");$("#stg").textContent=c?"▶":"◀";try{localStorage.setItem("tf_sc",c?"1":"0")}catch(e){}};
 $("#wf").addEventListener("change",async e=>{const f=e.target.files[0];if(!f||!logoFor)return;
   try{const data=await fileToLogo(f);await api("ws_logo",{id:logoFor,data});await load(true);renderWs()}catch(err){alert(err.message)}logoFor=null});
