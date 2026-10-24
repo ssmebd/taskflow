@@ -287,7 +287,7 @@ case 'st_add':
   foreach($all as $x)if(mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'A status with that name already exists']);
   $mx=$db->prepare("SELECT COALESCE(MAX(sort_no),0) FROM statuses WHERE ws_id=? AND skey<>'done'");$mx->execute([$W]);
   $db->prepare("INSERT INTO statuses(ws_id,skey,name,sort_no) VALUES(?,?,?,?)")->execute([$W,'t'.bin2hex(random_bytes(6)),$n,(int)$mx->fetchColumn()+1]);
-  $id=(int)$db->lastInsertId();$db->prepare("UPDATE statuses SET skey=? WHERE id=?")->execute(['s'.$id,$id]);out(['ok'=>1]);
+  $id=(int)$db->lastInsertId();$db->prepare("UPDATE statuses SET skey=? WHERE id=?")->execute(['s'.$id,$id]);out(['ok'=>1,'k'=>'s'.$id]);
 case 'st_color':
   need_level('full');$c=(string)($in['color']??'');if($c!==''&&!preg_match('/^#[0-9a-fA-F]{6}$/',$c))out(['error'=>'Invalid color']);
   $db->prepare("UPDATE statuses SET color=? WHERE id=? AND ws_id=?")->execute([$c,(int)($in['id']??0),$W]);out(['ok'=>1]);

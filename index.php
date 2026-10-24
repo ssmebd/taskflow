@@ -295,7 +295,8 @@ const ovBadge=t=>ov(t).length?`<span class="ovb" title="${ea(ovText(t))}">⚠</s
 const inGroup=t=>G===""||(G==="none"?!t.group_id:String(t.group_id)===G);
 const gname=id=>(groups.find(g=>g.id==id)||{}).name||"";
 const scol=k=>{const c=(SL.find(x=>x.k===k)||{}).color||"";return /^#[0-9a-f]{6}$/i.test(c)?c:""};
-const stOpts=s=>ST.map(([k,n])=>`<option value="${k}"${(s||ST[0][0])===k?" selected":""}>${n}</option>`).join("");
+const stOpts=s=>ST.map(([k,n])=>`<option value="${k}"${(s||ST[0][0])===k?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`);
+async function addStatus(){const n=prompt("New status name:");if(!n||!n.trim())return null;const r=await api("st_add",{name:n});await load(true);return r.k}
 const asOpts=c=>`<option value="">Unassigned</option>`+users.map(u=>`<option value="${u.id}"${u.id==c?" selected":""}>${esc(u.name)}</option>`).join("");
 const uname=id=>names[id]||"";
 const uniq=k=>[...new Set(tasks.map(t=>t[k]).filter(Boolean))].sort();
@@ -506,6 +507,8 @@ $("#ilist").addEventListener("click",e=>{const b=e.target.closest(".ib");if(!b)r
   if(w===W)openMsg(t);else location.href="index.php?w="+w+"&t="+t+"&m=1"});
 $("#dt").addEventListener("change",async e=>{if(e.target.value!=="__new")return;const prev=editing?((tasks.find(x=>x.id==editing)||{}).drawing_type||""):"";
   try{const n=await addDtype();$("#dt").innerHTML=dtOpts(n||prev);$("#dt").value=n||prev}catch(err){alert(err.message);$("#dt").innerHTML=dtOpts(prev);$("#dt").value=prev}});
+$("#st").addEventListener("change",async e=>{if(e.target.value!=="__new")return;const prev=editing?((tasks.find(x=>x.id==editing)||{}).status||ST[0][0]):ST[0][0];
+  try{const k=await addStatus();$("#st").innerHTML=stOpts(k||prev);$("#st").value=k||prev}catch(err){alert(err.message);$("#st").innerHTML=stOpts(prev);$("#st").value=prev}});
 $("#add").onclick=()=>openDlg(null);
 $("#cx").onclick=()=>$("#dlg").close();
 $("#sv").onclick=async()=>{
@@ -532,6 +535,7 @@ $("#main").addEventListener("click",e=>{
 });
 $("#main").addEventListener("change",e=>{
   const f=e.target.dataset.f,tr=e.target.closest("tr[data-id]");
+  if(f==="status"&&tr&&e.target.value==="__new"){const id=tr.dataset.id;(async()=>{try{const k=await addStatus();if(k)await api("field",{id,f,v:k});await load(true)}catch(err){alert(err.message);await load(true)}})();return}
   if(f&&tr&&e.target.value==="__new"&&f==="drawing_type"){const el=e.target,id=tr.dataset.id;(async()=>{try{const n=await addDtype();if(n)await api("field",{id,f,v:n});await load(true)}catch(err){alert(err.message);await load(true)}})();return}
   if(f&&tr){const v=e.target.value;e.target.blur();act("field",{id:tr.dataset.id,f,v});return}
   if(e.target.id==="all"){vis().forEach(t=>e.target.checked?sel.add(t.id):sel.delete(t.id));render()}
