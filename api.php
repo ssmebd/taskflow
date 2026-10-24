@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v12']))return;
+  if(!empty($_SESSION['schema_v13']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -26,6 +26,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'logo'")->fetch())$db->exec("ALTER TABLE workspaces ADD logo MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'sort_no'")->fetch())$db->exec("ALTER TABLE tasks ADD sort_no INT NOT NULL DEFAULT 0");
   $db->exec("CREATE TABLE IF NOT EXISTS drawing_types(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,name VARCHAR(100) NOT NULL,sort_no INT NOT NULL DEFAULT 0,UNIQUE KEY u(ws_id,name)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS meta(k VARCHAR(20) PRIMARY KEY,v BIGINT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("INSERT IGNORE INTO meta(k,v) VALUES('ver',1)");
@@ -40,7 +41,7 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v12']=1;
+  $_SESSION['schema_v13']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -119,7 +120,7 @@ case 'list':
   $res=['inbox'=>inbox_sql($db,true),'v'=>$ver,'me'=>$me,'ws'=>$WS,'w'=>$W,'level'=>$LV,'names'=>(object)$names,'users'=>[],'cols'=>[],'tasks'=>[]];
   if($W){
     $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR id IN(SELECT user_id FROM ws_users WHERE ws_id=?) ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
-    $q=$db->prepare("SELECT * FROM tasks WHERE ws_id=? ORDER BY id DESC");$q->execute([$W]);$tasks=$q->fetchAll();
+    $q=$db->prepare("SELECT * FROM tasks WHERE ws_id=? ORDER BY sort_no ASC,id DESC");$q->execute([$W]);$tasks=$q->fetchAll();
     foreach($tasks as &$t){$t['x']=(object)(json_decode((string)($t['extra']??''),true)?:[]);unset($t['extra']);}
     $ov=[];$wn=array_column($WS,'name','id');
     $ovs=ov_settings($db);
@@ -212,6 +213,19 @@ case 'task_move':
     if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;
   }
   out(['ok'=>1,'moved'=>$n]);
+case 'task_order':
+  need_level('edit');$id=(int)($in['id']??0);$before=(int)($in['before']??0);
+  $q=$db->prepare("SELECT id FROM tasks WHERE ws_id=? ORDER BY sort_no ASC,id DESC");$q->execute([$W]);$ids=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));
+  if(!in_array($id,$ids,true))out(['error'=>'Task not found']);
+  $ids=array_values(array_filter($ids,fn($x)=>$x!==$id));
+  $pos=$before?array_search($before,$ids,true):false;
+  if($pos===false)$ids[]=$id;else array_splice($ids,$pos,0,[$id]);
+  foreach(array_chunk($ids,400,true) as $ch){
+    $case='';$in2=[];$par=[];foreach($ch as $i=>$tid){$case.=' WHEN ? THEN ?';$par[]=$tid;$par[]=$i+1;$in2[]='?';}
+    $db->prepare("UPDATE tasks SET sort_no=CASE id$case END WHERE ws_id=? AND id IN(".implode(',',$in2).")")->execute(array_merge($par,[$W],array_values($ch)));
+  }
+  if(array_key_exists('g',$in)){$g=clean('group_id',$in['g']);$db->prepare("UPDATE tasks SET group_id=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$g,$id,$W]);}
+  out(['ok'=>1]);
 case 'dt_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
   $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=?");$q->execute([$W]);if((int)$q->fetchColumn()>=200)out(['error'=>'Maximum 200 drawing types']);

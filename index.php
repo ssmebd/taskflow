@@ -133,6 +133,8 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 #rpop .rd{height:34px;border:0;border-radius:8px;background:transparent;padding:0;font-size:13px;cursor:pointer}#rpop .rd:hover{background:var(--col)}
 #rpop .rd.in{background:color-mix(in srgb,var(--pri) 16%,transparent);border-radius:0}#rpop .rd.on{background:var(--pri);color:var(--priInk);border-radius:8px}#rpop .rd.td{box-shadow:inset 0 0 0 1.5px var(--pri)}
 #rpop .rf{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--mut)}#rpop .rf .sp{flex:1}
+.hd{display:inline-block;cursor:grab;color:var(--mut);padding:2px 5px 2px 0;touch-action:none;user-select:none;font-size:13px;letter-spacing:-2px}.hd:hover{color:var(--ink)}
+tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{box-shadow:inset 0 -3px 0 var(--pri)}.gh.rd-g td,.gh.rd-g{outline:2px solid var(--pri);outline-offset:-2px}body.rdg{cursor:grabbing;user-select:none}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -236,7 +238,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -284,6 +286,7 @@ function xCtl(c,v,mode){
   return `<input ${at} type="${c.ctype==="number"?"number":c.ctype==="date"?"date":"text"}"${c.ctype==="number"?' step="any"':""} value="${ea(v)}">`;
 }
 const today=()=>new Date().toISOString().slice(0,10);
+const dcell=(c,t)=>{const v=xv(t,c);return `<button type="button" class="drng ${v&&v<today()&&t.status!=="done"?"late":""}${v?"":" empty"}" data-rngx="x_${c.id}">${v?esc(fmtD(v)):"Set date"}</button>`};
 const late=t=>t.end_date&&t.end_date<today()&&t.status!=="done";
 
 function syncFilters(){
@@ -358,7 +361,7 @@ function endRz(){
 document.addEventListener("pointerup",endRz);document.addEventListener("pointercancel",endRz);
 function colOrder(){try{return JSON.parse(localStorage.getItem(coKey())||"[]")}catch(e){return []}}
 function colDefs(){
-  const all=BASE_COLS.concat(cols.map(c=>({id:"x_"+c.id,label:c.name,cell:t=>xCtl(c,xv(t,c),"row")})));
+  const all=BASE_COLS.concat(cols.map(c=>({id:"x_"+c.id,label:c.name,cell:t=>c.ctype==="date"?dcell(c,t):xCtl(c,xv(t,c),"row")})));
   const saved=colOrder(),out=[];
   for(const id of saved){const d=all.find(x=>x.id===id);if(d&&!out.includes(d))out.push(d)}
   for(const d of all)if(!out.includes(d))out.push(d);
@@ -408,7 +411,7 @@ function render(){
   }else{
     const defs=colDefs(),span=defs.length+2,gc=getGC();
     const act_=list.filter(t=>t.status!=="done"),done_=list.filter(t=>t.status==="done"),nd=done_.length;
-    const rowHTML=t=>`<tr class="row" data-id="${t.id}"${scol(t.status)?` style="--sc:${scol(t.status)}"`:""}><td><input type="checkbox" class="rc"${sel.has(t.id)?" checked":""}></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(t)}</td>`).join("")}<td><button class="o" title="Open details">⋯</button></td></tr>`;
+    const rowHTML=t=>`<tr class="row" data-id="${t.id}"${scol(t.status)?` style="--sc:${scol(t.status)}"`:""}><td style="white-space:nowrap">${LV==="view"?"":`<span class="hd" title="Drag to reorder">⋮⋮</span>`}<input type="checkbox" class="rc"${sel.has(t.id)?" checked":""}></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(t)}</td>`).join("")}<td><button class="o" title="Open details">⋯</button></td></tr>`;
     let rows="";
     if(groups.length){
       const filt=$("#q").value||$("#fs").value||$("#fp").value||$("#fa").value;
@@ -424,7 +427,7 @@ function render(){
       }
     }else rows=act_.map(rowHTML).join("");
     if(nd)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
-    $("#main").innerHTML=`<div class="listwrap"><table style="width:${36+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:36px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
+    $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
     $("#cr").hidden=!colOrderSaved();
   }
@@ -539,31 +542,56 @@ function rpDraw(){
     h+=`<div><div class="rh">${k===0?'<button data-rn="-1">‹</button>':"<span></span>"}<span>${MON[m]} ${y}</span>${k===n-1?'<button data-rn="1">›</button>':"<span></span>"}</div><div class="rg">`+["Mo","Tu","We","Th","Fr","Sa","Su"].map(x=>`<div class="rw">${x}</div>`).join("")+'<div></div>'.repeat(off);
     for(let d=1;d<=dim;d++){const iso=ISO(y,m,d),on=iso===a||iso===b,inr=a&&b&&iso>a&&iso<b;h+=`<button type="button" class="rd${on?" on":inr?" in":""}${iso===td?" td":""}" data-rd="${iso}">${d}</button>`}
     h+="</div></div>"}
-  h+=`</div><div class="rf"><span>${rp.s&&!rp.e?"Now pick the end date (click the same day for a one-day task)":"Pick the start date"}</span><span class="sp"></span><button type="button" data-rclear>Clear dates</button></div>`;
+  h+=`</div><div class="rf"><span>${rp.single?"Pick a date":rp.s&&!rp.e?"Now pick the end date (click the same day for a one-day task)":"Pick the start date"}</span><span class="sp"></span><button type="button" data-rclear>Clear dates</button></div>`;
   p.innerHTML=h}
 function rpOpen(btn){
-  const t=tasks.find(x=>x.id==btn.dataset.rng);if(!t||LV==="view")return;rpClose();
-  const [s0,e0]=[t.start_date||"",t.end_date||""],ref=s0||e0||today();
-  rp={id:t.id,s:null,e:null,y:+ref.slice(0,4),m:+ref.slice(5,7)-1,hover:null,old:[s0,e0]};
+  const tid=btn.dataset.rng||(btn.closest("[data-id]")||{dataset:{}}).dataset.id,t=tasks.find(x=>x.id==tid);if(!t||LV==="view")return;rpClose();
+  if(btn.dataset.rngx){const v=xv(t,{id:btn.dataset.rngx.slice(2)})||"",ref=v||today();
+    rp={id:t.id,f:btn.dataset.rngx,single:true,s:v||null,e:v||null,y:+ref.slice(0,4),m:+ref.slice(5,7)-1,hover:null}}
+  else{const [s0,e0]=[t.start_date||"",t.end_date||""],ref=s0||e0||today();
+  rp={id:t.id,s:null,e:null,y:+ref.slice(0,4),m:+ref.slice(5,7)-1,hover:null,old:[s0,e0]}}
   const p=document.createElement("div");p.id="rpop";document.body.appendChild(p);rpDraw();
   const r=btn.getBoundingClientRect(),w=p.offsetWidth,h=p.offsetHeight;
   p.style.left=Math.max(8,Math.min(r.left,window.innerWidth-w-8))+"px";p.style.top=Math.max(8,Math.min(r.bottom+6+h>window.innerHeight&&r.top-h-6>8?r.top-h-6:r.bottom+6,window.innerHeight-h-8))+"px";
 }
-async function rpApply(s,e){const id=rp.id;rpClose();try{await api("gantt_set",{id,s,e})}catch(err){alert(err.message)}await load(true)}
+async function rpApply(s,e){const id=rp.id,f=rp.single?rp.f:null;rpClose();try{if(f)await api("field",{id,f,v:s});else await api("gantt_set",{id,s,e})}catch(err){alert(err.message)}await load(true)}
 document.addEventListener("click",e=>{
   const p=$("#rpop");
   if(p&&p.contains(e.target)){
     const n=e.target.dataset.rn,d=e.target.dataset.rd;
     if(n){const x=new Date(Date.UTC(rp.y,rp.m+ +n,1));rp.y=x.getUTCFullYear();rp.m=x.getUTCMonth();rpDraw()}
+    else if(d&&rp.single)rpApply(d,d);
     else if(d){if(!rp.s||rp.e){rp.s=d;rp.e=null;rpDraw()}else{const a=rp.s<d?rp.s:d,b=rp.s<d?d:rp.s;rpApply(a,b)}}
     else if(e.target.hasAttribute("data-rclear"))rpApply("","");
     return}
-  const b=e.target.closest&&e.target.closest("[data-rng]");
+  const b=e.target.closest&&e.target.closest("[data-rng],[data-rngx]");
   if(b){e.stopPropagation();rpOpen(b);return}
   if(p)rpClose();
 },true);
 document.addEventListener("keydown",e=>{if(e.key==="Escape")rpClose()});
 document.addEventListener("mouseover",e=>{if(!rp||!rp.s||rp.e)return;const d=e.target.dataset&&e.target.dataset.rd;if(d&&d!==rp.hover){rp.hover=d;rpDraw()}});
+// ---- Drag rows up and down (works with mouse and touch) ----
+function rdClear(){document.querySelectorAll(".rd-b,.rd-a,.rd-g,.rdrag").forEach(x=>x.classList.remove("rd-b","rd-a","rd-g","rdrag"));document.body.classList.remove("rdg")}
+$("#main").addEventListener("pointerdown",e=>{const h=e.target.closest&&e.target.closest(".hd");if(!h||LV==="view"||(e.button||0)>0)return;const tr=h.closest("tr");e.preventDefault();
+  rowDrag={id:+tr.dataset.id,tr,moved:false,tgt:null,pos:"before",gh:null}});
+document.addEventListener("pointermove",e=>{const g=rowDrag;if(!g)return;
+  if(!g.moved){g.moved=true;g.tr.classList.add("rdrag");document.body.classList.add("rdg")}
+  if(e.clientY<70)window.scrollBy(0,-16);else if(window.innerHeight-e.clientY<70)window.scrollBy(0,16);
+  document.querySelectorAll(".rd-b,.rd-a,.rd-g").forEach(x=>x.classList.remove("rd-b","rd-a","rd-g"));
+  const el=document.elementFromPoint(e.clientX,e.clientY)||document.body,row=el.closest("tr.row[data-id]"),gh=el.closest(".gh");g.tgt=null;g.gh=null;
+  if(row&&row!==g.tr){const r=row.getBoundingClientRect();g.pos=e.clientY<r.top+r.height/2?"before":"after";row.classList.add(g.pos==="before"?"rd-b":"rd-a");g.tgt=+row.dataset.id}
+  else if(gh){gh.classList.add("rd-g");g.gh=gh.dataset.gh}
+});
+async function rdEnd(cancel){const g=rowDrag;if(!g)return;rowDrag=null;rdClear();if(!g.moved||cancel||(!g.tgt&&g.gh==null))return;
+  const d={id:g.id};
+  if(g.tgt){const t=tasks.find(x=>x.id===g.tgt);if(!t)return;let before=0;
+    if(g.pos==="before")before=g.tgt;else{let k=tasks.findIndex(x=>x.id===g.tgt)+1;if(tasks[k]&&tasks[k].id===g.id)k++;before=tasks[k]?tasks[k].id:0}
+    d.before=before;if(groups.length)d.g=t.group_id||0}
+  else{d.before=0;d.g=g.gh==="none"?0:+g.gh}
+  try{await api("task_order",d)}catch(err){alert(err.message)}
+  await load(true)}
+document.addEventListener("pointerup",()=>rdEnd(false));document.addEventListener("pointercancel",()=>rdEnd(true));
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&rowDrag){rdEnd(true)}});
 // ---- Gantt: drag to move / resize / reassign ----
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
 function gTipShow(e,txt){let g=$("#gtip");if(!g){g=document.createElement("div");g.id="gtip";document.body.appendChild(g)}g.textContent=txt;g.style.left=(e.clientX+14)+"px";g.style.top=(e.clientY+14)+"px"}
@@ -813,7 +841,7 @@ $("#tlist").addEventListener("click",async e=>{
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
-function busy(){return document.querySelector("dialog[open]")||rp||dragId||dragCol||rz||gdrag}
+function busy(){return document.querySelector("dialog[open]")||rp||rowDrag||dragId||dragCol||rz||gdrag}
 async function poll(){
   if(document.hidden)return;
   try{
