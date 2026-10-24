@@ -155,6 +155,7 @@ header .brand{color:var(--hfg)}
 #rdlg{width:min(1000px,96vw);max-height:92vh;overflow:auto}#rdlg .rctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#rdlg .rctl input,#rdlg .rctl select{width:auto}
 .rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
 .rcust{margin:16px 0 4px;font-size:16px}
+#ivdlg{width:min(720px,96vw);max-height:92vh;overflow:auto}.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0}.pgrid label{font-size:12px;color:var(--mut)}.pgrid input,.pgrid select{width:100%}@media(max-width:600px){.pgrid{grid-template-columns:1fr}}.rt.wl{font-size:11px}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
 @media print{body *{visibility:hidden!important}#rdlg,#rdlg *{visibility:visible!important}#rdlg{position:absolute;left:0;top:0;width:100%;max-height:none;overflow:visible;border:0;box-shadow:none}.noprint{display:none!important}}
 </style></head><body>
 <header>
@@ -178,7 +179,7 @@ header .brand{color:var(--hfg)}
    <button id="pm">🎨 Colours</button>
    <button id="cm">➕ Column</button>
    <button id="dm">✏ Drawing types</button>
-   <button id="rm" hidden>🧾 Invoice report</button>
+   <button id="rm" hidden>🧾 Worklog &amp; invoice</button>
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
@@ -228,13 +229,27 @@ header .brand{color:var(--hfg)}
 </dialog>
 <dialog id="tldg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="tlord" style="color:var(--pri)"></b><div id="tltit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="tlcl">Close</button></div>
  <div id="tll"></div>
- <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
+ <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><select id="tlk" title="Regular or overtime"><option value="R">Regular</option><option value="OT">OT</option></select><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
  <small style="color:var(--mut)">Hours are logged under your name. Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
-<dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Invoice report</b><button id="rcl">Close</button></div>
+<dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><button id="r14">Last 14 days</button><button id="rp14">Previous 14 days</button></div>
- <div class="rctl noprint"><select id="rc2"><option value="">All customers</option></select><label style="margin:0">Rate / hour</label><input type="number" id="rr" min="0" step="0.01" placeholder="optional" style="width:110px"><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="log">Daily work logs</option><option value="inv">Invoice</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
  <div id="rout"></div>
+</dialog>
+<dialog id="ivdlg"><b>Invoice profile</b>
+ <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
+ <div class="pgrid">
+  <label>Profile name<input id="pn"></label><label>Layout<select id="pl"><option value="worklog">Daily work logs per group + summary invoice</option><option value="items">Item list (actioned items / hours / sub-total)</option></select></label>
+  <label>Match Customer (comma separated)<input id="pmc" placeholder="e.g. UCA, Allshelter LLC"></label><label>Match Order No. starting with<input id="pmo" placeholder="e.g. UCA"></label>
+  <label>Client name<input id="pcn"></label><label>Client address<input id="pca"></label>
+  <label>Currency code<input id="pcc" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="pcs" maxlength="4" placeholder="$"></label>
+  <label>Default rate / hour<input type="number" id="prt" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="pot" min="0" step="0.05"></label>
+  <label>Invoice no. prefix<input id="ppx" placeholder="INVOICE-"></label><label>Next number / suffix<span style="display:flex;gap:6px"><input type="number" id="psq" min="0" style="width:90px"><input id="psf" placeholder="-UCA"></span></label>
+ </div>
+ <label>Bank / payment details<textarea id="pbk" rows="3"></textarea></label>
+ <b style="font-size:13px">Rate per person <span style="font-weight:400;color:var(--mut)">(blank = default rate)</span></b><div id="prl" class="pgrid"></div>
+ <div class="acts"><button id="pdel" class="danger">Delete</button><span class="sp"></span><button id="pcc2">Cancel</button><button class="p" id="ivsv">Save</button></div>
 </dialog>
 <dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
@@ -499,44 +514,86 @@ async function openTL(id){const t=tasks.find(x=>x.id==id);if(!t)return;tlId=id;
   $("#tlord").textContent=t.order_no?"Order #"+t.order_no:"";$("#tltit").textContent=t.title||"";$("#tld").value=today();$("#tlh").value="";$("#tln").value="";
   document.querySelectorAll("#tldg .tlf input,#tldg .tlf button").forEach(x=>x.disabled=LV==="view");$("#tll").innerHTML="";$("#tldg").showModal();await tlLoad()}
 async function tlLoad(){try{const r=await api("tl_list",{task_id:tlId});let tot=0;r.logs.forEach(l=>tot+=+l.hours);
-  $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th><th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}</td><td class="n">${fmtH(l.hours)}</td><td>${esc(l.note)}</td><td>${l.user_id==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="2"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
+  $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th><th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}</td><td class="n">${fmtH(l.hours)}${l.kind==="OT"?" <b>OT</b>":""}</td><td>${esc(l.note)}</td><td>${l.user_id==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="2"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
 $("#tla").onclick=async()=>{const h=parseFloat($("#tlh").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
-  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,note:$("#tln").value});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}};
+  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,kind:$("#tlk").value,note:$("#tln").value});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}};
 $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!id)return;try{await api("tl_del",{id});await tlLoad();await load(true)}catch(err){alert(err.message)}});
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
-// ---- Invoice report ----
-let rrows=[];
-const rcust=x=>x.customer||"(No customer)";
-function rShift(n){const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")}
-function rPreset(a,b){$("#rf").value=rShift(a);$("#rt").value=rShift(b);runReport()}
-async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
-  try{const r=await api("tl_report",{from,to});rrows=r.rows;const cur=$("#rc2").value,cs=[...new Set(rrows.map(rcust))].sort();
-    $("#rc2").innerHTML=`<option value="">All customers</option>`+cs.map(c=>`<option>${esc(c)}</option>`).join("");$("#rc2").value=cs.includes(cur)?cur:"";drawReport()}catch(e){alert(e.message)}}
-const rFiltered=()=>{const cf=$("#rc2").value;return rrows.filter(x=>!cf||rcust(x)===cf)};
+// ---- Worklog & invoice reports ----
+let rrows=[],rprofs=[],rcsvRows=[];
+const rShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")};
+const rPreset=(a,b)=>{$("#rf").value=rShift(a);$("#rt").value=rShift(b);runReport()};
 const money=n=>(+n).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+const rDef=()=>({slot:0,name:"Invoice",match_cust:"",match_order:"",client_name:"",client_addr:"",currency:"AUD",symbol:"$",layout:"worklog",rate:0,rates:{},ot:1,bank:"",prefix:"INVOICE-",suffix:"",seq:1});
+function isoWeek(s){const d=new Date(s+"T00:00:00Z");const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil(((d-y)/864e5+1)/7)}
+const rList=()=>rprofs.length?rprofs:[rDef()];
+const rCur=()=>{const l=rList(),v=$("#rpf").value;return l.find(p=>String(p.slot)===v)||l[0]};
+const splitC=s=>String(s||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
+const rClaims=(p,x)=>{const mc=splitC(p.match_cust),mo=String(p.match_order||"").trim().toLowerCase();return (mc.length&&mc.includes(String(x.customer||"").trim().toLowerCase()))||(mo&&String(x.order_no||"").toLowerCase().indexOf(mo)===0)};
+const hasM=p=>splitC(p.match_cust).length||String(p.match_order||"").trim();
+function rProfRows(p){const L=rList();return rrows.filter(x=>hasM(p)?rClaims(p,x):!L.some(q=>q!==p&&hasM(q)&&rClaims(q,x)))}
+const rRate=(p,uid)=>{const v=p.rates&&p.rates[String(uid)];return v!==undefined&&v!==""?+v:+p.rate||0};
+const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
+function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
+function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
+function rLines(rows){const m=new Map();for(const x of rows){const k=x.work_date+"|"+x.task_id+"|"+(x.kind==="OT"?"OT":"R");let l=m.get(k);if(!l){l={date:x.work_date,x,kind:x.kind==="OT"?"OT":"R",by:{},notes:[],hrs:0,cost:0};m.set(k,l)}l.by[x.user_id]=(l.by[x.user_id]||0)+ +x.hours;l.hrs+=+x.hours;if(x.note&&!l.notes.includes(x.note))l.notes.push(x.note)}
+  return [...m.values()].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.x.order_no).localeCompare(String(b.x.order_no)))}
+function logTable(p,name,rows,csv){
+  const L=rLines(rows),pp=new Map();rows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()],S=p.symbol||"";
+  let th=0,tc=0;const pt={};P.forEach(([id])=>pt[id]=0);
+  const body=L.map(l=>{l.cost=0;for(const id in l.by){l.cost+=l.by[id]*rRate(p,id)*(l.kind==="OT"?(+p.ot||0):1);pt[id]+=l.by[id]}th+=l.hrs;tc+=l.cost;
+    const sub=l.x.sub_name||l.x.top_name||"";
+    csv.push([name,l.date,isoWeek(l.date),sub,l.x.order_no,l.x.title].concat(P.map(([id])=>l.by[id]||""),[l.kind==="OT"?"OT":"Regular",+l.hrs.toFixed(2),+l.cost.toFixed(2),l.notes.join("; ")]));
+    return `<tr><td>${esc(l.date)}</td><td>${isoWeek(l.date)}</td><td>${esc(sub)}</td><td>${esc(l.x.order_no||"")}</td><td>${esc(l.x.title)}</td>${P.map(([id])=>`<td class="n">${l.by[id]?fmtH(l.by[id]):""}</td>`).join("")}<td>${l.kind==="OT"?"OT":"Regular"}</td><td class="n">${fmtH(l.hrs)}</td><td class="n">${money(l.cost)}</td><td>${esc(l.notes.join("; "))}</td></tr>`}).join("");
+  return {th,tc,html:`<h3 class="rcust">${esc(name)} — Daily Work Log</h3><div style="overflow:auto"><table class="rt wl"><tr><th>Date</th><th>Wk</th><th>Project group</th><th>Project No</th><th>Project name</th>${P.map(([,n])=>`<th class="n">${esc(n)}</th>`).join("")}<th>Type</th><th class="n">Total hrs</th><th class="n">Cost (${esc(p.currency)})</th><th>Remarks</th></tr>${body}
+   <tr class="tot"><td colspan="5">Total hours / cost</td>${P.map(([id])=>`<td class="n">${fmtH(pt[id])}</td>`).join("")}<td></td><td class="n">${fmtH(th)}</td><td class="n">${money(tc)}</td><td></td></tr></table></div>`}}
+function itemsTable(p,rows,csv){const m=new Map();for(const x of rows){let r=m.get(x.task_id);if(!r){r={x,h:0,c:0};m.set(x.task_id,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
+  let th=0,tc=0;const body=[...m.values()].sort((a,b)=>String(a.x.order_no).localeCompare(String(b.x.order_no))).map(r=>{th+=r.h;tc+=r.c;const g=r.x.sub_name||r.x.top_name||"";csv.push([r.x.order_no,r.x.title,g,+r.h.toFixed(2),+r.c.toFixed(2)]);
+    return `<tr><td>${esc(r.x.order_no||"")} ${esc(r.x.title)}</td><td>${esc(g)}</td><td class="n">${fmtH(r.h)}</td><td class="n">${esc(p.symbol)}${money(r.c)}</td></tr>`}).join("");
+  return {th,tc,html:`<table class="rt"><tr><th>Actioned items</th><th>Item group</th><th class="n">Hours spent</th><th class="n">Sub-total (${esc(p.currency)})</th></tr>${body}<tr class="tot"><td colspan="2">Total</td><td class="n">${fmtH(th)}</td><td class="n">${esc(p.symbol)}${money(tc)}</td></tr></table>`}}
 function drawReport(){
-  const rate=parseFloat($("#rr").value)||0,rows=rFiltered(),cur=(wss.find(w=>w.id==W)||{}).name||"",by=new Map();
-  for(const x of rows){const c=rcust(x);if(!by.has(c))by.set(c,[]);by.get(c).push(x)}
-  let h=`<div style="margin:6px 0"><b style="font-size:18px">Invoice report</b><div style="color:var(--mut)">${esc(cur)} · ${esc($("#rf").value)} to ${esc($("#rt").value)}${$("#rc2").value?" · "+esc($("#rc2").value):""}</div></div>`,grand=0;
-  if(!rows.length)h+='<div class="empty">No hours logged in this period.</div>';
-  for(const [c,list] of by){let ct=0;h+=`<h3 class="rcust">${esc(c)}</h3><table class="rt"><tr><th>Order No.</th><th>Task</th><th>Drawing type</th><th>Person</th><th>Date</th><th class="n">Hours</th>${rate?'<th class="n">Amount</th>':""}</tr>`;
-    const orders=new Map();for(const x of list){const o=x.order_no||"—";if(!orders.has(o))orders.set(o,[]);orders.get(o).push(x)}
-    for(const [o,l] of orders){let ot=0;for(const x of l){ot+=+x.hours;h+=`<tr><td>${esc(o)}</td><td>${esc(x.title)}</td><td>${esc(x.drawing_type||"")}</td><td>${esc(x.person)}</td><td>${esc(x.work_date)}</td><td class="n">${fmtH(x.hours)}</td>${rate?`<td class="n">${money(x.hours*rate)}</td>`:""}</tr>`}
-      ct+=ot;if(l.length>1||orders.size>1)h+=`<tr class="sub"><td colspan="5">Order ${esc(o)} total</td><td class="n">${fmtH(ot)}</td>${rate?`<td class="n">${money(ot*rate)}</td>`:""}</tr>`}
-    grand+=ct;h+=`<tr class="tot"><td colspan="5">${esc(c)} total</td><td class="n">${fmtH(ct)}</td>${rate?`<td class="n">${money(ct*rate)}</td>`:""}</tr></table>`}
-  if(by.size>1)h+=`<div style="font-weight:700;font-size:15px;margin-top:10px">All customers: ${fmtH(grand)} h${rate?" · "+money(grand*rate):""}</div>`;
+  const p=rCur(),rows=rProfRows(p),vw=$("#rvw").value,wsn=(wss.find(w=>w.id==W)||{}).name||"",csv=[],S=p.symbol||"";let h="";
+  if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this profile in this period.</div>';return}
+  const period=`${$("#rf").value} to ${$("#rt").value}`;
+  if(p.layout==="items"){
+    const it=itemsTable(p,rows,csv);rcsvRows=[["Project No","Actioned item","Item group","Hours","Sub-total "+p.currency]].concat(csv);
+    h=vw==="inv"?invHead(p,period)+it.html+invFoot(p):`<div style="margin:6px 0"><b style="font-size:18px">${esc(p.name)}</b><div style="color:var(--mut)">${esc(wsn)} · ${period}</div></div>`+it.html;
+  }else{
+    const secs=rSections(p,rows);let tot=0,tc=0,lines=[];
+    const parts=[];for(const [n,r] of secs){const t=logTable(p,n,r,csv);tot+=t.th;tc+=t.tc;lines.push([n,t.th,t.tc]);parts.push(t.html)}
+    rcsvRows=[["Group","Date","Week","Project group","Project No","Project name","(person hours …)","Type","Total hrs","Cost "+p.currency,"Remarks"]].concat(csv);
+    if(vw==="inv"){h=invHead(p,period)+`<table class="rt"><tr><th>Description</th><th class="n">Hours</th><th class="n">Amount (${esc(p.currency)})</th></tr>${lines.map(l=>`<tr><td>${esc(l[0])}</td><td class="n">${fmtH(l[1])}</td><td class="n">${esc(S)}${money(l[2])}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${fmtH(tot)}</td><td class="n">${esc(S)}${money(tc)}</td></tr></table>`+invFoot(p)}
+    else h=`<div style="margin:6px 0"><b style="font-size:18px">${esc(p.name)}</b><div style="color:var(--mut)">${esc(wsn)} · ${period} · Total ${fmtH(tot)} h · ${esc(S)}${money(tc)}</div></div>`+parts.join("")}
   $("#rout").innerHTML=h}
-$("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}try{$("#rr").value=localStorage.getItem("tf_rate_"+W)||""}catch(e){}$("#rdlg").showModal();runReport()};
+function invHead(p,period){return `<div class="rinv"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><b style="font-size:20px">INVOICE</b><div>No. <b>${esc(rInvNo(p))}</b></div><div>Date: ${esc(new Date().toLocaleDateString("en-GB"))}</div><div>Period: ${esc(period)}</div></div><div style="text-align:right"><b>${esc(p.client_name||"")}</b><div style="white-space:pre-line">${esc(p.client_addr||"")}</div></div></div></div>`}
+const invFoot=p=>p.bank?`<div style="white-space:pre-line;margin-top:10px;font-size:13px"><b>Payment details</b>\n${esc(p.bank)}</div>`:"";
+async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
+  try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];const cur=$("#rpf").value;
+    $("#rpf").innerHTML=rList().map(p=>`<option value="${p.slot}">${esc(p.name)}</option>`).join("")+`<option value="new">＋ New profile…</option>`;$("#rpf").value=rList().some(p=>String(p.slot)===cur)?cur:rList()[0].slot;drawReport()}catch(e){alert(e.message)}}
+$("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}$("#rdlg").showModal();runReport()};
 $("#rcl").onclick=()=>$("#rdlg").close();
 $("#r14").onclick=()=>rPreset(-13,0);$("#rp14").onclick=()=>rPreset(-27,-14);
-$("#rf").addEventListener("change",runReport);$("#rt").addEventListener("change",runReport);$("#rc2").addEventListener("change",drawReport);
-$("#rr").addEventListener("input",()=>{try{localStorage.setItem("tf_rate_"+W,$("#rr").value)}catch(e){}drawReport()});
+$("#rf").addEventListener("change",runReport);$("#rt").addEventListener("change",runReport);$("#rvw").addEventListener("change",drawReport);
+$("#rpf").addEventListener("change",()=>{if($("#rpf").value==="new"){openProf(null);return}drawReport()});
 $("#rpr").onclick=()=>window.print();
-$("#rcsv").onclick=()=>{const rate=parseFloat($("#rr").value)||0,rows=rFiltered();
-  const head=["Customer","Order No.","Task","Drawing type","Person","Date","Hours","Note"].concat(rate?["Rate","Amount"]:[]);
-  const csv="\uFEFF"+[head].concat(rows.map(x=>[rcust(x),x.order_no,x.title,x.drawing_type,x.person,x.work_date,+x.hours,x.note].concat(rate?[rate,+(x.hours*rate).toFixed(2)]:[]))).map(r=>r.map(csvCell).join(",")).join("\r\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="invoice_hours_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+$("#rcsv").onclick=()=>{const csv="﻿"+rcsvRows.map(r=>r.map(csvCell).join(",")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=(rCur().name||"report").replace(/[^\w-]+/g,"_")+"_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+// profile editor
+let profEdit=null;
+function openProf(p){profEdit=p?p.slot:0;const d=p||Object.assign(rDef(),{name:"New profile"});
+  const set=(i,v)=>$(i).value=v==null?"":v;set("#pn",d.name);set("#pl",d.layout);set("#pmc",d.match_cust);set("#pmo",d.match_order);set("#pcn",d.client_name);set("#pca",d.client_addr);set("#pcc",d.currency);set("#pcs",d.symbol);set("#prt",d.rate||"");set("#pot",d.ot);set("#ppx",d.prefix);set("#psf",d.suffix);set("#psq",d.seq);set("#pbk",d.bank);
+  const ppl=new Map();allUsers.forEach(u=>ppl.set(String(u.id),u.name));rrows.forEach(x=>ppl.set(String(x.user_id),x.person));
+  $("#prl").innerHTML=[...ppl.entries()].map(([id,n])=>`<label>${esc(n)}<input type="number" min="0" step="0.01" data-pr="${id}" value="${d.rates&&d.rates[id]!==undefined?d.rates[id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No people yet</span>';
+  $("#pdel").style.visibility=p?"visible":"hidden";$("#ivdlg").showModal()}
+$("#rpedit").onclick=()=>{const p=rCur();openProf(p.slot?p:Object.assign(p,{}))};
+$("#pcc2").onclick=()=>{$("#ivdlg").close();$("#rpf").value=String(rCur().slot)};
+$("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [data-pr]").forEach(i=>{if(i.value!=="")rates[i.dataset.pr]=+i.value});
+  let slot=profEdit;if(!slot){const used=rprofs.map(p=>p.slot);for(let s=1;s<=9;s++)if(!used.includes(s)){slot=s;break}}
+  if(!slot){alert("Maximum of 9 profiles");return}
+  const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,client_addr:$("#pca").value,currency:$("#pcc").value||"AUD",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
+  try{await api("inv_set",{slot,profile});$("#ivdlg").close();await runReport();$("#rpf").value=String(slot);drawReport()}catch(e){alert(e.message)}};
+$("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
 function startDraft(gid){if(LV==="view")return;const g=/^\d+$/.test(String(gid))?String(gid):"";
   if(g){const c=getGC();let ch=c.delete(g);if(gParent(g))ch=c.delete(gParent(g))||ch;if(ch)try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(e){}}
   draft={grp:g,t:{id:0,title:"",order_no:"",customer:"",drawing_type:"",start_date:"",end_date:"",status:ST[0][0],assigned_to:"",notes:"",group_id:g,x:{}}};

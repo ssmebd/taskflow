@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v16']))return;
+  if(!empty($_SESSION['schema_v17']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -27,6 +27,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS time_logs(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,work_date DATE NOT NULL,hours DECIMAL(5,2) NOT NULL,note VARCHAR(255) NOT NULL DEFAULT '',created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id,work_date),INDEX(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'kind'")->fetch())$db->exec("ALTER TABLE time_logs ADD kind VARCHAR(4) NOT NULL DEFAULT 'R'");
+  $db->exec("CREATE TABLE IF NOT EXISTS invoice_profiles(ws_id INT NOT NULL,slot TINYINT NOT NULL,data MEDIUMTEXT NOT NULL,PRIMARY KEY(ws_id,slot)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'parent_id'")->fetch())$db->exec("ALTER TABLE task_groups ADD parent_id INT NULL");
   if(!$db->query("SHOW COLUMNS FROM users LIKE 'pref_theme'")->fetch())$db->exec("ALTER TABLE users ADD pref_theme VARCHAR(20) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'sort_no'")->fetch())$db->exec("ALTER TABLE tasks ADD sort_no INT NOT NULL DEFAULT 0");
@@ -44,7 +46,7 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v16']=1;
+  $_SESSION['schema_v17']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -104,6 +106,8 @@ function inbox_sql($db,$count){
   if($count)return (int)$db->query("SELECT COUNT(*) $from")->fetchColumn();
   return $db->query("SELECT c.id,c.task_id,c.ws_id,t.title,c.kind,c.body,c.created_at,COALESCE(us.name,'Former member') AS from_name $from ORDER BY c.id DESC LIMIT 50")->fetchAll();
 }
+function inv_defaults(){return ['name'=>'Invoice','match_cust'=>'','match_order'=>'','client_name'=>'','client_addr'=>'','currency'=>'AUD','symbol'=>'$','layout'=>'worklog','rate'=>0,'rates'=>new stdClass(),'ot'=>1,'bank'=>'','prefix'=>'INVOICE-','suffix'=>'','seq'=>1];}
+function inv_profiles($db){global $W;$q=$db->prepare("SELECT slot,data FROM invoice_profiles WHERE ws_id=? ORDER BY slot");$q->execute([$W]);$o=[];foreach($q->fetchAll() as $r){$j=json_decode((string)$r['data'],true);$d=inv_defaults();if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();$d['slot']=(int)$r['slot'];$o[]=$d;}return $o;}
 function admin(){global $me;if($me['role']!=='admin')out(['error'=>'Admins only']);}
 $F=['title','order_no','customer','drawing_type','start_date','end_date','status','assigned_to','notes','group_id'];
 function clean($f,$v){
@@ -235,14 +239,14 @@ case 'task_order':
 case 'tl_list':
   need_ws();$tid=(int)($in['task_id']??0);
   $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
-  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
+  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.kind,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
   out(['logs'=>$q->fetchAll(),'me'=>(int)$uid]);
 case 'tl_add':
-  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);
+  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
-  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,work_date,hours,note,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$tid,$W,$uid,$d,$h,$n]);out(['ok'=>1]);
+  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,work_date,hours,kind,note,created_at) VALUES(?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$uid,$d,$h,$kd,$n]);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetchColumn();
   if($o===false)out(['error'=>'Entry not found']);
@@ -251,8 +255,18 @@ case 'tl_del':
 case 'tl_report':
   need_level('full');$f=(string)($in['from']??'');$t=(string)($in['to']??'');
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
-  $q=$db->prepare("SELECT t.customer,t.order_no,t.title,t.drawing_type,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.note FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY t.customer,t.order_no,t.id,l.work_date,l.id");$q->execute([$W,$f,$t]);
-  out(['rows'=>$q->fetchAll()]);
+  $q=$db->prepare("SELECT l.user_id,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.kind,l.note,t.id AS task_id,t.order_no,t.title,t.customer,t.drawing_type,COALESCE(pg.name,g.name) AS top_name,COALESCE(pg.id,g.id) AS top_id,IF(pg.id IS NULL,NULL,g.name) AS sub_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$W,$f,$t]);
+  out(['rows'=>$q->fetchAll(),'profiles'=>inv_profiles($db)]);
+case 'inv_set':
+  need_level('full');$slot=(int)($in['slot']??0);if($slot<1||$slot>9)out(['error'=>'Bad profile']);
+  if(!empty($in['remove'])){$db->prepare("DELETE FROM invoice_profiles WHERE ws_id=? AND slot=?")->execute([$W,$slot]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);}
+  $p=is_array($in['profile']??null)?$in['profile']:[];$d=inv_defaults();
+  $s=fn($k,$n)=>mb_substr(trim((string)($p[$k]??$d[$k])),0,$n);
+  $rates=[];if(is_array($p['rates']??null))foreach($p['rates'] as $k=>$v)if(is_numeric($v)&&(float)$v>=0&&(float)$v<100000)$rates[(string)(int)$k]=round((float)$v,2);
+  $clean=['name'=>$s('name',60),'match_cust'=>$s('match_cust',300),'match_order'=>$s('match_order',60),'client_name'=>$s('client_name',150),'client_addr'=>$s('client_addr',300),'currency'=>$s('currency',8),'symbol'=>$s('symbol',4),
+    'layout'=>(($p['layout']??'')==='items')?'items':'worklog','rate'=>round(max(0,min(100000,(float)($p['rate']??0))),2),'rates'=>$rates,
+    'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>max(0,min(99999999,(int)($p['seq']??1)))];
+  $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
 case 'dt_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
   $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=?");$q->execute([$W]);if((int)$q->fetchColumn()>=200)out(['error'=>'Maximum 200 drawing types']);
@@ -393,7 +407,7 @@ case 'ws_del':
   $db->prepare("DELETE FROM tasks WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM custom_cols WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_comments WHERE ws_id=?")->execute([$id]);
-  $db->prepare("DELETE FROM time_logs WHERE ws_id=?")->execute([$id]);
+  $db->prepare("DELETE FROM time_logs WHERE ws_id=?")->execute([$id]);$db->prepare("DELETE FROM invoice_profiles WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM drawing_types WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM task_groups WHERE ws_id=?")->execute([$id]);
   $db->prepare("DELETE FROM statuses WHERE ws_id=?")->execute([$id]);
