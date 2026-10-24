@@ -107,6 +107,15 @@ body.sc #wlinks,body.sc .sf{display:none}body.sc #vname{display:block}
 .msg{border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:13px;white-space:pre-wrap;word-break:break-word}.msg.ins{border-color:#f59e0b;background:rgba(245,158,11,.1)}.msg.new{box-shadow:0 0 0 2px #3b82f6}.msg small{display:block;color:var(--mut);font-size:11px}.msg .x{float:right;cursor:pointer;color:var(--mut);border:0;background:none;width:auto;padding:0}
 #bell{position:relative}#bell b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:3px}
 .ib{border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:6px 0;cursor:pointer;font-size:13px}.ib:hover{background:rgba(127,127,127,.1)}
+header{--nv:#0f2a5c;background:var(--nv);border-bottom:1px solid #0a1d42;color:#fff}
+header h1,header .app,header #who,header a.out,header #live{color:#fff!important}header .app{opacity:.75}
+header input,header select,header button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+header input::placeholder{color:rgba(255,255,255,.7)}header option{color:#1d2433;background:#fff}
+header button:hover:not(:disabled){background:rgba(255,255,255,.22)}header button:disabled{opacity:.7}
+header .tabs button.on{background:#fff;color:var(--nv);border-color:#fff;font-weight:600}
+header button.p{background:#fff;color:var(--nv);border-color:#fff}header button.p:hover{background:#e6ecfb}
+header #bell b{background:#ef4444;color:#fff}
+header #smenu button{background:var(--card);color:var(--ink);border-color:transparent;text-align:left}header #smenu button:hover{background:var(--col)}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
