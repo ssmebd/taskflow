@@ -116,6 +116,11 @@ header .tabs button.on{background:#fff;color:var(--nv);border-color:#fff;font-we
 header button.p{background:#fff;color:var(--nv);border-color:#fff}header button.p:hover{background:#e6ecfb}
 header #bell b{background:#ef4444;color:#fff}
 header #smenu button{background:var(--card);color:var(--ink);border-color:transparent;text-align:left}header #smenu button:hover{background:var(--col)}
+#side{background:#0b2150;border-right-color:#081a40}#side .sh{border-bottom-color:rgba(255,255,255,.18)}
+#side button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}#side button:hover{background:rgba(255,255,255,.24)}
+#side .wl{background:rgba(255,255,255,.1)}#side .wl:hover{border-color:rgba(255,255,255,.5)}#side .wl.on{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.28)}
+.gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
+#gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -134,6 +139,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
    <button id="cm">➕ Column</button>
+   <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
   </div></span>
@@ -206,7 +212,7 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 (function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
@@ -286,7 +292,7 @@ function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{lo
 function lockView(){if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
-function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
+function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${groups.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to workspace…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
@@ -479,6 +485,58 @@ $("#bar").addEventListener("click",async e=>{
   if(id==="bdup"){sel.clear();act("dup",{ids})}
   if(id==="bdel"&&confirm("Delete "+ids.length+" selected task(s)? This cannot be undone.")){sel.clear();act("delete",{ids})}
 });
+// ---- Gantt: drag to move / resize / reassign ----
+const iso=ms=>new Date(ms).toISOString().slice(0,10);
+function gTipShow(e,txt){let g=$("#gtip");if(!g){g=document.createElement("div");g.id="gtip";document.body.appendChild(g)}g.textContent=txt;g.style.left=(e.clientX+14)+"px";g.style.top=(e.clientY+14)+"px"}
+function gTipHide(){const g=$("#gtip");if(g)g.remove()}
+function gDates(t){let s=pd(t.start_date),e=pd(t.end_date);if(s==null)s=e;if(e==null)e=s;if(e<s)[s,e]=[e,s];return[s,e]}
+$("#main").addEventListener("pointermove",e=>{if(gdrag||LV==="view"||!e.target.closest)return;const b=e.target.closest(".gbar");if(b){const r=b.getBoundingClientRect(),x=e.clientX-r.left;b.style.cursor=(x<7||x>r.width-7)?"ew-resize":"grab"}});
+$("#main").addEventListener("pointerdown",e=>{
+  if(LV==="view"||e.button>0||view!=="gantt")return;const b=e.target.closest(".gbar");if(!b)return;
+  const t=tasks.find(x=>x.id==b.dataset.id);if(!t)return;const r=b.getBoundingClientRect(),x=e.clientX-r.left;
+  gdrag={b,t,mode:x<7?"l":x>r.width-7?"r":"m",x0:e.clientX,y0:e.clientY,L:parseFloat(b.style.left),Wd:parseFloat(b.style.width),moved:false,dd:0,lane:null};
+});
+document.addEventListener("pointermove",e=>{
+  const g=gdrag;if(!g)return;const dx=e.clientX-g.x0,dy=e.clientY-g.y0;
+  if(!g.moved){if(Math.hypot(dx,dy)<5)return;g.moved=true;g.b.style.pointerEvents="none";g.b.style.zIndex=6;g.b.style.opacity=.85}
+  let dd=Math.round(dx/gz);const [s,en]=gDates(g.t),span=Math.round((en-s)/DAYMS);
+  if(g.mode==="l")dd=Math.min(dd,span);if(g.mode==="r")dd=Math.max(dd,-span);g.dd=dd;
+  if(g.mode==="m"){g.b.style.left=(g.L+dd*gz)+"px";
+    if(gMode!=="task"){g.b.style.transform=`translateY(${dy}px)`;const ln=(document.elementFromPoint(e.clientX,e.clientY)||document.body).closest(".glane[data-lane]");
+      document.querySelectorAll(".glane.gdrop").forEach(x=>x.classList.remove("gdrop"));if(ln){ln.classList.add("gdrop");g.lane=ln.dataset.lane}}}
+  else if(g.mode==="l"){g.b.style.left=(g.L+dd*gz)+"px";g.b.style.width=(g.Wd-dd*gz)+"px"}
+  else g.b.style.width=(g.Wd+dd*gz)+"px";
+  const ns=g.mode==="r"?s:s+dd*DAYMS,ne=g.mode==="l"?en:en+dd*DAYMS;gTipShow(e,iso(ns)+" → "+iso(ne)+(g.lane!=null&&g.lane!==String(g.t.assigned_to||"")?" · "+((users.find(u=>String(u.id)===g.lane)||{}).name||"Unassigned"):""));
+});
+async function gEnd(cancel){
+  const g=gdrag;if(!g)return;gdrag=null;gTipHide();document.querySelectorAll(".glane.gdrop").forEach(x=>x.classList.remove("gdrop"));
+  if(!g.moved)return;gSwallow=true;setTimeout(()=>{gSwallow=false},60);
+  const cur=String(g.t.assigned_to||""),newLane=g.mode==="m"&&g.lane!=null?g.lane:cur;
+  if(cancel||(g.dd===0&&newLane===cur)){render();return}
+  const [s,en]=gDates(g.t),ns=g.mode==="r"?s:s+g.dd*DAYMS,ne=g.mode==="l"?en:en+g.dd*DAYMS;
+  const d={id:g.t.id,s:iso(ns),e:iso(ne)};if(newLane!==cur)d.a=newLane?+newLane:0;
+  try{await api("gantt_set",d)}catch(err){alert(err.message)}
+  await load(true);
+}
+document.addEventListener("pointerup",()=>gEnd(false));document.addEventListener("pointercancel",()=>gEnd(true));
+document.addEventListener("click",e=>{if(gSwallow){e.stopPropagation();e.preventDefault();gSwallow=false}},true);
+
+// ---- Move selected tasks to another workspace ----
+$("#bar").addEventListener("change",async e=>{
+  if(e.target.id!=="bws"||!e.target.value)return;const to=+e.target.value,ids=[...sel],w=wss.find(x=>x.id==to);
+  if(!confirm("Move "+ids.length+" task(s) to \""+(w?w.name:"")+"\"?\n\nThey leave this workspace. Group is cleared; status, people and matching custom columns are carried over where possible."))return load(true);
+  sel.clear();try{await api("task_move",{ids,to})}catch(err){alert(err.message)}await load(true);
+});
+
+// ---- Export to Excel (CSV opens directly in Excel) ----
+function csvCell(v){v=v==null?"":String(v);if(/^[=+@]/.test(v)||/^-[A-Za-z]/.test(v))v="'"+v;return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
+$("#xm").onclick=()=>{
+  const list=filtered(),head=["Title","Order No.","Customer","Drawing type","Start","End","Status","Assigned to","Group","Notes",...cols.map(c=>c.name)];
+  const rows=[head].concat(list.map(t=>[t.title,t.order_no,t.customer,t.drawing_type,t.start_date,t.end_date,(ST.find(x=>x[0]===t.status)||[0,t.status])[1],t.assigned_to?(names[t.assigned_to]||""):"",gname(t.group_id),t.notes,...cols.map(c=>xv(t,c))]));
+  const csv="﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),cur=(wss.find(w=>w.id==W)||{}).name||"tasks";
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=cur.replace(/[^\w\-]+/g,"_")+"_"+today()+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  $("#smenu").hidden=true;
+};
 let dragId=null;
 $("#main").addEventListener("dragstart",e=>{const c=e.target.closest(".card");if(c&&LV!=="view")dragId=c.dataset.id});
 $("#main").addEventListener("dragover",e=>{const c=e.target.closest(".col");if(c){e.preventDefault();c.classList.add("over")}});
@@ -596,7 +654,7 @@ function renderGantt(list){
     const h=Math.max(1,rowsEnd.length)*30+10;
     const bars=mine.map(x=>{const t=x.t,L=Math.round((x.s-min)/DAYMS*gz),Wd=Math.max(8,Math.round((x.e-x.s)/DAYMS*gz+gz)),c=scol(t.status)||"#6b7385",o=ov(t).length;
       return `<div class="gbar${t.status==="done"?" dn":""}" data-id="${t.id}" title="${ea(tip(t))}" style="left:${L}px;width:${Wd}px;top:${pos.get(x)*30+5}px;background:${c};${o?"outline:2px solid #dc2626;outline-offset:1px;":""}">${o?"⚠ ":""}${t.status==="done"?"✔ ":""}${esc((t.order_no?t.order_no+" · ":"")+t.title)}</div>`}).join("");
-    return {n:mine.length,html:`<div class="glane" style="height:${h}px"><div class="gname" style="height:${h}px">${esc(l.name)}<small>${mine.length?mine.length+" task"+(mine.length>1?"s":""):"free"}</small></div><div class="gtrack" style="width:${width}px;${grid}">${bars}</div></div>`}};
+    return {n:mine.length,html:`<div class="glane" data-lane="${l.id}" style="height:${h}px"><div class="gname" style="height:${h}px">${esc(l.name)}<small>${mine.length?mine.length+" task"+(mine.length>1?"s":""):"free"}</small></div><div class="gtrack" style="width:${width}px;${grid}">${bars}</div></div>`}};
   const taskRows=()=>{
     const info=new Map(items.map(x=>[x.t.id,x])),key=t=>info.has(t.id)?info.get(t.id).s:Infinity;
     const row=t=>{const x=info.get(t.id),who=t.assigned_to?(names[t.assigned_to]||"?"):"Unassigned",st=(ST.find(z=>z[0]===t.status)||[0,t.status])[1],o=ov(t).length;
@@ -658,7 +716,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
-function busy(){return document.querySelector("dialog[open]")||dragId||dragCol||rz}
+function busy(){return document.querySelector("dialog[open]")||dragId||dragCol||rz||gdrag}
 async function poll(){
   if(document.hidden)return;
   try{

@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -171,6 +171,39 @@ case 'delete':
 case 'dup':
   need_level('edit');foreach($in['ids']??[] as $i)$db->prepare("INSERT INTO tasks(title,order_no,customer,drawing_type,start_date,end_date,status,assigned_to,notes,group_id,extra,ws_id,updated_at) SELECT CONCAT(title,' (copy)'),order_no,customer,drawing_type,start_date,end_date,IF(status='done',?,status),assigned_to,notes,group_id,extra,ws_id,NOW() FROM tasks WHERE id=? AND ws_id=?")->execute([status_keys($db)[0],(int)$i,$W]);
   out(['ok'=>1]);
+case 'gantt_set':
+  need_level('edit');$id=(int)($in['id']??0);
+  $sd=clean('start_date',$in['s']??'');$ed=clean('end_date',$in['e']??'');
+  if($sd&&$ed&&$ed<$sd)[$sd,$ed]=[$ed,$sd];
+  $set="start_date=?,end_date=?";$p=[$sd,$ed];
+  if(array_key_exists('a',$in)){
+    $a=(int)$in['a'];
+    if($a){$q=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");$q->execute([$a,$W]);if(!$q->fetchColumn())out(['error'=>'That person cannot open this workspace']);}
+    $set.=",assigned_to=?";$p[]=$a?:null;
+  }
+  $p[]=$id;$p[]=$W;
+  $db->prepare("UPDATE tasks SET $set,updated_at=NOW() WHERE id=? AND ws_id=?")->execute($p);out(['ok'=>1]);
+case 'task_move':
+  need_level('full');$to=(int)($in['to']??0);$ids=array_map('intval',$in['ids']??[]);
+  if(!$to||$to===$W)out(['error'=>'Choose another workspace']);
+  $okTo=false;foreach($WS as $w)if((int)$w['id']===$to&&in_array($w['level'],['edit','full'],true))$okTo=true;
+  if(!$okTo)out(['error'=>'You cannot add tasks to that workspace']);
+  $q=$db->prepare("SELECT skey FROM statuses WHERE ws_id=? ORDER BY (skey='done'),sort_no,id");$q->execute([$to]);$dk=$q->fetchAll(PDO::FETCH_COLUMN);
+  if(!$dk)$dk=['todo','progress','review','done'];
+  $q=$db->prepare("SELECT id,name,ctype FROM custom_cols WHERE ws_id=?");$q->execute([$W]);$sc=$q->fetchAll();
+  $q=$db->prepare("SELECT id,name,ctype FROM custom_cols WHERE ws_id=?");$q->execute([$to]);$dc=$q->fetchAll();
+  $map=[];foreach($sc as $c)foreach($dc as $d)if(mb_strtolower($c['name'])===mb_strtolower($d['name'])&&$c['ctype']===$d['ctype'])$map['x_'.$c['id']]='x_'.$d['id'];
+  $acc=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");
+  $n=0;
+  foreach($ids as $i){
+    $q=$db->prepare("SELECT status,assigned_to,extra FROM tasks WHERE id=? AND ws_id=?");$q->execute([$i,$W]);$t=$q->fetch();if(!$t)continue;
+    $st=in_array($t['status'],$dk,true)?$t['status']:$dk[0];
+    $as=$t['assigned_to'];if($as){$acc->execute([$as,$to]);if(!$acc->fetchColumn())$as=null;}
+    $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($map[$k]))$nx[$map[$k]]=$v;
+    $db->prepare("UPDATE tasks SET ws_id=?,group_id=NULL,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$st,$as,$nx?json_encode($nx):null,$i,$W]);
+    $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$i]);$n++;
+  }
+  out(['ok'=>1,'moved'=>$n]);
 case 'col_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
   if($n==='')out(['error'=>'Enter a column name']);
