@@ -122,6 +122,10 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
 .wh{filter:brightness(0) invert(1)}
+.uh,.ur2{display:grid;grid-template-columns:1.2fr 1fr 1.5fr .9fr 70px;gap:6px;align-items:center}.uh{font-size:11px;color:var(--mut);font-weight:600;margin:10px 0 4px;text-transform:uppercase}
+.ur2{margin:4px 0}.ur2 input,.ur2 select{min-width:0}.pw{display:flex;gap:4px}.pw input{flex:1}.eye{padding:4px 8px;width:auto;flex:none}
+.urow{display:grid;grid-template-columns:1.2fr 1fr 1.5fr .9fr 70px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}
+@media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
 </style></head><body>
 <header>
  <span id="wlogo"></span><h1><span class="app">TaskFlow</span><span id="wname"></span></h1>
@@ -172,11 +176,15 @@ header #smenu button{background:var(--card);color:var(--ink);border-color:transp
  <div class="acts"><button id="del" style="display:none">Delete</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
-<dialog id="tdlg"><b>Users</b><div id="tlist"></div>
- <label>Add user</label>
- <input id="un" placeholder="Full name"><input id="uu" placeholder="Username" style="margin-top:6px"><input id="up" type="password" placeholder="Password (8+ chars)" style="margin-top:6px">
- <select id="ur" style="margin-top:6px"><option value="member">Member</option><option value="admin">Admin</option></select>
- <div class="acts"><span class="sp"></span><button id="tc">Close</button><button class="p" id="ta">Add</button></div>
+<dialog id="tdlg" style="width:min(780px,94vw)"><b>Users</b>
+ <div class="uh"><span>Full name</span><span>Username</span><span>Password</span><span>User type</span><span></span></div>
+ <div id="tlist"></div>
+ <div class="acts" style="margin-top:12px"><b>Add user</b></div>
+ <div class="uh"><span>Full name</span><span>Username</span><span>Password (8+ chars)</span><span>User type</span><span></span></div>
+ <div class="ur2"><input id="un" placeholder="Full name"><input id="uu" placeholder="Username" autocomplete="off"><span class="pw"><input id="up" type="password" placeholder="Password" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
+ <select id="ur"><option value="member">Member</option><option value="admin">Admin</option></select><button class="p" id="ta">Add</button></div>
+ <small style="color:var(--mut)">Saved passwords are stored scrambled, so they cannot be shown. Type a new one and press Set to change it.</small>
+ <div class="acts"><span class="sp"></span><button id="tc">Close</button></div>
 </dialog>
 
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
@@ -712,7 +720,10 @@ $("#clist").addEventListener("click",async e=>{
   try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
 });
 function renderUsers(){
-  $("#tlist").innerHTML=allUsers.map(u=>`<div class="acts"><span style="flex:1">${esc(u.name)} <small style="color:var(--mut)">${u.role}</small></span><button data-pw="${u.id}">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}">Remove</button>`}</div>`).join("");
+  $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b></span><span>${esc(u.username||"")}</span>
+   <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
+   <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"?" selected":""}>Member</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
+   <span style="display:flex;gap:4px"><button data-pw="${u.id}" title="Save the new password">Set</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
 $("#tm").onclick=()=>{renderUsers();$("#tdlg").showModal()};
 $("#tc").onclick=()=>$("#tdlg").close();
@@ -723,9 +734,12 @@ $("#ta").onclick=async()=>{
 $("#tlist").addEventListener("click",async e=>{
   try{
     if(e.target.dataset.rm&&confirm("Remove this user? Their tasks become unassigned.")){await api("user_del",{id:e.target.dataset.rm});await load(true);renderUsers()}
-    if(e.target.dataset.pw){const p=prompt("New password (8+ characters):");if(p){await api("user_pass",{id:e.target.dataset.pw,password:p});alert("Password changed.")}}
+    if(e.target.dataset.pw){const inp=$('#tlist input[data-np="'+e.target.dataset.pw+'"]'),p=inp.value;if(p.length<8){alert("Type a new password of 8+ characters first.");return}await api("user_pass",{id:e.target.dataset.pw,password:p});inp.value="";alert("Password changed.")}
+    const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}
   }catch(err){alert(err.message)}
 });
+$("#tdlg").addEventListener("click",e=>{const ey=e.target.closest(".eye");if(ey&&!e.target.closest("#tlist")){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}});
+$("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
 function busy(){return document.querySelector("dialog[open]")||dragId||dragCol||rz||gdrag}

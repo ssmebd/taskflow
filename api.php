@@ -137,7 +137,7 @@ case 'list':
     $q=$db->prepare("SELECT id,name FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();$res['cols']=get_cols($db);
   }
   if($me['role']==='admin'){
-    $res['allUsers']=$db->query("SELECT id,name,role FROM users ORDER BY name")->fetchAll();
+    $res['allUsers']=$db->query("SELECT id,name,username,role FROM users ORDER BY name")->fetchAll();
     $acc=[];foreach($db->query("SELECT ws_id,user_id,level FROM ws_users")->fetchAll() as $r)$acc[$r['ws_id']][$r['user_id']]=$r['level'];
     $res['access']=(object)$acc;
   }
@@ -341,6 +341,10 @@ case 'user_add':
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
   $db->prepare("UPDATE users SET pass_hash=? WHERE id=?")->execute([password_hash($in['password'],PASSWORD_DEFAULT),(int)$in['id']]);try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([(int)$in['id']]);}catch(Throwable $e){}out(['ok'=>1]);
+case 'user_role':
+  admin();$id=(int)($in['id']??0);$r=($in['role']??'')==='admin'?'admin':'member';
+  if($id===$uid)out(['error'=>'You cannot change your own type']);
+  $db->prepare("UPDATE users SET role=? WHERE id=?")->execute([$r,$id]);out(['ok'=>1]);
 case 'user_del':
   admin();$id=(int)($in['id']??0);if($id===$uid)out(['error'=>'You cannot remove yourself']);
   $db->prepare("UPDATE tasks SET assigned_to=NULL WHERE assigned_to=?")->execute([$id]);
