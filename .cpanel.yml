@@ -1,5 +1,5 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/CPANELUSER/public_html/taskflow/
+    - export DEPLOYPATH=$HOME/public_html/taskflow/
     - /bin/cp index.php api.php login.php logo.php deploy.php $DEPLOYPATH
