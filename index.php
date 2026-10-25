@@ -568,13 +568,14 @@ function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.s
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
 function rLines(rows){const m=new Map();for(const x of rows){const k=x.work_date+"|"+x.task_id+"|"+(x.kind==="OT"?"OT":"R");let l=m.get(k);if(!l){l={date:x.work_date,x,kind:x.kind==="OT"?"OT":"R",by:{},notes:[],hrs:0,cost:0};m.set(k,l)}l.by[x.user_id]=(l.by[x.user_id]||0)+ +x.hours;l.hrs+=+x.hours;if(x.note&&!l.notes.includes(x.note))l.notes.push(x.note)}
   return [...m.values()].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.x.order_no).localeCompare(String(b.x.order_no)))}
-function logTable(p,name,rows,csv){
-  const L=rLines(rows),pp=new Map();rows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()],S=p.symbol||"";
+function logTable(p,name,rows,csv,P){
+  const L=rLines(rows),S=p.symbol||"";
   let th=0,tc=0;const pt={};P.forEach(([id])=>pt[id]=0);
   const body=L.map(l=>{l.cost=0;for(const id in l.by){l.cost+=l.by[id]*rRate(p,id)*(l.kind==="OT"?(+p.ot||0):1);pt[id]+=l.by[id]}th+=l.hrs;tc+=l.cost;
     const sub=l.x.sub_name||l.x.top_name||"";
     csv.push([name,l.date,isoWeek(l.date),sub,l.x.order_no,l.x.title].concat(P.map(([id])=>l.by[id]||""),[l.kind==="OT"?"OT":"Regular",+l.hrs.toFixed(2),+l.cost.toFixed(2),l.notes.join("; ")]));
     return `<tr><td>${esc(l.date)}</td><td>${isoWeek(l.date)}</td><td>${esc(sub)}</td><td>${esc(l.x.order_no||"")}</td><td>${esc(l.x.title)}</td>${P.map(([id])=>`<td class="n">${l.by[id]?fmtH(l.by[id]):""}</td>`).join("")}<td>${l.kind==="OT"?"OT":"Regular"}</td><td class="n">${fmtH(l.hrs)}</td><td class="n">${money(l.cost)}</td><td>${esc(l.notes.join("; "))}</td></tr>`}).join("");
+  csv.push([name,"","","","","TOTAL"].concat(P.map(([id])=>+pt[id].toFixed(2)),["",+th.toFixed(2),+tc.toFixed(2),""]));
   return {th,tc,html:`<h3 class="rcust">${esc(name)} — Daily Work Log</h3><div style="overflow:auto"><table class="rt wl"><tr><th>Date</th><th>Wk</th><th>Project group</th><th>Project No</th><th>Project name</th>${P.map(([,n])=>`<th class="n">${esc(n)}</th>`).join("")}<th>Type</th><th class="n">Total hrs</th><th class="n">Cost (${esc(p.currency)})</th><th>Remarks</th></tr>${body}
    <tr class="tot"><td colspan="5">Total hours / cost</td>${P.map(([id])=>`<td class="n">${fmtH(pt[id])}</td>`).join("")}<td></td><td class="n">${fmtH(th)}</td><td class="n">${money(tc)}</td><td></td></tr></table></div>`}}
 function itemsTable(p,rows,csv){const m=new Map();for(const x of rows){let r=m.get(x.task_id);if(!r){r={x,h:0,c:0};m.set(x.task_id,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
@@ -582,19 +583,22 @@ function itemsTable(p,rows,csv){const m=new Map();for(const x of rows){let r=m.g
     return `<tr><td>${esc(r.x.order_no||"")} ${esc(r.x.title)}</td><td>${esc(g)}</td><td class="n">${fmtH(r.h)}</td><td class="n">${esc(p.symbol)}${money(r.c)}</td></tr>`}).join("");
   return {th,tc,html:`<table class="rt"><tr><th>Actioned items</th><th>Item group</th><th class="n">Hours spent</th><th class="n">Sub-total (${esc(p.currency)})</th></tr>${body}<tr class="tot"><td colspan="2">Total</td><td class="n">${fmtH(th)}</td><td class="n">${esc(p.symbol)}${money(tc)}</td></tr></table>`}}
 function drawReport(){
-  const p=rCur(),rows=rProfRows(p),vw=$("#rvw").value,wsn=(wss.find(w=>w.id==W)||{}).name||"",csv=[],S=p.symbol||"";let h="";
+  const p=rCur(),rows=rProfRows(p),vw=$("#rvw").value,wsn=(wss.find(w=>w.id==W)||{}).name||"",csv=[],S=p.symbol||"";let h="",h0="";
   if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this profile in this period.</div>';return}
   const period=`${$("#rf").value} to ${$("#rt").value}`;
   if(p.layout==="items"){
-    const it=itemsTable(p,rows,csv);rcsvRows=[["Project No","Actioned item","Item group","Hours","Sub-total "+p.currency]].concat(csv);
+    const it=itemsTable(p,rows,csv);if(!it.tc)h0=RWARN;rcsvRows=[["Project No","Actioned item","Item group","Hours","Sub-total "+p.currency]].concat(csv);
     h=vw==="inv"?invHead(p,period)+it.html+invFoot(p):`<div style="margin:6px 0"><b style="font-size:18px">${esc(p.name)}</b><div style="color:var(--mut)">${esc(wsn)} · ${period}</div></div>`+it.html;
   }else{
     const secs=rSections(p,rows);let tot=0,tc=0,lines=[];
-    const parts=[];for(const [n,r] of secs){const t=logTable(p,n,r,csv);tot+=t.th;tc+=t.tc;lines.push([n,t.th,t.tc]);parts.push(t.html)}
-    rcsvRows=[["Group","Date","Week","Project group","Project No","Project name","(person hours …)","Type","Total hrs","Cost "+p.currency,"Remarks"]].concat(csv);
+    const pp=new Map();rows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>String(a[1]).localeCompare(String(b[1])));
+    const parts=[];for(const [n,r] of secs){const t=logTable(p,n,r,csv,P);tot+=t.th;tc+=t.tc;lines.push([n,t.th,t.tc]);parts.push(t.html)}
+    rcsvRows=[["Group","Date","Week","Project group","Project No","Project name"].concat(P.map(x=>x[1]),["Type","Total hrs","Cost "+p.currency,"Remarks"])].concat(csv);
+    if(!tc)h0=RWARN;
     if(vw==="inv"){h=invHead(p,period)+`<table class="rt"><tr><th>Description</th><th class="n">Hours</th><th class="n">Amount (${esc(p.currency)})</th></tr>${lines.map(l=>`<tr><td>${esc(l[0])}</td><td class="n">${fmtH(l[1])}</td><td class="n">${esc(S)}${money(l[2])}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${fmtH(tot)}</td><td class="n">${esc(S)}${money(tc)}</td></tr></table>`+invFoot(p)}
     else h=`<div style="margin:6px 0"><b style="font-size:18px">${esc(p.name)}</b><div style="color:var(--mut)">${esc(wsn)} · ${period} · Total ${fmtH(tot)} h · ${esc(S)}${money(tc)}</div></div>`+parts.join("")}
-  $("#rout").innerHTML=h}
+  $("#rout").innerHTML=h0+h}
+const RWARN='<div style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set for this profile, so cost shows 0. Click <b>⚙ Edit profile</b> and fill the default rate or each person\'s rate.</div>';
 function invHead(p,period){return `<div class="rinv"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><b style="font-size:20px">INVOICE</b><div>No. <b>${esc(rInvNo(p))}</b></div><div>Date: ${esc(new Date().toLocaleDateString("en-GB"))}</div><div>Period: ${esc(period)}</div></div><div style="text-align:right"><b>${esc(p.client_name||"")}</b><div style="white-space:pre-line">${esc(p.client_addr||"")}</div></div></div></div>`}
 const invFoot=p=>p.bank?`<div style="white-space:pre-line;margin-top:10px;font-size:13px"><b>Payment details</b>\n${esc(p.bank)}</div>`:"";
 async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
