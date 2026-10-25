@@ -594,11 +594,11 @@ function render(){
         rows+=(sc.lv?"":`<tr class="gsp"><td colspan="${span}"></td></tr>`)+`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" style="--gc:${sc.color}" title="Click to show or hide"><th colspan="${span}">${LV!=="view"&&sc.id!=="none"?'<span class="ghd" title="Drag to reorder this group">⋮⋮</span>':""}${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
         if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv,sc.color);
           const dl=done_.filter(t=>inSec(t,sc));
-          if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}
+          if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} 📁 ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}
           if(sc.id!=="none"&&(sc.lv?secs.filter(k=>k.parent===sc.parent).pop()===sc:!kids.length))rows+=`<tr class="gend" style="--gc:${sc.color}"><td colspan="${span}"></td></tr>`}
       }
     }else rows=act_.map(rowHTML).join("")+(draft&&draft.grp===""?draftHTML():"")+addRow("none",span);
-    if(nd&&!groups.length)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} ✔ Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
+    if(nd&&!groups.length)rows+=`<tr class="dh" style="cursor:pointer" title="Click to show or hide"><th colspan="${span}">${dc?"▸":"▾"} 📁 Completed (${nd})</th></tr>`+(dc?"":done_.map(rowHTML).join(""));
     $("#main").innerHTML=`<div class="listwrap"><table style="width:${54+defs.reduce((a,d)=>a+colW(d.id),0)+48}px"><colgroup><col style="width:54px">${defs.map(d=>`<col data-c="${d.id}" style="width:${colW(d.id)}px">`).join("")}<col style="width:48px"></colgroup><thead><tr id="hrow"><th><input type="checkbox" id="all"${vis().length&&vis().every(t=>sel.has(t.id))?" checked":""}></th>${defs.map(d=>`<th class="ch" draggable="true" data-col="${d.id}" title="Drag to rearrange">${esc(d.label)}<span class="rz" data-rz="${d.id}" draggable="false"></span></th>`).join("")}<th></th></tr></thead><tbody>`+
       (rows||`<tr><td colspan="${span}" class="empty">No tasks yet. Click “New task”.</td></tr>`)+`</tbody></table></div>`;
     $("#cr").disabled=!colOrderSaved();
@@ -1360,7 +1360,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=72;
+const BUILD=73;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
