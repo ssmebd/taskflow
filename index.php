@@ -168,7 +168,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .wlt td.c{text-align:center}.wlt td.k{background:#f4cccc}.wlt .ft td{font-weight:700;border:1px solid #777}
 .pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
 .itb{table-layout:auto;border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap;overflow:visible}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
-.itb.nb{border:1px solid #000}.itb.nb td,.itb.nb th{border:0}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb tr:last-child td{border-top:1px solid #000;border-bottom:1px solid #000}.itb.nb td.spc{background:#d9ead3;border:0;height:7px}
+.itb.nb{border:1px solid #000}.itb.nb td,.itb.nb th{border:1px solid #000}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb td.spc{background:#d9ead3;height:7px;padding:0}
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
 .invf{position:absolute;left:0;right:0;bottom:6mm}.invf .ifbar{height:2.2mm;background:#22784b;margin:0 4mm}.invf .ifad{text-align:right;margin:1.5mm 5mm 0;font:9px Arial}
 @page wl{size:A3 landscape;margin:8mm}@page inv{size:A4 portrait;margin:0}
@@ -670,7 +670,8 @@ function wlPage(p,name,rows,P,csv){
    <tr class="ft"><td colspan="5"></td>${P.map(([id])=>`<td class="c">${h1(pt[id])}</td>`).join("")}<td class="k"><b>Total Hours:</b></td><td class="c">${h1(th)}</td>${sp.map(()=>"<td></td>").join("")}<td class="c"><b>Total Amount:</b></td><td class="c">${num(tc)}</td><td></td></tr></table></div>`}}
 function invTop(p){const to=$("#rt").value;return `<img class="lh" src="${LH}" alt=""><div class="invt">INVOICE</div>`}
 const invBottom=p=>`<div class="invf"><div class="ifbar"></div><div class="ifad">${esc(ISSUER_ADDR)}</div></div>`;
-function payBox(p){if(!String(p.bank||"").trim())return"";return `<div class="paybox">Payments can be made to-<br>${String(p.bank).split("\n").map(l=>{const k=l.indexOf(":");return k>0?esc(l.slice(0,k+1))+" <b>"+esc(l.slice(k+1).trim())+"</b>":esc(l)}).join("<br>")}</div>`}
+const DEF_BANK="Bank Name: Bank Asia Ltd.\nSWIFT: BALBBDDH\nAccount Name: Guru Cadd\nAccount No: 02333001410";
+function payBox(p){const bk=String(p.bank||"").trim()||DEF_BANK;return `<div class="paybox">Payments can be made to-<br>${bk.split("\n").map(l=>{const k=l.indexOf(":");return k>0?esc(l.slice(0,k+1))+" <b>"+esc(l.slice(k+1).trim())+"</b>":esc(l)}).join("<br>")}</div>`}
 function invCatPage(p,secs){const from=$("#rf").value,to=$("#rt").value,yy=to.slice(2,4),wk=isoWeek(from)+"-"+isoWeek(to)+"_"+yy;let tot=0;
   const cells=secs.map(s=>{tot+=s[2];return `<td class="c">${esc(p.symbol)}${num(s[2])}</td>`}).join("");
   return `<div class="pg pginv">${invTop(p)}<table class="itb"><tr><th class="l">INVOICE NO:</th><td class="b">${esc(rInvNo(p))}</td><th class="l">DATE:</th><td class="b c">${esc(to)}</td></tr><tr><td colspan="4" class="c"><b style="font-size:13px">CLIENT:</b> ${esc([p.client_name,p.client_addr].filter(Boolean).join(", "))}</td></tr><tr><td colspan="4" class="spc"></td></tr></table>
@@ -1294,7 +1295,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=51;
+const BUILD=52;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
