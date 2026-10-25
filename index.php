@@ -148,7 +148,7 @@ header .brand{color:var(--hfg)}
 #side #smenu button{background:transparent;color:var(--ink);border:0;text-align:left;padding:8px 10px}#side #smenu button:hover{background:var(--col)}
 #uw{position:relative}#umenu{position:fixed;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px;z-index:60}#umenu[hidden]{display:none}
 #umenu a{display:block;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}#umenu a:hover{background:var(--col)}
-.gh.sub th{padding-left:28px}.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
+tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-left:8px solid var(--gc,#888);border-top:2px solid var(--gc,#888)}tr.gh.sub th{border-left-width:5px;background:color-mix(in srgb,var(--gc,#888) 12%,var(--card))}tr.gsp td{height:14px;padding:0;border:0;background:transparent}tr.gsp:first-child{display:none}.addrow td{border-bottom:3px solid var(--gc,#888)!important}.gcs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.gcs button{width:26px;height:26px;border-radius:50%;padding:0;border:2px solid transparent}.gcs button.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--card) inset}.gcs button.auto{width:auto;border-radius:14px;padding:0 10px;font-size:12px}.gh.sub th{padding-left:28px}.addrow td{padding:7px 10px;border-bottom:1px solid var(--line);background:var(--card)}.addrow a{color:var(--mut);cursor:pointer;margin-right:18px;font-size:13px;text-decoration:none}.addrow a:hover{color:var(--ink)}
 .hbtn{width:100%;background:transparent;border:1px solid transparent;padding:5px 6px;white-space:nowrap;color:var(--ink)}.hbtn:hover{border-color:var(--line);background:var(--card)}
 #tldg{width:min(620px,94vw)}.tlt{width:100%;border-collapse:collapse;font-size:13px}.tlt td,.tlt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}.tlt td.n{text-align:right}.tlt th{font-size:11px;color:var(--mut);text-transform:uppercase}
 .tlf{display:grid;grid-template-columns:150px 90px 1fr auto;gap:6px;margin-top:10px;align-items:center}
@@ -326,7 +326,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  <div class="acts"><span class="sp"></span><button id="oc">Cancel</button><button class="p" id="os">Save</button></div>
 </dialog>
 
-<dialog id="gedlg"><b>Edit group</b><label>Name</label><input id="gen" maxlength="80"><label>Inside group</label><select id="gep"></select><small id="genote" style="color:var(--mut)"></small><div id="gemw" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><label>Move this group to another company</label><div style="display:flex;gap:6px"><select id="gemt"></select><button id="gemb">Move</button></div><small style="color:var(--mut)">The group, its sub-groups and all their tasks move together. People without access to the other company become unassigned.</small></div><div class="acts"><span class="sp"></span><button id="gex">Cancel</button><button class="p" id="gesv">Save</button></div></dialog>
+<dialog id="gedlg"><b>Edit group</b><label>Name</label><input id="gen" maxlength="80"><label>Inside group</label><select id="gep"></select><label>Colour</label><div class="gcs" id="gecs"></div><small id="genote" style="color:var(--mut)"></small><div id="gemw" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><label>Move this group to another company</label><div style="display:flex;gap:6px"><select id="gemt"></select><button id="gemb">Move</button></div><small style="color:var(--mut)">The group, its sub-groups and all their tasks move together. People without access to the other company become unassigned.</small></div><div class="acts"><span class="sp"></span><button id="gex">Cancel</button><button class="p" id="gesv">Save</button></div></dialog>
 <dialog id="gdlg"><b>Groups (folders)</b><div id="glist"></div>
  <label>New group</label><input id="gn" placeholder="e.g. Production drawing, Sales drawing">
  <div class="acts"><span class="sp"></span><button id="gc">Close</button><button class="p" id="ga">Add group</button></div>
@@ -416,6 +416,8 @@ const fmtRange=t=>t.start_date&&t.end_date&&t.start_date===t.end_date?fmtD(t.sta
 const ov=t=>ovl[t.id]||[];
 const ovText=t=>"Overlaps with:\n"+ov(t).map(o=>"• "+o.t+" ("+(o.s||"?")+" → "+(o.e||"?")+")"+(o.w?" – "+o.w:"")).join("\n");
 const ovBadge=t=>ov(t).length?`<span class="ovb" title="${ea(ovText(t))}">⚠</span>`:"";
+const GPAL=['#2563eb','#16a34a','#f59e0b','#db2777','#7c3aed','#0891b2','#dc2626','#65a30d','#ea580c','#475569'];
+function gcol(g){if(!g)return'#64748b';if(g.color)return g.color;if(g.parent_id){const p=groups.find(x=>String(x.id)===String(g.parent_id));if(p)return gcol(p)}const i=groups.filter(x=>!x.level).findIndex(x=>String(x.id)===String(g.id));return GPAL[(i<0?0:i)%GPAL.length]}
 function orderGroups(rows){const top=rows.filter(g=>!g.parent_id||!rows.some(p=>String(p.id)===String(g.parent_id))),out=[];
   for(const g of top){out.push({...g,parent_id:null,level:0,full:g.name});for(const c of rows)if(String(c.parent_id)===String(g.id))out.push({...c,level:1,full:g.name+" › "+c.name})}return out}
 const gOpts=cur=>groups.map(g=>`<option value="${g.id}"${String(cur)===String(g.id)?" selected":""}>${g.level?"\u00a0\u00a0↳ ":""}${esc(g.name)}</option>`).join("");
@@ -575,7 +577,7 @@ function render(){
     let rows="";
     if(groups.length){
       const filt=$("#q").value||$("#fs").value||$("#fp").value||$("#fa").value;
-      let secs=groups.map(g=>({id:String(g.id),name:g.name,lv:g.level,parent:g.parent_id?String(g.parent_id):""})).concat([{id:"none",name:"No group",lv:0,parent:""}]);
+      let secs=groups.map(g=>({id:String(g.id),name:g.name,lv:g.level,parent:g.parent_id?String(g.parent_id):"",color:gcol(g)})).concat([{id:"none",name:"No group",lv:0,parent:"",color:"#64748b"}]);
       if(G!=="")secs=secs.filter(x=>x.id===G||x.parent===G);
       const inSec=(t,sc)=>sc.id==="none"?!t.group_id:String(t.group_id)===sc.id;
       for(const sc of secs){
@@ -586,8 +588,8 @@ function render(){
         if(sc.id==="none"&&!items.length&&!dn&&!hasD)continue;
         if(filt&&!tot&&!totd&&!hasD)continue;
         const col=gc.has(sc.id);
-        rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${LV!=="view"&&sc.id!=="none"?'<span class="ghd" title="Drag to reorder this group">⋮⋮</span>':""}${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
-        if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
+        rows+=(sc.lv?"":`<tr class="gsp"><td colspan="${span}"></td></tr>`)+`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" style="--gc:${sc.color}" title="Click to show or hide"><th colspan="${span}">${LV!=="view"&&sc.id!=="none"?'<span class="ghd" title="Drag to reorder this group">⋮⋮</span>':""}${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
+        if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv,sc.color);
           const dl=done_.filter(t=>inSec(t,sc));
           if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
       }
@@ -855,7 +857,7 @@ async function draftSave(){const d=draft;if(!d)return;const t=d.t;
   try{const r=await api("save",{title:t.title,order_no:t.order_no,customer:t.customer,drawing_type:t.drawing_type,start_date:t.start_date,end_date:t.end_date,status:t.status,assigned_to:t.assigned_to,notes:"",group_id:t.group_id,x:t.x});
     if(r&&r.id)await api("task_order",{id:+r.id,before:0});draft=null;await load(true)}catch(e){alert(e.message)}}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&draft&&!document.querySelector("dialog[open],#rpop")){draft=null;render()}});
-const addRow=(gid,span,top)=>LV==="view"?"":`<tr class="addrow"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a>${top?`<a data-gsub="${gid}">+ Sub-group</a>`:""}<a data-gnew="1">+ Group</a></td></tr>`;
+const addRow=(gid,span,top,gc)=>LV==="view"?"":`<tr class="addrow" style="--gc:${gc||"#64748b"}"><td colspan="${span}"><a data-gadd="${gid}">+ New task</a>${top?`<a data-gsub="${gid}">+ Sub-group</a>`:""}<a data-gnew="1">+ Group</a></td></tr>`;
 function openDlg(t,grp){
   editing=t?t.id:null;
   $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").innerHTML=dtOpts(t?t.drawing_type||"":"");$("#dt").value=t?t.drawing_type||"":"";
@@ -1203,18 +1205,20 @@ $("#om").onclick=()=>{$("#oh").checked=!!+ovset.hand;$("#oo").checked=!!+ovset.o
 $("#oc").onclick=()=>$("#odlg").close();
 $("#os").onclick=async()=>{try{await api("ov_set",{hand:$("#oh").checked,one:$("#oo").checked});$("#odlg").close();await load(true)}catch(e){alert(e.message)}};
 let geId=0;
+let geCol="";function gcsDraw(){$("#gecs").innerHTML='<button class="auto'+(geCol?"":" on")+'" data-gc="">Auto</button>'+GPAL.map(c=>`<button data-gc="${c}" class="${geCol===c?"on":""}" style="background:${c}" title="${c}"></button>`).join("")}
+$("#gecs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;e.preventDefault();geCol=b.dataset.gc;gcsDraw()});
 $("#gex").onclick=()=>$("#gedlg").close();
 $("#gemb").onclick=async()=>{const to=+$("#gemt").value,w=wss.find(x=>x.id==to),g=groups.find(x=>x.id==geId);if(!to||!g)return;
   if(!confirm("Move the group \""+g.name+"\""+(g.level?"":" with its sub-groups")+" and all its tasks to \""+(w?w.name:"")+"\"?"))return;
   try{const r=await api("gr_move",{id:geId,to});$("#gedlg").close();if(G===String(geId))G="";await load(true);renderGr();alert("Moved "+r.moved+" task(s) to "+(w?w.name:"the other company")+".")}catch(e){alert(e.message)}};
-$("#gesv").onclick=async()=>{const n=$("#gen").value.trim();if(!n){alert("Enter a name");return}try{await api("gr_ren",{id:geId,name:n,parent_id:+$("#gep").value||0});$("#gedlg").close();await load(true);renderGr()}catch(e){alert(e.message)}};
+$("#gesv").onclick=async()=>{const n=$("#gen").value.trim();if(!n){alert("Enter a name");return}try{await api("gr_ren",{id:geId,name:n,parent_id:+$("#gep").value||0,color:geCol});$("#gedlg").close();await load(true);renderGr()}catch(e){alert(e.message)}};
 $("#gm").onclick=()=>{renderGr();$("#gdlg").showModal()};
 $("#gc").onclick=()=>$("#gdlg").close();
 $("#ga").onclick=async()=>{try{const r=await api("gr_add",{name:$("#gn").value});$("#gn").value="";await load(true);G=String(r.id);try{localStorage.setItem("tf_g_"+W,G)}catch(x){}render();renderGr()}catch(e){alert(e.message)}};
 $("#glist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
     if(d.gs){const n=prompt("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
-    if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;$("#gen").value=cur.name;
+    if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;geCol=cur.color||"";gcsDraw();$("#gen").value=cur.name;
       $("#gep").innerHTML='<option value="">— None (top level) —</option>'+groups.filter(x=>!x.level&&x.id!=cur.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#gep").value=cur.parent_id?String(cur.parent_id):"";
       $("#gep").disabled=hasSub;const oth=wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level));$("#gemw").hidden=!oth.length;$("#gemt").innerHTML=oth.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
     if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
@@ -1333,7 +1337,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=60;
+const BUILD=61;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

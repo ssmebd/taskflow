@@ -1,5 +1,5 @@
 <?php
-const BUILD=60;
+const BUILD=61;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','inv_approve','inv_pay','inv_del'];
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v20']))return;
+  if(!empty($_SESSION['schema_v21']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -50,7 +50,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_pages(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(150) NOT NULL,body MEDIUMTEXT NOT NULL,updated_by INT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'logged_by'")->fetch())$db->exec("ALTER TABLE time_logs ADD logged_by INT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS invoices(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,slot INT NOT NULL DEFAULT 0,inv_no VARCHAR(80) NOT NULL,inv_date DATE NOT NULL,from_date DATE NOT NULL,to_date DATE NOT NULL,client VARCHAR(200) NOT NULL DEFAULT '',currency VARCHAR(8) NOT NULL DEFAULT '',amount DECIMAL(14,2) NOT NULL DEFAULT 0,hours DECIMAL(10,2) NOT NULL DEFAULT 0,status VARCHAR(10) NOT NULL DEFAULT 'pending',paid_date DATE NULL,html MEDIUMTEXT NULL,approved_by INT NULL,created_at DATETIME NOT NULL,UNIQUE KEY(ws_id,inv_no),KEY(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v20']=1;
+  if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'color'")->fetch())$db->exec("ALTER TABLE task_groups ADD color VARCHAR(7) NULL");
+  $_SESSION['schema_v21']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -150,7 +151,7 @@ case 'list':
     $hq=$db->prepare("SELECT task_id,SUM(hours) h FROM time_logs WHERE ws_id=? GROUP BY task_id");$hq->execute([$W]);$hm=[];foreach($hq->fetchAll() as $r)$hm[$r['task_id']]=(float)$r['h'];$res['hours']=(object)$hm;
     $res['overlaps']=(object)$ov;$res['ovset']=$ovs;
     $res['tasks']=$tasks;$res['statuses']=get_statuses($db);
-    $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
+    $q=$db->prepare("SELECT id,name,parent_id,color FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
     $sk="dt_seed_$W";$q=$db->prepare("SELECT v FROM meta WHERE k=?");$q->execute([$sk]);
     if($q->fetchColumn()===false){
       $db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name,sort_no) SELECT ?,TRIM(drawing_type),0 FROM tasks WHERE ws_id=? AND drawing_type IS NOT NULL AND TRIM(drawing_type)<>'' GROUP BY TRIM(drawing_type)")->execute([$W,$W]);
@@ -416,7 +417,9 @@ case 'gr_ren':
     if($np){if($np===$id)out(['error'=>'A group cannot be inside itself']);$par=null;foreach($all as $x)if((int)$x['id']===$np)$par=$x;if(!$par||$par['parent_id'])out(['error'=>'Choose a top-level group']);
       foreach($all as $x)if((int)($x['parent_id']??0)===$id)out(['error'=>'This group has sub-groups, so it cannot go inside another group']);}}
   foreach($all as $x)if((int)$x['id']!==$id&&(int)($x['parent_id']??0)===$np&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
-  $db->prepare("UPDATE task_groups SET name=?,parent_id=? WHERE id=? AND ws_id=?")->execute([$n,$np?:null,$id,$W]);out(['ok'=>1]);
+  $db->prepare("UPDATE task_groups SET name=?,parent_id=? WHERE id=? AND ws_id=?")->execute([$n,$np?:null,$id,$W]);
+  if(array_key_exists('color',$in)){$c=(string)$in['color'];$db->prepare("UPDATE task_groups SET color=? WHERE id=? AND ws_id=?")->execute([preg_match('/^#[0-9a-fA-F]{6}$/',$c)?strtolower($c):null,$id,$W]);}
+  out(['ok'=>1]);
 case 'gr_del':
   need_level('full');$id=(int)($in['id']??0);
   $q=$db->prepare("SELECT id FROM task_groups WHERE parent_id=? AND ws_id=?");$q->execute([$id,$W]);$all=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$all[]=$id;
