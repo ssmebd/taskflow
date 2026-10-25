@@ -685,10 +685,10 @@ function invItemsPage(p,rows){const from=$("#rf").value,to=$("#rt").value,m=new 
   <table class="itb nb"><tr><td colspan="3">INVOICE WEEK</td><td class="g c">${isoWeek(from)}-${isoWeek(to)}</td></tr><tr><td colspan="3">Duration:</td><td class="g c">${dmy(from)} - ${dmy(to)}</td></tr>
   <tr class="g"><th class="a">ACTIONED ITEMS</th><th class="a">ITEM GROUP</th><th class="c">HOURS<br>SPENT</th><th class="c">SUB-TOTAL<br>(${esc(p.currency)})</th></tr>${body}<tr><td colspan="4" class="spc"></td></tr><tr><td colspan="3">Invoiced Total (${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}}
 function smPage(p,rows,csv){const from=$("#rf").value,to=$("#rt").value,m=new Map();for(const x of rows){const k=x.task_id;let r=m.get(k);if(!r){r={x,h:0,c:0};m.set(k,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
-  const go=groups.filter(g=>!g.level).map(g=>g.name.toLowerCase()),ix=r=>{const i=go.indexOf((r.x.top_name||"").toLowerCase());return i<0?999:i};
-  const L=[...m.values()].sort((a,b)=>ix(a)-ix(b)||String(a.x.top_name).localeCompare(String(b.x.top_name))||String(a.x.title).localeCompare(String(b.x.title)));let th=0,tc=0,oth=0,dr=0;
-  const body=L.map(r=>{th+=r.h;tc+=r.c;if(/^others?$/i.test(r.x.top_name||""))oth+=r.c;else dr+=r.c;const rt=r.h?r.c/r.h:0;csv.push([r.x.top_name||"",r.x.title,+r.h.toFixed(2),+rt.toFixed(2),+r.c.toFixed(2)]);
-    return `<tr><td>${esc(r.x.top_name||"")}</td><td>${esc(r.x.title)}</td><td class="c">${num(r.h)}</td><td class="c">${num(rt)}</td><td class="c">${num(r.c)}</td></tr>`}).join("");
+  const cn=r=>String(r.x.customer||r.x.top_name||"").trim();
+  const L=[...m.values()].sort((a,b)=>cn(a).localeCompare(cn(b))||String(a.x.title).localeCompare(String(b.x.title)));let th=0,tc=0,oth=0,dr=0;
+  const body=L.map(r=>{th+=r.h;tc+=r.c;if(/^others?$/i.test(r.x.top_name||""))oth+=r.c;else dr+=r.c;const rt=r.h?r.c/r.h:0;csv.push([cn(r),r.x.title,+r.h.toFixed(2),+rt.toFixed(2),+r.c.toFixed(2)]);
+    return `<tr><td>${esc(cn(r))}</td><td>${esc(r.x.title)}</td><td class="c">${num(r.h)}</td><td class="c">${num(rt)}</td><td class="c">${num(r.c)}</td></tr>`}).join("");
   csv.push(["","Total",+th.toFixed(2),"",+tc.toFixed(2)]);
   const no=rInvNo(p).replace(/^INVOICE-/i,"");
   return {th,tc,dr,oth,html:`<div class="pg pgsm"><table class="smt"><colgroup><col style="width:27%"><col style="width:22%"><col style="width:22%"><col style="width:15%"><col style="width:14%"></colgroup><tr class="bar"><td colspan="5">Invoice Report: ${esc(no)}</td></tr><tr class="bar"><td colspan="5" style="text-align:center;font-size:24px;padding:4px">${esc(p.wl_title||p.client_name||"")}</td></tr><tr class="bar"><td colspan="5">Duration: ${dmy(from)} -${dmy(to)}</td></tr>
@@ -1308,7 +1308,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=57;
+const BUILD=58;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
