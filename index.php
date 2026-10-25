@@ -296,10 +296,11 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
- <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button id="rapp" title="Save this report and invoice as final, use the current invoice number and move to the next one">✔ Approve</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button id="rapp" title="Save this report and invoice as a draft in Invoice tracking">➕ Create invoice</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div id="redit" class="noprint" hidden style="background:#fff4d6;color:#7a5200;padding:6px 10px;border-radius:6px;margin:6px 0"></div>
  <div id="rout"></div>
 </dialog>
-<dialog id="ivl"><div class="acts" style="margin:0 0 6px"><b style="flex:1;white-space:nowrap">📋 Invoice tracking</b><select id="ivlf" style="width:auto;flex:none"><option value="">All</option><option value="pending">Pending</option><option value="paid">Paid</option></select><button id="ivlc">Close</button></div>
+<dialog id="ivl"><div class="acts" style="margin:0 0 6px"><b style="flex:1;white-space:nowrap">📋 Invoice tracking</b><select id="ivlf" style="width:auto;flex:none"><option value="">All</option><option value="draft">Drafts</option><option value="amend">Needs amendment</option><option value="pending">Approved · unpaid</option><option value="paid">Paid</option></select><button id="ivlc">Close</button></div>
  <div id="ivls" style="margin:4px 0;font-size:13.5px"></div><div style="overflow:auto;max-height:70vh"><table id="ivlt"></table></div></dialog>
 <dialog id="ivdlg"><b>Invoice profile</b>
  <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Company details and hourly rates are set in Manage → company → Details &amp; rates; fill the boxes below only to override them for this invoice. Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
@@ -648,7 +649,8 @@ const rRate=(p,uid)=>{const k=String(uid),v=p.rates&&p.rates[k];if(v!==undefined
 const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank","wl_title","po","sec_labels","prefix","suffix"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});
   e.layout=[p.layout,rComp.layout].includes("summary")?"summary":[p.layout,rComp.layout].includes("items")?"items":"worklog";if(!p.slot&&+rComp.seq>0)e.seq=String(rComp.seq);if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
 const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
-function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
+let rPend=null;
+function rInvNo(p){if(rEdit)return rEdit.no;return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
 function rLines(rows){const m=new Map();for(const x of rows){const k=x.work_date+"|"+x.task_id+"|"+(x.kind==="OT"?"OT":"R");let l=m.get(k);if(!l){l={date:x.work_date,x,kind:x.kind==="OT"?"OT":"R",by:{},notes:[],hrs:0,cost:0};m.set(k,l)}l.by[x.user_id]=(l.by[x.user_id]||0)+ +x.hours;l.hrs+=+x.hours;if(x.note&&!l.notes.includes(x.note))l.notes.push(x.note)}
   return [...m.values()].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:String(a.x.order_no).localeCompare(String(b.x.order_no)))}
@@ -718,7 +720,7 @@ function drawReport(){
   $("#rout").innerHTML=h0+(vw==="inv"?"":pages)+(vw==="log"?"":inv)}
 const RWARN='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set, so cost shows 0. Set them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
 async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
-  try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];rComp=r.company||rComp;const cur=$("#rpf").value;
+  try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];rComp=r.company||rComp;const cur=rPend!=null?String(rPend):$("#rpf").value;rPend=null;
     $("#rpf").innerHTML=rList().map(p=>`<option value="${p.slot}">${esc(p.name)}</option>`).join("")+`<option value="new">＋ New profile…</option>`;$("#rpf").value=rList().some(p=>String(p.slot)===cur)?cur:rList()[0].slot;drawReport()}catch(e){alert(e.message)}}
 $("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}$("#rdlg").showModal();runReport()};
 $("#rcl").onclick=()=>$("#rdlg").close();
@@ -735,26 +737,38 @@ $("#rcsv").onclick=()=>{const csv="﻿"+rcsvRows.map(r=>r.map(csvCell).join(",")
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=(rCur().name||"report").replace(/[^\w-]+/g,"_")+"_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
 // profile editor
 
-// ---- Approve + invoice tracking ----
-$("#rapp").onclick=async()=>{if(!rTot||!rTot.html)return alert("Nothing to approve for this period.");const p=rEff(rCur()),no=rInvNo(p);
-  if(!rTot.amount&&!confirm("The invoice total is 0 (rates may be missing). Approve anyway?"))return;
-  if(!confirm("Approve invoice "+no+"?\n\nThe report and invoice are saved as final in Invoice tracking, and the next invoice number moves on by one."))return;
+// ---- Create invoice (draft) -> Invoice list: check, edit, amend, approve ----
+let rEdit=null;
+function rEditBar(){const b=$("#rapp"),n=$("#redit");if(rEdit){b.textContent="💾 Save changes";if(n){n.hidden=false;n.innerHTML="Editing draft <b>"+esc(rEdit.no)+"</b>"+(rEdit.note?" · <span style='color:#c5221f'>Amendment asked: "+esc(rEdit.note)+"</span>":"")+' <button id="rednx" type="button">Stop editing</button>'}}else{b.textContent="➕ Create invoice";if(n)n.hidden=true}}
+document.addEventListener("click",e=>{if(e.target.id==="rednx"){rEdit=null;rEditBar();drawReport()}});
+$("#rdlg").addEventListener("close",()=>{rEdit=null;rEditBar()});
+$("#rapp").onclick=async()=>{if(!rTot||!rTot.html)return alert("Nothing to create for this period.");const p=rEff(rCur()),no=rInvNo(p);
+  if(!rTot.amount&&!confirm("The invoice total is 0 (rates may be missing). Create anyway?"))return;
   const el=document.createElement("div");el.innerHTML=rTot.html;
-  try{await api("inv_approve",{slot:p.slot||0,no,seq:String(p.seq),from:$("#rf").value,to:$("#rt").value,client:p.client_name||"",currency:p.currency,amount:rTot.amount,hours:rTot.hours,html:el.innerHTML});
-    alert("Approved "+no+". It is now in Invoice tracking.");await runReport()}catch(e){alert(e.message)}};
+  try{await api("inv_create",{id:rEdit?rEdit.id:0,slot:p.slot||0,no,seq:rEdit?rEdit.seq:String(p.seq),from:$("#rf").value,to:$("#rt").value,client:p.client_name||"",currency:p.currency,amount:rTot.amount,hours:rTot.hours,html:el.innerHTML});
+    const was=!!rEdit;rEdit=null;rEditBar();alert((was?"Saved changes to ":"Created draft ")+no+". Check and approve it in Invoice tracking.");$("#rdlg").close();$("#ivl").showModal();ivLoad()}catch(e){alert(e.message)}};
 let ivRows=[];
 const fmtAmt=(c,n)=>(c?c+" ":"")+(Math.round((+n||0)*100)/100).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+const IVST={draft:["📝 Draft","#5f6368"],amend:["✏ Needs amendment","#c5221f"],pending:["⏳ Approved · unpaid","#b06000"],paid:["✔ Paid","#188038"]};
 async function ivLoad(){try{ivRows=(await api("inv_list",{})).invoices}catch(e){return alert(e.message)}ivDraw()}
-function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),tot={};ivRows.filter(x=>x.status==="pending").forEach(x=>tot[x.currency]=(tot[x.currency]||0)+ +x.amount);
-  $("#ivls").innerHTML="Pending: "+(Object.keys(tot).length?Object.entries(tot).map(([c,n])=>"<b>"+esc(fmtAmt(c,n))+"</b>").join(" · "):"<b>nothing</b>")+" · "+ivRows.filter(x=>x.status==="pending").length+" invoice(s) waiting";
-  $("#ivlt").innerHTML='<tr><th>Invoice no.</th><th>Company</th><th>Period</th><th>Amount</th><th>Status</th><th></th></tr>'+(L.map(x=>`<tr><td><b>${esc(x.inv_no)}</b><br><small style="color:var(--mut)">${esc(x.inv_date)}</small></td><td>${esc(x.company)}<br><small style="color:var(--mut)">${esc(x.client)}</small></td><td>${esc(x.from_date)} → ${esc(x.to_date)}</td><td style="text-align:right">${esc(fmtAmt(x.currency,x.amount))}<br><small style="color:var(--mut)">${+x.hours} h</small></td>
-    <td>${x.status==="paid"?`<span style="color:#188038;font-weight:600">✔ Paid</span><br><small>${esc(x.paid_date||"")}</small>`:`<span style="color:#b06000;font-weight:600">⏳ Pending</span>`}</td>
-    <td style="white-space:nowrap"><button data-ivp="${x.id}">${x.status==="paid"?"Mark pending":"Mark paid"}</button> <button data-ivv="${x.id}">🖨 Open</button> <button data-ivd="${x.id}" title="Delete this record">🗑</button></td></tr>`).join("")||'<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:16px">No invoices here yet. Approve one from Worklog &amp; invoice.</td></tr>')}
+function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),tot={},n=s=>ivRows.filter(x=>x.status===s).length;ivRows.filter(x=>x.status==="pending").forEach(x=>tot[x.currency]=(tot[x.currency]||0)+ +x.amount);
+  $("#ivls").innerHTML="To check: <b>"+(n("draft")+n("amend"))+"</b> · Awaiting payment: "+(Object.keys(tot).length?Object.entries(tot).map(([c,v])=>"<b>"+esc(fmtAmt(c,v))+"</b>").join(" · "):"<b>nothing</b>")+" ("+n("pending")+" invoice(s))";
+  $("#ivlt").innerHTML='<tr><th>Invoice no.</th><th>Company</th><th>Period</th><th>Amount</th><th>Status</th><th></th></tr>'+(L.map(x=>{const s=IVST[x.status]||[x.status,"#000"],b=(k,t)=>`<button data-ivk="${k}" data-id="${x.id}">${t}</button> `;
+    const act=x.status==="draft"?b("edit","✎ Edit")+b("approve","✔ Approve")+b("amend","↩ Amendment")+b("open","🖨 Open")+b("del","🗑")
+      :x.status==="amend"?b("edit","✎ Edit")+b("approve","✔ Approve")+b("open","🖨 Open")+b("del","🗑")
+      :b("pay",x.status==="paid"?"Mark unpaid":"Mark paid")+b("open","🖨 Open")+b("del","🗑");
+    return `<tr><td><b>${esc(x.inv_no)}</b><br><small style="color:var(--mut)">${esc(x.inv_date)}</small></td><td>${esc(x.company)}<br><small style="color:var(--mut)">${esc(x.client)}</small></td><td>${esc(x.from_date)} → ${esc(x.to_date)}</td><td style="text-align:right">${esc(fmtAmt(x.currency,x.amount))}<br><small style="color:var(--mut)">${+x.hours} h</small></td>
+    <td><span style="color:${s[1]};font-weight:600">${s[0]}</span>${x.status==="paid"?`<br><small>${esc(x.paid_date||"")}</small>`:""}${x.status==="amend"&&x.amend_note?`<br><small style="color:#c5221f">${esc(x.amend_note)}</small>`:""}</td><td style="white-space:nowrap">${act}</td></tr>`}).join("")||'<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:16px">Nothing here yet. Use ➕ Create invoice in Worklog &amp; invoice.</td></tr>')}
 $("#ivm").onclick=()=>{$("#ivl").showModal();ivLoad()};$("#ivlc").onclick=()=>$("#ivl").close();$("#ivlf").onchange=ivDraw;
-$("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
-  try{if(b.dataset.ivp){const x=ivRows.find(r=>r.id==b.dataset.ivp);await api("inv_pay",{id:+x.id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
-  else if(b.dataset.ivv){const j=await api("inv_get",{id:+b.dataset.ivv});$("#pbox").innerHTML=j.html;window.print()}
-  else if(b.dataset.ivd){const x=ivRows.find(r=>r.id==b.dataset.ivd);if(confirm("Delete the record of "+x.inv_no+"? The invoice number is not given back."))await api("inv_del",{id:+x.id}).then(ivLoad)}}catch(er){alert(er.message)}});
+$("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[data-ivk]");if(!b)return;const k=b.dataset.ivk,id=+b.dataset.id,x=ivRows.find(r=>+r.id===id);
+  try{if(k==="pay"){await api("inv_pay",{id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
+  else if(k==="open"){const j=await api("inv_get",{id});$("#pbox").innerHTML=j.inv.html;window.print()}
+  else if(k==="approve"){if(confirm("Approve invoice "+x.inv_no+"?\n\nIt becomes final (awaiting payment) and the next invoice number moves on by one."))await api("inv_step",{id,op:"approve"}).then(ivLoad)}
+  else if(k==="amend"){const n=prompt("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
+  else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
+  else if(k==="edit"){if(String(x.ws_id)!==String(W))return alert("This invoice belongs to "+x.company+". Switch to that company first, then press Edit.");
+    const j=await api("inv_get",{id});rEdit={id,no:j.inv.inv_no,seq:j.inv.seq,note:x.amend_note||""};rPend=j.inv.slot;$("#ivl").close();$("#rf").value=j.inv.from_date;$("#rt").value=j.inv.to_date;$("#rdlg").showModal();rEditBar();await runReport()}}catch(er){alert(er.message)}});
+
 let profEdit=null;
 function openProf(p){profEdit=p?p.slot:0;const d=p||Object.assign(rDef(),{name:"New profile"});
   const set=(i,v)=>$(i).value=v==null?"":v;set("#pn",d.name);set("#pl",d.layout);set("#pmc",d.match_cust);set("#pmo",d.match_order);set("#pcn",d.client_name);set("#pwt",d.wl_title);set("#ppo",d.po);set("#psl",d.sec_labels);set("#pca",d.client_addr);set("#pcc",d.currency);set("#pcs",d.symbol);set("#prt",d.rate||"");set("#pot",d.ot);set("#ppx",d.prefix);set("#psf",d.suffix);set("#psq",d.seq);set("#pbk",d.bank);
@@ -1343,7 +1357,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=66;
+const BUILD=67;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
