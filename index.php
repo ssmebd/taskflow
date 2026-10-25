@@ -16,7 +16,7 @@ button{cursor:pointer}button.p{background:var(--pri);color:var(--priInk);border-
 .tabs button.on{background:var(--pri);color:var(--priInk);border-color:var(--pri)}
 .sp{flex:1}a.out{color:var(--mut);text-decoration:none;font-size:13px}
 .stats{display:flex;gap:10px;padding:12px 16px;flex-wrap:wrap}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:92px}
+.stat{display:flex;align-items:center;gap:8px;background:color-mix(in srgb,var(--pc,#888) 20%,var(--card));border:1px solid color-mix(in srgb,var(--pc,#888) 45%,transparent);border-radius:7px;padding:5px 12px;min-width:0}.stat.more{background:transparent;border:1px dashed var(--line)}
 th.ch{cursor:grab;user-select:none;white-space:nowrap}th.ch.over{box-shadow:inset 3px 0 0 var(--pri)}
 tr.row[style] td{background:color-mix(in srgb,var(--sc) 14%,var(--card))}
 tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
@@ -25,8 +25,8 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .gt{padding:5px 14px;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:0;background:var(--col);cursor:pointer;white-space:nowrap;color:var(--ink)}
 .gt.on{background:var(--card);font-weight:600;box-shadow:inset 0 3px 0 var(--pri)}.gt small{color:var(--mut)}.ro #gm{display:none}
 .gh th,.dh th{background:var(--col);color:var(--ink);font-size:13px;cursor:pointer}
-.stat{cursor:pointer}.stat.on{border-color:var(--pri);outline:1px solid var(--pri)}.ro #sm,.ro #tlb{display:none}
-.stat b{display:block;font-size:20px}.stat span{color:var(--mut);font-size:12px}
+.stat{cursor:pointer}.stat.on{background:color-mix(in srgb,var(--pc,#888) 42%,var(--card));border-color:var(--pc,var(--pri));box-shadow:0 0 0 1px var(--pc,var(--pri))}.ro #sm,.ro #tlb{display:none}
+.stat b{font-size:17px;color:color-mix(in srgb,var(--pc,#888) 55%,#000)}.stat span{color:color-mix(in srgb,var(--pc,#888) 45%,var(--ink));font-size:12.5px;font-weight:600}.stat.more span{color:var(--mut);font-weight:400}@media(prefers-color-scheme:dark){.stat b{color:color-mix(in srgb,var(--pc,#888) 55%,#fff)}}
 .board{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;padding:0 16px 16px;overflow-x:auto}
 .col{background:var(--col);border-radius:12px;padding:10px;min-height:200px}
 .col.over{outline:2px dashed var(--pri)}
@@ -562,10 +562,13 @@ function render(){
   const list=filtered();
   const gt=tasks.filter(inGroup);
   const fsv=$("#fs").value;
-  $("#stats").innerHTML=`<div class="stat${fsv?"":" on"}" data-fs=""><b>${gt.length}</b><span>All tasks</span></div>`+
-    ST.map(([k,n])=>`<div class="stat${fsv===k?" on":""}" data-fs="${k}" title="Show only this status"${scol(k)?` style="border-top:4px solid ${scol(k)}"`:""}><b>${gt.filter(t=>t.status===k).length}</b><span>${esc(n)}</span></div>`).join("")+
-    `<div class="stat"><b>${gt.filter(late).length}</b><span>Overdue</span></div>`+
-    (gt.some(t=>ov(t).length)||ovOnly?`<div class="stat${ovOnly?" on":""}" data-ov="1" title="Show only tasks that overlap for the same person" style="border-top:4px solid #dc2626"><b>${gt.filter(t=>ov(t).length).length}</b><span>⚠ Overlaps</span></div>`:"");
+  const smore=(()=>{try{return localStorage.getItem("tf_smore")==="1"}catch(e){return false}})(),isDefSt=(k,n)=>/ongoing|progress|review|ready/i.test(n+" "+k),shown=ST.filter(([k,n])=>smore||isDefSt(k,n)||fsv===k),hid=ST.length-shown.length;
+  const pill=(c,on,att,num,lab,tt)=>`<div class="stat${on?" on":""}" ${att} style="--pc:${c}"${tt?` title="${tt}"`:""}><b>${num}</b><span>${lab}</span></div>`;
+  $("#stats").innerHTML=pill("#4f46e5",!fsv,'data-fs=""',gt.length,"All tasks")+
+    shown.map(([k,n])=>pill(scol(k)||"#94a3b8",fsv===k,`data-fs="${k}"`,gt.filter(t=>t.status===k).length,esc(n),"Show only this status")).join("")+
+    pill("#dc2626",false,"",gt.filter(late).length,"Overdue")+
+    (gt.some(t=>ov(t).length)||ovOnly?pill("#dc2626",ovOnly,'data-ov="1"',gt.filter(t=>ov(t).length).length,"⚠ Overlaps","Show only tasks that overlap for the same person"):"")+
+    (hid>0||smore?`<div class="stat more" data-more="1" title="${smore?"Show fewer":"Show every status"}"><span>${smore?"− Fewer":"＋ "+hid+" more"}</span></div>`:"");
   const gtb=$("#gtabs"),nn=tasks.filter(t=>!t.group_id).length;
   gtb.hidden=!groups.length;
   gtb.innerHTML=`<a class="gt${G===""?" on":""}" data-g="">All <small>${tasks.length}</small></a>`+groups.filter(g=>!g.level).map(g=>`<a class="gt${String(g.id)===G?" on":""}" data-g="${g.id}">${esc(g.name)} <small>${tasks.filter(t=>t.group_id==g.id||gParent(t.group_id)===String(g.id)).length}</small></a>`).join("")+(nn?`<a class="gt${G==="none"?" on":""}" data-g="none">No group <small>${nn}</small></a>`:"");
@@ -1203,7 +1206,7 @@ $("#slist").addEventListener("click",async e=>{
   }catch(err){alert(err.message)}
 });
 $("#slist").addEventListener("change",async e=>{const id=e.target.dataset.sc;if(!id)return;try{await api("st_color",{id,color:e.target.value});await load(true);renderSt()}catch(err){alert(err.message)}});
-$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}const el=e.target.closest("[data-fs]");if(!el)return;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;try{localStorage.setItem("tf_gc_"+W,"[]")}catch(x){}render()});
+$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-more]")){try{localStorage.setItem("tf_smore",localStorage.getItem("tf_smore")==="1"?"":"1")}catch(x){}render();return}if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}const el=e.target.closest("[data-fs]");if(!el)return;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;try{localStorage.setItem("tf_gc_"+W,"[]")}catch(x){}render()});
 $("#gtabs").addEventListener("click",e=>{const a=e.target.closest("[data-g]");if(!a)return;G=a.dataset.g;try{localStorage.setItem("tf_g_"+W,G)}catch(x){}try{const c=getGC();if(G==="")c.clear();else{c.delete(G);if(gParent(G))c.delete(gParent(G))}localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(x){}sel.clear();render()});
 function renderGr(){
   const full=LV==="full";
@@ -1365,7 +1368,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=76;
+const BUILD=77;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
