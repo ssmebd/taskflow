@@ -231,6 +231,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 .hst{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;text-transform:uppercase;background:color-mix(in srgb,var(--pc,#888) 22%,var(--card));color:color-mix(in srgb,var(--pc,#888) 60%,var(--ink));border:1px solid color-mix(in srgb,var(--pc,#888) 45%,transparent)}
 @media(max-width:600px){.hrow{grid-template-columns:minmax(0,1fr) auto}.hrow .hco{grid-column:1}}
 #side .rlogo{flex-direction:column;width:52px;height:auto;line-height:1;gap:1px;margin:2px 0 10px;text-decoration:none;color:var(--sf);font-weight:800;font-size:14px;letter-spacing:.2px}#side .rlogo .fl{color:#22c55e;text-shadow:0 0 8px rgba(34,197,94,.55)}
+.apn{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px}.apr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}.apr small{color:var(--mut)}.apr .acts{margin:0}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -261,6 +262,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <button id="xm">⬇ Export to Excel</button>
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
+   <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
   </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
@@ -317,6 +319,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <dialog id="acdlg" style="width:min(900px,96vw)"><b>Access Control</b> <small style="color:var(--mut)">choose what each person can do in each company. Admins always have full access everywhere; guests can only be view-only.</small><div id="acbody" style="overflow:auto;max-height:60vh;margin-top:8px"></div><div class="acts"><button class="p" id="acsave">Save access</button><span class="sp"></span><button id="acx">Close</button></div>
 </dialog>
+<dialog id="apdlg" style="width:min(720px,96vw)"><b>Approvals</b> <small style="color:var(--mut)">Members ask here before deleting a group, status, column or drawing type.</small><div id="apl" style="margin-top:8px"></div><div class="acts"><span class="sp"></span><button id="apx">Close</button></div></dialog>
 <dialog id="udlg"><b>New user</b>
  <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
  <label>Username</label><input id="uu" name="nf_user" autocomplete="off" readonly>
@@ -441,7 +444,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);chkBuild(rest.build);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;window.__drq=+j.drq||0;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState&&!HOME)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -498,7 +501,7 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#who").textContent=me.name||"";$("#tmw").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
+  $("#who").textContent=me.name||"";$("#tmw").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";$("#apm").hidden=me.role!=="admin";{const n=+(window.__drq||0);$("#apn").hidden=!n;$("#apn").textContent=n}
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
@@ -1320,6 +1323,12 @@ $("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidde
 $("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px"};
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
 document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true;if(!e.target.closest("#cpanel,#rco"))cpClose()});
+async function apOpen(){const l=$("#apl");l.innerHTML='<div class="empty">Loading…</div>';$("#apdlg").showModal();
+  try{const r=await api("dr_list"),kn={group:"Group",status:"Status",column:"Column",dtype:"Drawing type"};
+    l.innerHTML=r.items.length?r.items.map(i=>`<div class="apr"><div><b>${esc(kn[i.kind]||i.kind)}: ${esc(i.target_name)}</b><br><small>${esc(i.ws_name)} · asked by ${esc(i.by_name)} · ${esc(String(i.created_at).slice(0,16))}</small></div><div class="acts"><button class="p" data-ap="${i.id}" data-act="approve">Approve delete</button><button data-ap="${i.id}" data-act="reject">Keep it</button></div></div>`).join(""):'<div class="empty">Nothing waiting for approval.</div>'}catch(e){l.innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+$("#apm").onclick=apOpen;$("#apx").onclick=()=>$("#apdlg").close();
+$("#apl").addEventListener("click",async e=>{const b=e.target.closest("[data-ap]");if(!b)return;b.disabled=true;try{await api("dr_act",{id:b.dataset.ap,act:b.dataset.act});await load(true);apOpen()}catch(err){alert(err.message);b.disabled=false}});
+function delNote(r){if(r&&r.pending)alert("Sent to an admin for approval. It will be removed once an admin approves it.")}
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
 $("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
 $("#cpx").onclick=cpClose;$("#cps").addEventListener("input",fillCp);
@@ -1355,7 +1364,7 @@ $("#slist").addEventListener("click",async e=>{
     if(d.scx){await api("st_color",{id:d.scx,color:""});await load(true);renderSt()}
     if(d.sm){await api("st_move",{id:d.sm,dir:d.d});await load(true);renderSt()}
     if(d.sr){const cur=SL.find(x=>x.id==d.sr),n=prompt("New name for this status:",cur.name);if(n&&n.trim()){await api("st_ren",{id:d.sr,name:n});await load(true);renderSt()}}
-    if(d.sd){const cur=SL.find(x=>x.id==d.sd);if(confirm("Remove the status \""+cur.name+"\"? Its tasks move to the first remaining status.")){await api("st_del",{id:d.sd});await load(true);renderSt()}}
+    if(d.sd){const cur=SL.find(x=>x.id==d.sd);if(confirm("Remove the status \""+cur.name+"\"? Its tasks move to the first remaining status.")){delNote(await api("st_del",{id:d.sd}));await load(true);renderSt()}}
   }catch(err){alert(err.message)}
 });
 $("#slist").addEventListener("change",async e=>{const id=e.target.dataset.sc;if(!id)return;try{await api("st_color",{id,color:e.target.value});await load(true);renderSt()}catch(err){alert(err.message)}});
@@ -1373,7 +1382,7 @@ $("#dlist").addEventListener("change",async e=>{const i=e.target.dataset&&e.targ
 $("#da").onclick=async()=>{try{await api("dt_add",{name:$("#dn").value});$("#dn").value="";await load(true);renderDt()}catch(e){alert(e.message)}};
 $("#dlist").addEventListener("click",async e=>{try{
   if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=prompt("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
-  if(e.target.dataset.dd&&confirm("Delete this drawing type? Tasks that already use it keep their value."))await api("dt_del",{id:e.target.dataset.dd}).then(async()=>{await load(true);renderDt()})
+  if(e.target.dataset.dd&&confirm("Delete this drawing type? Tasks that already use it keep their value."))await api("dt_del",{id:e.target.dataset.dd}).then(async r=>{delNote(r);await load(true);renderDt()})
 }catch(err){alert(err.message)}});
 function pPrev(){const bg=$("#pbg").value,fg=$("#pfg").value,p=$("#pprev");p.style.background=bg;p.style.color=fg;applyTheme(bg+"|"+fg)}
 $("#pm").onclick=()=>{const t=(me.theme||"#0f2a5c|#ffffff").split("|");$("#pbg").value=t[0];$("#pfg").value=t[1];
@@ -1405,7 +1414,7 @@ $("#glist").addEventListener("click",async e=>{
     if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;geCol=cur.color||"";gcsDraw();$("#gen").value=cur.name;
       $("#gep").innerHTML='<option value="">— None (top level) —</option>'+groups.filter(x=>!x.level&&x.id!=cur.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#gep").value=cur.parent_id?String(cur.parent_id):"";
       $("#gep").disabled=hasSub;const oth=wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level));$("#gemw").hidden=!oth.length;$("#gemt").innerHTML=oth.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
-    if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
+    if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){{const r=await api("gr_del",{id:d.gd});delNote(r);if(!(r&&r.pending)&&G===String(d.gd))G=""};await load(true);renderGr()}}
   }catch(err){alert(err.message)}
 });
 const DAYMS=86400000;
@@ -1494,7 +1503,7 @@ $("#clist").addEventListener("click",async e=>{
   const bb=e.target.dataset.bce;if(bb){const c=BASE_COLS.find(x=>x.id===bb);ceBuilt=bb;ceId=0;$("#cen").value=colLabels()[bb]||c.label;$("#ceow").hidden=true;$("#ceh").checked=hiddenCols().includes(bb);$("#ceh").disabled=bb==="title";$("#cet").textContent="Built-in column. The name and visibility apply only on this device.";$("#cedlg").showModal();return}
   const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceBuilt="";ceId=c.id;$("#ceh").checked=hiddenCols().includes("x_"+c.id);$("#ceh").disabled=false;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=c.ctype!=="dropdown";$("#cet").textContent="Type: "+c.ctype+" (the type cannot be changed). Hiding applies only on this device.";$("#cedlg").showModal();return}
   const id=e.target.dataset.cd;if(!id||!confirm("Remove this column? The values entered in it will be deleted."))return;
-  try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
+  try{delNote(await api("col_del",{id}));await load(true);renderCols()}catch(err){alert(err.message)}
 });
 function renderAcc(){
   const th="padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;white-space:nowrap";
@@ -1535,7 +1544,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=114;
+const BUILD=115;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

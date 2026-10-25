@@ -1,8 +1,8 @@
 <?php
-const BUILD=114;
+const BUILD=115;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v25']))return;
+  if(!empty($_SESSION['schema_v26']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -57,7 +57,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
-  $_SESSION['schema_v25']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v26']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -136,7 +137,55 @@ function notify_assign($db,$tid,$new,$old){global $uid,$W,$WS;$new=(int)$new;if(
   $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
   $b="📌 New task assigned to you: ".$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);}catch(Throwable $e){}}
+function del_name($db,$kind,$id){global $W;
+  $t=['group'=>['task_groups','name'],'status'=>['statuses','name'],'column'=>['custom_cols','name'],'dtype'=>['drawing_types','name']][$kind]??null;if(!$t)return null;
+  $q=$db->prepare("SELECT {$t[1]} FROM {$t[0]} WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$n=$q->fetchColumn();return $n===false?null:(string)$n;}
+function del_do($db,$kind,$id){global $W;
+  if($kind==='dtype'){$db->prepare("DELETE FROM drawing_types WHERE id=? AND ws_id=?")->execute([$id,$W]);return;}
+  if($kind==='column'){$k='x_'.$id;
+    $db->prepare("DELETE FROM custom_cols WHERE id=? AND ws_id=?")->execute([$id,$W]);
+    $q=$db->prepare("SELECT id,extra FROM tasks WHERE extra IS NOT NULL AND ws_id=?");$q->execute([$W]);
+    foreach($q->fetchAll() as $r){$x=json_decode($r['extra'],true);if(is_array($x)&&array_key_exists($k,$x)){unset($x[$k]);
+      $db->prepare("UPDATE tasks SET extra=? WHERE id=? AND ws_id=?")->execute([$x?json_encode($x,JSON_UNESCAPED_UNICODE):null,$r['id'],$W]);}}
+    return;}
+  if($kind==='group'){
+    $q=$db->prepare("SELECT id FROM task_groups WHERE parent_id=? AND ws_id=?");$q->execute([$id,$W]);$all=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$all[]=$id;
+    foreach($all as $g){$db->prepare("UPDATE tasks SET group_id=NULL WHERE group_id=? AND ws_id=?")->execute([$g,$W]);$db->prepare("DELETE FROM task_groups WHERE id=? AND ws_id=?")->execute([$g,$W]);}
+    return;}
+  if($kind==='status'){$work=array_values(array_filter(get_statuses($db),fn($x)=>$x['k']!=='done'));
+    $tgt=null;foreach($work as $x)if($x['id']==$id)$tgt=$x;
+    if(!$tgt)out(['error'=>'Status not found']);
+    $others=array_values(array_filter($work,fn($x)=>$x['id']!=$id));if(!$others)out(['error'=>'You need at least one working status']);
+    $db->prepare("UPDATE tasks SET status=? WHERE ws_id=? AND status=?")->execute([$others[0]['k'],$W,$tgt['k']]);
+    $db->prepare("DELETE FROM statuses WHERE id=? AND ws_id=?")->execute([$id,$W]);}}
+function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
+  $nm=del_name($db,$kind,$id);if($nm===null)out(['error'=>'Not found']);
+  if($me['role']==='admin'){del_do($db,$kind,$id);out(['ok'=>1]);}
+  if($kind==='status'){$work=array_values(array_filter(get_statuses($db),fn($x)=>$x['k']!=='done'));$tg=false;foreach($work as $x)if($x['id']==$id)$tg=true;if(!$tg)out(['error'=>'Status not found']);if(count($work)<2)out(['error'=>'You need at least one working status']);}
+  $q=$db->prepare("SELECT COUNT(*) FROM delete_requests WHERE ws_id=? AND kind=? AND target_id=? AND status='pending'");$q->execute([$W,$kind,$id]);
+  if(!(int)$q->fetchColumn()){
+    $db->prepare("INSERT INTO delete_requests(ws_id,kind,target_id,target_name,requested_by,created_at) VALUES(?,?,?,?,?,NOW())")->execute([$W,$kind,$id,mb_substr($nm,0,255),$uid]);
+    $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
+    $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$kind];
+    $b="🗑 Delete request: ".$kn." \"".$nm."\"".($cn!==''?" in ".$cn:"")." — please review under Settings ▸ Approvals.";
+    foreach($db->query("SELECT id FROM users WHERE role='admin'")->fetchAll(PDO::FETCH_COLUMN) as $ad){if((int)$ad===$uid)continue;
+      $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$ad,mb_substr($b,0,1900)]);}
+  }
+  out(['ok'=>1,'pending'=>1]);}
 switch($a){
+case 'dr_list':
+  admin();
+  $o=[];foreach($db->query("SELECT r.id,r.ws_id,r.kind,r.target_name,r.created_at,COALESCE(w.name,'') AS ws_name,COALESCE(u.name,'Former member') AS by_name FROM delete_requests r LEFT JOIN workspaces w ON w.id=r.ws_id LEFT JOIN users u ON u.id=r.requested_by WHERE r.status='pending' ORDER BY r.id")->fetchAll() as $r)$o[]=$r;
+  out(['items'=>$o]);
+case 'dr_act':
+  admin();$id=(int)($in['id']??0);$ap=($in['act']??'')==='approve';
+  $q=$db->prepare("SELECT * FROM delete_requests WHERE id=? AND status='pending'");$q->execute([$id]);$r=$q->fetch();if(!$r)out(['error'=>'That request was already handled']);
+  $W=(int)$r['ws_id'];
+  if($ap){if(del_name($db,$r['kind'],(int)$r['target_id'])!==null)del_do($db,$r['kind'],(int)$r['target_id']);}
+  $db->prepare("UPDATE delete_requests SET status=?,decided_by=?,decided_at=NOW() WHERE id=?")->execute([$ap?'approved':'rejected',$uid,$id]);
+  $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$r['kind']]??$r['kind'];
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$r['requested_by'],mb_substr(($ap?"✅ Approved: ":"❌ Not approved: ").$kn." \"".$r['target_name']."\" delete request.",1900)]);
+  out(['ok'=>1]);
 case 'ping':
   $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
   out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>(int)$q->fetchColumn()]);
@@ -199,6 +248,7 @@ case 'list':
     $q=$db->prepare("SELECT id,name,color FROM drawing_types WHERE ws_id=? ORDER BY name");$q->execute([$W]);$res['dtypes']=$q->fetchAll();$res['cols']=get_cols($db);
   }
   if($me['role']==='admin'){
+    $res['drq']=(int)$db->query("SELECT COUNT(*) FROM delete_requests WHERE status='pending'")->fetchColumn();
     $res['allUsers']=$db->query("SELECT id,name,username,role FROM users ORDER BY name")->fetchAll();
     $acc=[];foreach($db->query("SELECT ws_id,user_id,level FROM ws_users")->fetchAll() as $r)$acc[$r['ws_id']][$r['user_id']]=$r['level'];
     $res['access']=(object)$acc;
@@ -417,7 +467,7 @@ case 'dt_ren':
 case 'dt_color':
   need_level('full');$c=(string)($in['color']??'');$db->prepare("UPDATE drawing_types SET color=? WHERE id=? AND ws_id=?")->execute([preg_match('/^#[0-9a-fA-F]{6}$/',$c)?strtolower($c):null,(int)($in['id']??0),$W]);out(['ok'=>1]);
 case 'dt_del':
-  need_level('full');$db->prepare("DELETE FROM drawing_types WHERE id=? AND ws_id=?")->execute([(int)($in['id']??0),$W]);out(['ok'=>1]);
+  need_level('full');del_gate($db,'dtype',(int)($in['id']??0));
 case 'col_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
   if($n==='')out(['error'=>'Enter a column name']);
@@ -435,14 +485,7 @@ case 'col_edit':
   $o=null;if($cur['ctype']==='dropdown'){$l=[];foreach(explode(',',(string)($in['options']??'')) as $p){$p=mb_substr(trim($p),0,60);if($p!==''&&!in_array($p,$l,true))$l[]=$p;}if(!$l)out(['error'=>'Enter at least one option, separated by commas']);$o=json_encode($l,JSON_UNESCAPED_UNICODE);}
   $db->prepare("UPDATE custom_cols SET name=?,options=? WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);out(['ok'=>1]);
 case 'col_del':
-  need_level('full');$id=(int)($in['id']??0);$k='x_'.$id;
-  $db->prepare("DELETE FROM custom_cols WHERE id=? AND ws_id=?")->execute([$id,$W]);
-  $q=$db->prepare("SELECT id,extra FROM tasks WHERE extra IS NOT NULL AND ws_id=?");$q->execute([$W]);
-  foreach($q->fetchAll() as $r){
-    $x=json_decode($r['extra'],true);if(is_array($x)&&array_key_exists($k,$x)){unset($x[$k]);
-      $db->prepare("UPDATE tasks SET extra=? WHERE id=? AND ws_id=?")->execute([$x?json_encode($x,JSON_UNESCAPED_UNICODE):null,$r['id'],$W]);}
-  }
-  out(['ok'=>1]);
+  need_level('full');del_gate($db,'column',(int)($in['id']??0));
 case 'pref_theme':
   $v=(string)($in['v']??'');if($v!==''&&!preg_match('/^#[0-9a-f]{6}\|#[0-9a-f]{6}$/i',$v))out(['error'=>'Invalid colours']);
   $db->prepare("UPDATE users SET pref_theme=? WHERE id=?")->execute([$v,$uid]);out(['ok'=>1]);
@@ -480,13 +523,7 @@ case 'gr_ren':
   if(array_key_exists('color',$in)){$c=(string)$in['color'];$db->prepare("UPDATE task_groups SET color=? WHERE id=? AND ws_id=?")->execute([preg_match('/^#[0-9a-fA-F]{6}$/',$c)?strtolower($c):null,$id,$W]);}
   out(['ok'=>1]);
 case 'gr_del':
-  need_level('full');$id=(int)($in['id']??0);
-  $q=$db->prepare("SELECT id FROM task_groups WHERE parent_id=? AND ws_id=?");$q->execute([$id,$W]);$all=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$all[]=$id;
-  foreach($all as $g){
-    $db->prepare("UPDATE tasks SET group_id=NULL WHERE group_id=? AND ws_id=?")->execute([$g,$W]);
-    $db->prepare("DELETE FROM task_groups WHERE id=? AND ws_id=?")->execute([$g,$W]);
-  }
-  out(['ok'=>1]);
+  need_level('full');del_gate($db,'group',(int)($in['id']??0));
 case 'st_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,40);if($n==='')out(['error'=>'Enter a status name']);
   $all=get_statuses($db);if(count($all)>=13)out(['error'=>'Maximum 12 statuses plus Completed']);
@@ -502,12 +539,7 @@ case 'st_ren':
   foreach(get_statuses($db) as $x)if($x['id']!=$id&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'A status with that name already exists']);
   $db->prepare("UPDATE statuses SET name=? WHERE id=? AND ws_id=? AND skey<>'done'")->execute([$n,$id,$W]);out(['ok'=>1]);
 case 'st_del':
-  need_level('full');$id=(int)($in['id']??0);$work=array_values(array_filter(get_statuses($db),fn($x)=>$x['k']!=='done'));
-  $tgt=null;foreach($work as $x)if($x['id']==$id)$tgt=$x;
-  if(!$tgt)out(['error'=>'Status not found']);
-  $others=array_values(array_filter($work,fn($x)=>$x['id']!=$id));if(!$others)out(['error'=>'You need at least one working status']);
-  $db->prepare("UPDATE tasks SET status=? WHERE ws_id=? AND status=?")->execute([$others[0]['k'],$W,$tgt['k']]);
-  $db->prepare("DELETE FROM statuses WHERE id=? AND ws_id=?")->execute([$id,$W]);out(['ok'=>1]);
+  need_level('full');del_gate($db,'status',(int)($in['id']??0));
 case 'st_move':
   need_level('full');$id=(int)($in['id']??0);$d=((int)($in['dir']??0))<0?-1:1;
   $work=array_values(array_filter(get_statuses($db),fn($x)=>$x['k']!=='done'));$ix=null;
