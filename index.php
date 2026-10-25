@@ -166,7 +166,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .wlt .band td{border:0;height:78px;background:#38761d;color:#fff;font-weight:700;vertical-align:middle;padding:4px 6px}.wlt .band .bt{background:#0f5499;font-size:17px;text-align:center;font-weight:700}.wlt .band .gtt{background:#38761d}
 .wlt .wlh th{color:#000;text-transform:none;background:#a9d08e;font-weight:700;font-size:11px;vertical-align:top;height:34px}.wlt .wlh th.c{text-align:center}.wlt .wlh th.pk{background:#f4cccc}.wlt .wlh th.rt1{text-align:center;background:#fce5cd}
 .wlt td.c{text-align:center}.wlt td.k{background:#f4cccc}.wlt .ft td{font-weight:700;border:1px solid #777}
-.pgsm{width:210mm;min-height:297mm;padding:12mm 12mm 12mm 16mm;margin:10px auto;box-sizing:border-box}.smt{width:100%;border-collapse:collapse;table-layout:fixed;font:15px Calibri,Arial,sans-serif}.smt td,.smt th{font-size:15px;white-space:nowrap;border:1px solid #000;padding:1px 4px;color:#000;text-transform:none;text-align:left;line-height:1.25;overflow:hidden}.smt .bar td{background:#134f5c;color:#fff;font:700 17px Arial;border:0;padding:2px 4px}.smt th{background:#d9d9d9;font:700 15px Arial;white-space:nowrap}.smt th.c{text-align:center}.smt td.c{text-align:center;font:16px Arial}.smt td.cb{text-align:center;font:700 16px Arial}.pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
+#ivlt{table-layout:auto;width:100%}#ivlt td,#ivlt th{overflow:visible;text-align:left;padding:6px 8px;vertical-align:top}#ivl{width:min(960px,96vw)}.pgsm{width:210mm;min-height:297mm;padding:12mm 12mm 12mm 16mm;margin:10px auto;box-sizing:border-box}.smt{width:100%;border-collapse:collapse;table-layout:fixed;font:15px Calibri,Arial,sans-serif}.smt td,.smt th{font-size:15px;white-space:nowrap;border:1px solid #000;padding:1px 4px;color:#000;text-transform:none;text-align:left;line-height:1.25;overflow:hidden}.smt .bar td{background:#134f5c;color:#fff;font:700 17px Arial;border:0;padding:2px 4px}.smt th{background:#d9d9d9;font:700 15px Arial;white-space:nowrap}.smt th.c{text-align:center}.smt td.c{text-align:center;font:16px Arial}.smt td.cb{text-align:center;font:700 16px Arial}.pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
 .itb{table-layout:auto;border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap;overflow:visible}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
 .itb.nb{border:1px solid #000}.itb.nb td,.itb.nb th{border:1px solid #000}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb td.spc{background:#d9ead3;height:7px;padding:0}
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
@@ -213,6 +213,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
    <button id="cm">➕ Column</button>
    <button id="dm">✏ Drawing types</button>
    <button id="rm" hidden>🧾 Worklog &amp; invoice</button>
+   <button id="ivm" hidden>📋 Invoice tracking</button>
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
@@ -295,9 +296,11 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
- <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button id="rapp" title="Save this report and invoice as final, use the current invoice number and move to the next one">✔ Approve</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
  <div id="rout"></div>
 </dialog>
+<dialog id="ivl"><div class="acts" style="margin:0 0 6px"><b style="flex:1;white-space:nowrap">📋 Invoice tracking</b><select id="ivlf" style="width:auto;flex:none"><option value="">All</option><option value="pending">Pending</option><option value="paid">Paid</option></select><button id="ivlc">Close</button></div>
+ <div id="ivls" style="margin:4px 0;font-size:13.5px"></div><div style="overflow:auto;max-height:70vh"><table id="ivlt"></table></div></dialog>
 <dialog id="ivdlg"><b>Invoice profile</b>
  <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Company details and hourly rates are set in Manage → company → Details &amp; rates; fill the boxes below only to override them for this invoice. Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
  <div class="pgrid">
@@ -442,7 +445,7 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
+  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
@@ -684,6 +687,7 @@ function invItemsPage(p,rows){const from=$("#rf").value,to=$("#rt").value,m=new 
   return {tc,th,html:`<div class="pg pginv">${invTop(p)}<table class="itb"><tr><th class="l">INVOICE NO:</th><td class="b c" style="font-size:10.5px">${esc(rInvNo(p))}</td><th class="l">DATE:</th><td class="b c">${esc(to)}</td><th class="l">PO NO</th><td class="po">${esc(p.po||"")}</td></tr><tr><td colspan="6" class="c"><b style="font-size:13px">CLIENT:</b> ${esc([p.client_name,p.client_addr].filter(Boolean).join(", "))}</td></tr><tr><td colspan="6" class="spc"></td></tr></table>
   <table class="itb nb"><tr><td colspan="3">INVOICE WEEK</td><td class="g c">${isoWeek(from)}-${isoWeek(to)}</td></tr><tr><td colspan="3">Duration:</td><td class="g c">${dmy(from)} - ${dmy(to)}</td></tr>
   <tr class="g"><th class="a">ACTIONED ITEMS</th><th class="a">ITEM GROUP</th><th class="c">HOURS<br>SPENT</th><th class="c">SUB-TOTAL<br>(${esc(p.currency)})</th></tr>${body}<tr><td colspan="4" class="spc"></td></tr><tr><td colspan="3">Invoiced Total (${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}}
+let rTot=null;
 function smPage(p,rows,csv){const from=$("#rf").value,to=$("#rt").value,m=new Map();for(const x of rows){const k=x.task_id;let r=m.get(k);if(!r){r={x,h:0,c:0};m.set(k,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
   const cn=r=>String(r.x.customer||r.x.top_name||"").trim();
   const L=[...m.values()].sort((a,b)=>cn(a).localeCompare(cn(b))||String(a.x.title).localeCompare(String(b.x.title)));let th=0,tc=0,oth=0,dr=0;
@@ -699,14 +703,14 @@ function drawReport(){
   const pp=new Map();rrows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>(+a[0])-(+b[0]));
   let pages="",inv="";
   if(p.layout==="summary"){const t=smPage(p,rows,csv);rcsvRows=[["Client Name","Actioned items","Hours spent","Hourly rate","Cost ("+p.currency+")"]].concat(csv);
-    const iv=invCatPage(p,[["DRAWING AND ERP SERVICE",0,t.dr],["Others",0,t.oth]]);if(!t.tc)h0=RWARN;
+    const iv=invCatPage(p,[["DRAWING AND ERP SERVICE",0,t.dr],["Others",0,t.oth]]);rTot={amount:t.tc,hours:t.th,html:t.html+iv};if(!t.tc)h0=RWARN;
     if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
     $("#rout").innerHTML=h0+(vw==="inv"?"":t.html)+(vw==="log"?"":iv);return}
   const secs=rSections(p,rows),names=secOrder([...secs.keys()]),lines=[];
   if(p.layout==="items"){const t=wlPage(p,(wss.find(w=>w.id==W)||{}).name||names.join(" / "),rows,P,csv);pages+=t.html}
   else for(const n of names){const t=wlPage(p,n,secs.get(n),P,csv);lines.push([n,t.th,t.tc]);pages+=t.html}
   rcsvRows=[["Group","Date","Week","Project group","Project No","Project name"].concat(P.map(x=>x[1]),["Type","Total hrs"],"(rates)","Total cost "+p.currency,"Remarks")].concat(csv);
-  if(p.layout==="items"){const it=invItemsPage(p,rows);inv=it.html;if(!it.tc)h0=RWARN}else{inv=invCatPage(p,lines);if(!lines.some(l=>l[2]))h0=RWARN}
+  if(p.layout==="items"){const it=invItemsPage(p,rows);inv=it.html;rTot={amount:it.tc,hours:it.th};if(!it.tc)h0=RWARN}else{inv=invCatPage(p,lines);rTot={amount:lines.reduce((s,l)=>s+l[2],0),hours:lines.reduce((s,l)=>s+l[1],0)};if(!lines.some(l=>l[2]))h0=RWARN}rTot.html=pages+inv;
   if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
   $("#rout").innerHTML=h0+(vw==="inv"?"":pages)+(vw==="log"?"":inv)}
 const RWARN='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set, so cost shows 0. Set them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
@@ -727,6 +731,27 @@ $("#rpr").onclick=()=>{$("#pbox").innerHTML=$("#rout").innerHTML;window.print()}
 $("#rcsv").onclick=()=>{const csv="﻿"+rcsvRows.map(r=>r.map(csvCell).join(",")).join("\r\n");
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=(rCur().name||"report").replace(/[^\w-]+/g,"_")+"_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
 // profile editor
+
+// ---- Approve + invoice tracking ----
+$("#rapp").onclick=async()=>{if(!rTot||!rTot.html)return alert("Nothing to approve for this period.");const p=rEff(rCur()),no=rInvNo(p);
+  if(!rTot.amount&&!confirm("The invoice total is 0 (rates may be missing). Approve anyway?"))return;
+  if(!confirm("Approve invoice "+no+"?\n\nThe report and invoice are saved as final in Invoice tracking, and the next invoice number moves on by one."))return;
+  const el=document.createElement("div");el.innerHTML=rTot.html;
+  try{await api("inv_approve",{slot:p.slot||0,no,seq:String(p.seq),from:$("#rf").value,to:$("#rt").value,client:p.client_name||"",currency:p.currency,amount:rTot.amount,hours:rTot.hours,html:el.innerHTML});
+    alert("Approved "+no+". It is now in Invoice tracking.");await runReport()}catch(e){alert(e.message)}};
+let ivRows=[];
+const fmtAmt=(c,n)=>(c?c+" ":"")+(Math.round((+n||0)*100)/100).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+async function ivLoad(){try{ivRows=(await api("inv_list",{})).invoices}catch(e){return alert(e.message)}ivDraw()}
+function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),tot={};ivRows.filter(x=>x.status==="pending").forEach(x=>tot[x.currency]=(tot[x.currency]||0)+ +x.amount);
+  $("#ivls").innerHTML="Pending: "+(Object.keys(tot).length?Object.entries(tot).map(([c,n])=>"<b>"+esc(fmtAmt(c,n))+"</b>").join(" · "):"<b>nothing</b>")+" · "+ivRows.filter(x=>x.status==="pending").length+" invoice(s) waiting";
+  $("#ivlt").innerHTML='<tr><th>Invoice no.</th><th>Company</th><th>Period</th><th>Amount</th><th>Status</th><th></th></tr>'+(L.map(x=>`<tr><td><b>${esc(x.inv_no)}</b><br><small style="color:var(--mut)">${esc(x.inv_date)}</small></td><td>${esc(x.company)}<br><small style="color:var(--mut)">${esc(x.client)}</small></td><td>${esc(x.from_date)} → ${esc(x.to_date)}</td><td style="text-align:right">${esc(fmtAmt(x.currency,x.amount))}<br><small style="color:var(--mut)">${+x.hours} h</small></td>
+    <td>${x.status==="paid"?`<span style="color:#188038;font-weight:600">✔ Paid</span><br><small>${esc(x.paid_date||"")}</small>`:`<span style="color:#b06000;font-weight:600">⏳ Pending</span>`}</td>
+    <td style="white-space:nowrap"><button data-ivp="${x.id}">${x.status==="paid"?"Mark pending":"Mark paid"}</button> <button data-ivv="${x.id}">🖨 Open</button> <button data-ivd="${x.id}" title="Delete this record">🗑</button></td></tr>`).join("")||'<tr><td colspan="6" style="text-align:center;color:var(--mut);padding:16px">No invoices here yet. Approve one from Worklog &amp; invoice.</td></tr>')}
+$("#ivm").onclick=()=>{$("#ivl").showModal();ivLoad()};$("#ivlc").onclick=()=>$("#ivl").close();$("#ivlf").onchange=ivDraw;
+$("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  try{if(b.dataset.ivp){const x=ivRows.find(r=>r.id==b.dataset.ivp);await api("inv_pay",{id:+x.id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
+  else if(b.dataset.ivv){const j=await api("inv_get",{id:+b.dataset.ivv});$("#pbox").innerHTML=j.html;window.print()}
+  else if(b.dataset.ivd){const x=ivRows.find(r=>r.id==b.dataset.ivd);if(confirm("Delete the record of "+x.inv_no+"? The invoice number is not given back."))await api("inv_del",{id:+x.id}).then(ivLoad)}}catch(er){alert(er.message)}});
 let profEdit=null;
 function openProf(p){profEdit=p?p.slot:0;const d=p||Object.assign(rDef(),{name:"New profile"});
   const set=(i,v)=>$(i).value=v==null?"":v;set("#pn",d.name);set("#pl",d.layout);set("#pmc",d.match_cust);set("#pmo",d.match_order);set("#pcn",d.client_name);set("#pwt",d.wl_title);set("#ppo",d.po);set("#psl",d.sec_labels);set("#pca",d.client_addr);set("#pcc",d.currency);set("#pcs",d.symbol);set("#prt",d.rate||"");set("#pot",d.ot);set("#ppx",d.prefix);set("#psf",d.suffix);set("#psq",d.seq);set("#pbk",d.bank);
@@ -1308,7 +1333,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=59;
+const BUILD=60;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

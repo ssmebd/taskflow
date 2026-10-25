@@ -1,8 +1,8 @@
 <?php
-const BUILD=59;
+const BUILD=60;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','inv_approve','inv_pay','inv_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v19']))return;
+  if(!empty($_SESSION['schema_v20']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -49,7 +49,8 @@ function ensure_schema($db){
   }
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_pages(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(150) NOT NULL,body MEDIUMTEXT NOT NULL,updated_by INT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'logged_by'")->fetch())$db->exec("ALTER TABLE time_logs ADD logged_by INT NULL");
-  $_SESSION['schema_v19']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS invoices(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,slot INT NOT NULL DEFAULT 0,inv_no VARCHAR(80) NOT NULL,inv_date DATE NOT NULL,from_date DATE NOT NULL,to_date DATE NOT NULL,client VARCHAR(200) NOT NULL DEFAULT '',currency VARCHAR(8) NOT NULL DEFAULT '',amount DECIMAL(14,2) NOT NULL DEFAULT 0,hours DECIMAL(10,2) NOT NULL DEFAULT 0,status VARCHAR(10) NOT NULL DEFAULT 'pending',paid_date DATE NULL,html MEDIUMTEXT NULL,approved_by INT NULL,created_at DATETIME NOT NULL,UNIQUE KEY(ws_id,inv_no),KEY(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v20']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -296,6 +297,28 @@ case 'tl_report':
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $q=$db->prepare("SELECT l.user_id,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.kind,l.note,t.id AS task_id,t.order_no,t.title,t.customer,t.drawing_type,COALESCE(pg.name,g.name) AS top_name,COALESCE(pg.id,g.id) AS top_id,IF(pg.id IS NULL,NULL,g.name) AS sub_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$W,$f,$t]);
   out(['rows'=>$q->fetchAll(),'profiles'=>inv_profiles($db),'company'=>inv_company($db)]);
+case 'inv_approve':
+  admin();$slot=(int)($in['slot']??0);if($slot<0||$slot>9)out(['error'=>'Bad profile']);
+  $no=mb_substr(trim((string)($in['no']??'')),0,80);$f=(string)($in['from']??'');$t=(string)($in['to']??'');
+  if($no===''||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Missing invoice number or dates']);
+  $q=$db->prepare("SELECT id FROM invoices WHERE ws_id=? AND inv_no=?");$q->execute([$W,$no]);if($q->fetch())out(['error'=>'Invoice '.$no.' is already approved. Change the next number if you need another.']);
+  $html=(string)($in['html']??'');if(strlen($html)>3000000)out(['error'=>'Report too large to store']);
+  $db->prepare("INSERT INTO invoices(ws_id,slot,inv_no,inv_date,from_date,to_date,client,currency,amount,hours,status,html,approved_by,created_at) VALUES(?,?,?,?,?,?,?,?,?,?, 'pending',?,?,NOW())")->execute([$W,$slot,$no,$t,$f,$t,mb_substr((string)($in['client']??''),0,200),mb_substr((string)($in['currency']??''),0,8),round((float)($in['amount']??0),2),round((float)($in['hours']??0),2),$html,$uid]);
+  $nid=(int)$db->lastInsertId();
+  // move this profile's (or the company's) next number on by one, keeping leading zeros
+  $d=null;if($slot>0){foreach(inv_profiles($db) as $pp)if((int)$pp['slot']===$slot)$d=$pp;}else $d=inv_company($db);
+  if(is_array($d)){$s=(string)($d['seq']??'1');$s=preg_match('/^\d+$/',$s)?$s:'1';$used=preg_replace('/\D/','',(string)($in['seq']??$s));if($used==='')$used=$s;$n=str_pad((string)((int)$used+1),strlen($used),'0',STR_PAD_LEFT);$d['seq']=$n;unset($d['slot']);
+    $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($d,JSON_UNESCAPED_UNICODE)]);}
+  out(['ok'=>1,'id'=>$nid]);
+case 'inv_list':
+  admin();$q=$db->query("SELECT i.id,i.ws_id,COALESCE(w.name,'(deleted company)') AS company,i.inv_no,i.inv_date,i.from_date,i.to_date,i.client,i.currency,i.amount,i.hours,i.status,i.paid_date,i.created_at,COALESCE(u.name,'') AS by_name FROM invoices i LEFT JOIN workspaces w ON w.id=i.ws_id LEFT JOIN users u ON u.id=i.approved_by ORDER BY i.inv_date DESC,i.id DESC");out(['invoices'=>$q->fetchAll()]);
+case 'inv_get':
+  admin();$q=$db->prepare("SELECT html FROM invoices WHERE id=?");$q->execute([(int)($in['id']??0)]);out(['html'=>(string)$q->fetchColumn()]);
+case 'inv_pay':
+  admin();$paid=($in['status']??'')==='paid';$pd=(string)($in['paid_date']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$pd))$pd=date('Y-m-d');
+  $db->prepare("UPDATE invoices SET status=?,paid_date=? WHERE id=?")->execute([$paid?'paid':'pending',$paid?$pd:null,(int)($in['id']??0)]);out(['ok'=>1]);
+case 'inv_del':
+  admin();$db->prepare("DELETE FROM invoices WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'co_get':
   admin();out(['company'=>inv_company($db)]);
 case 'inv_set':
