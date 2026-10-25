@@ -1080,6 +1080,8 @@ document.addEventListener("load",e=>{const im=e.target;if(!im||im.tagName!=="IMG
   try{const nw=im.naturalWidth||32,nh=im.naturalHeight||32,k=Math.min(1,300/Math.max(nw,nh)),w=Math.max(1,Math.round(nw*k)),h=Math.max(1,Math.round(nh*k));
     const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.drawImage(im,0,0,w,h);const img=x.getImageData(0,0,w,h),d=img.data;
     const cs=[[0,0],[w-1,0],[0,h-1],[w-1,h-1]].map(([a,b])=>{const o=(b*w+a)*4;return[d[o],d[o+1],d[o+2],d[o+3]]});
+    let op=0;for(let o=3;o<d.length;o+=4)if(d[o]>200)op++;
+    if(op/(w*h)>0.55){im.dataset.w=1;return}
     if(cs.every(p=>p[3]<40)){im.dataset.w=1;im.classList.add("wh");return}
     if(cs.every(p=>p[3]>200&&(p[0]+p[1]+p[2])/3>225)){
       for(let o=0;o<d.length;o+=4){const lum=0.3*d[o]+0.59*d[o+1]+0.11*d[o+2],a=Math.min(1,Math.max(0,(255-lum)/255*1.8))*(d[o+3]/255);d[o]=d[o+1]=d[o+2]=255;d[o+3]=Math.round(a*255)}
@@ -1448,7 +1450,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=87;
+const BUILD=88;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
