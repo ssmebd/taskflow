@@ -127,9 +127,9 @@ body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightnes
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
 .wh{filter:brightness(0) invert(1)}
-.uh,.ur2{display:grid;grid-template-columns:1.2fr 1fr 1.5fr .9fr 70px;gap:6px;align-items:center}.uh{font-size:11px;color:var(--mut);font-weight:600;margin:10px 0 4px;text-transform:uppercase}
+.uh,.ur2{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 190px;gap:6px;align-items:center}.uh{font-size:11px;color:var(--mut);font-weight:600;margin:10px 0 4px;text-transform:uppercase}
 .ur2{margin:4px 0}.ur2 input,.ur2 select{min-width:0}.pw{display:flex;gap:4px}.pw input{flex:1}.eye{padding:4px 8px;width:auto;flex:none}
-.urow{display:grid;grid-template-columns:1.2fr 1fr 1.5fr .9fr 70px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}
+.urow{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 190px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}.urow button[data-pw]{white-space:nowrap}
 @media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
 .drng{width:100%;text-align:center;background:transparent;border:1px solid transparent;padding:6px 8px;white-space:nowrap}.drng:hover{border-color:var(--line);background:var(--card)}.drng.empty{color:var(--mut);border:1px dashed var(--line)}.drng.late{color:var(--hi)}.ro .drng{pointer-events:none}
 #rpop{position:fixed;z-index:70;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:14px 16px}
@@ -271,10 +271,10 @@ header h1{font-size:15px;margin-right:4px}#wlogo{width:32px;height:32px;margin-r
  <div class="acts"><button id="del" style="display:none">Delete</button><button id="tlb" type="button" title="Log hours for this task">⏱ Hours</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
-<dialog id="tdlg" style="width:min(780px,94vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b></div>
+<dialog id="tdlg" style="width:min(900px,96vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b></div>
  <div class="uh"><span>Full name</span><span>Username</span><span>Password</span><span>User type</span><span></span></div>
  <div id="tlist"></div>
- <small style="color:var(--mut)">Saved passwords are stored scrambled, so they cannot be shown. Type a new one and press Set to change it.</small>
+ <small style="color:var(--mut)">Saved passwords are stored scrambled, so they cannot be shown. Type a new one and press Reset password.</small>
  <div class="acts"><button class="p" id="tnew">+ New user</button><span class="sp"></span><button id="tc">Close</button></div>
 </dialog>
 <dialog id="acdlg" style="width:min(900px,96vw)"><b>Access Control</b> <small style="color:var(--mut)">choose what each person can do in each company. Admins always have full access everywhere; guests can only be view-only.</small><div id="acbody" style="overflow:auto;max-height:60vh;margin-top:8px"></div><div class="acts"><button class="p" id="acsave">Save access</button><span class="sp"></span><button id="acx">Close</button></div>
@@ -1456,7 +1456,7 @@ function renderUsers(){
   $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
    <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
-   <span style="display:flex;gap:4px"><button data-pw="${u.id}" title="Save the new password">Set</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
+   <span style="display:flex;gap:4px"><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
 $("#tm").onclick=()=>{renderUsers();$("#tdlg").showModal()};
 $("#tc").onclick=()=>$("#tdlg").close();
@@ -1477,7 +1477,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=103;
+const BUILD=104;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
