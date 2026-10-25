@@ -1,5 +1,5 @@
 <?php
-const BUILD=97;
+const BUILD=98;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -565,8 +565,6 @@ case 'user_add':
   try{$db->prepare("INSERT INTO users(name,username,pass_hash,role) VALUES(?,?,?,?)")->execute([mb_substr($n,0,100),$u,password_hash($p,PASSWORD_DEFAULT),$r]);}
   catch(PDOException $e){out(['error'=>'That username is already taken']);}
   $nid=(int)$db->lastInsertId();
-  if($r==='guest')$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT id,?,'view' FROM workspaces")->execute([$nid]);
-  elseif($W)$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id) VALUES(?,?)")->execute([$W,$nid]);
   out(['ok'=>1]);
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
@@ -575,7 +573,7 @@ case 'user_role':
   admin();$id=(int)($in['id']??0);$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
   if($id===$uid)out(['error'=>'You cannot change your own type']);
   $db->prepare("UPDATE users SET role=? WHERE id=?")->execute([$r,$id]);
-  if($r==='guest'){$db->prepare("UPDATE ws_users SET level='view' WHERE user_id=?")->execute([$id]);$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT id,?,'view' FROM workspaces")->execute([$id]);}
+  if($r==='guest'){$db->prepare("UPDATE ws_users SET level='view' WHERE user_id=?")->execute([$id]);}
   out(['ok'=>1]);
 case 'user_del':
   admin();$id=(int)($in['id']??0);if($id===$uid)out(['error'=>'You cannot remove yourself']);
