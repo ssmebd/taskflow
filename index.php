@@ -235,6 +235,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 #umenu a[hidden],#umenu [hidden]{display:none!important}
 #side .rlogo{flex-direction:row;align-items:center;gap:1px;font-size:22px;letter-spacing:0;width:52px;height:40px}#side .rlogo .fl{font-size:26px;line-height:1;margin-top:-3px;text-shadow:0 0 8px rgba(34,197,94,.7)}
 #sidetabs .stab.ring,#sidetabs.hid .stab.ring{transform:translateX(0);opacity:1;animation:stbl .5s ease-in-out 10;z-index:2}@keyframes stbl{0%,100%{box-shadow:-2px 2px 8px rgba(0,0,0,.18);background:color-mix(in srgb,var(--pc) 26%,var(--card))}50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 55%,transparent),-2px 2px 14px color-mix(in srgb,var(--pc) 70%,transparent);background:color-mix(in srgb,var(--pc) 70%,#fff)}}@media(prefers-reduced-motion:reduce){#sidetabs .stab.ring{animation:none;box-shadow:0 0 0 3px var(--pc)}}
+.ed.tt{cursor:pointer;text-overflow:ellipsis}.ed.tt:hover{text-decoration:underline;border-color:transparent}.ed.tt:focus{border-color:transparent;background:transparent}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -545,7 +546,7 @@ function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(
 function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to company…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
 const fmtH=n=>{n=+n||0;return n.toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1")};
 const BASE_COLS=[
- {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
+ {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed${t.id?" tt":""}" data-f="title" value="${ea(t.title)}"${t.id?' readonly title="Open task"':""}></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
  {id:"customer",label:"Customer",cell:t=>`<input class="ed" data-f="customer" list="pjl" value="${ea(t.customer)}">`},
  {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed pill" data-f="drawing_type" style="--pc:${t.drawing_type?dtCol(t.drawing_type):"#94a3b8"}">${dtOpts(t.drawing_type)}</select>`},
@@ -1118,6 +1119,7 @@ $("#main").addEventListener("click",e=>{
   if(e.target.closest("[data-dcancel]")){draft=null;render();return}
   const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=prompt("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
   if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
+  const tt=e.target.closest("input.tt");if(tt){const tr=tt.closest("[data-id]"),t0=tr&&tasks.find(x=>x.id==tr.dataset.id);if(t0){openDlg(t0);return}}
   const hb=e.target.closest("[data-hrs]");if(hb){openTL(+hb.dataset.hrs);return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
   const el=e.target.closest("[data-id]");if(!el)return;
@@ -1547,7 +1549,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=118;
+const BUILD=119;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
