@@ -196,6 +196,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
  <span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
+ <span id="gcb" class="tabs" hidden><button data-gc="c" title="Collapse all groups">Collapse all</button><button data-gc="e" title="Expand groups, keep Completed folders collapsed">Expand</button><button data-gc="a" title="Expand groups and Completed folders">Expand all</button></span>
  <button id="dv" title="Choose which view opens first"></button>
  <input id="q" placeholder="Search tasks" style="min-width:140px">
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
@@ -485,6 +486,11 @@ function toggleCC(id){const c=getCC();c.has(id)?c.delete(id):c.add(id);try{local
 function vis(){return filtered().filter(t=>!hiddenRow(t))}
 function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...g]))}catch(e){}
   for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
+function gcSet(m){const ids=groups.map(g=>String(g.id)).concat("none");let gc=[],cc=[];
+  if(m==="c"){gc=ids;cc=ids;dc=true}else if(m==="e"){cc=ids;dc=true}else dc=false;
+  try{localStorage.setItem("tf_gc_"+W,JSON.stringify(gc));localStorage.setItem("tf_cc_"+W,JSON.stringify(cc));localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
+  for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
+$("#gcb").addEventListener("click",e=>{const b=e.target.closest("[data-gc]");if(b)gcSet(b.dataset.gc)});
 function lockView(){$("#mhm").hidden=LV==="view"&&!(me&&me.role==="admin");if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
@@ -555,7 +561,7 @@ function render(){
   updBar();syncFilters();
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#wm").hidden=me.role!=="admin";
-  const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
+  $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
   $("#who").textContent=(me.name||"")+(LV==="view"?" · view only":LV==="full"&&me.role!=="admin"?" · full access":"");
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
@@ -1452,7 +1458,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=90;
+const BUILD=91;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
