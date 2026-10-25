@@ -307,7 +307,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
   <label>Client name (blank = company)<input id="pcn"></label><label>Client address (blank = company)<input id="pca"></label>
   <label>Currency code<input id="pcc" maxlength="8" placeholder="blank = company"></label><label>Currency symbol<input id="pcs" maxlength="4" placeholder="blank = company"></label>
   <label>Rate / hour for everyone (blank = use company rates)<input type="number" id="prt" min="0" step="0.01"></label><label>OT multiplier (1 = company setting)<input type="number" id="pot" min="0" step="0.05"></label>
-  <label>Invoice no. prefix<input id="ppx" placeholder="INVOICE-"></label><label>Next number / suffix<span style="display:flex;gap:6px"><input type="number" id="psq" min="0" style="width:90px"><input id="psf" placeholder="-UCA"></span></label>
+  <label>Invoice no. prefix<input id="ppx" placeholder="INVOICE-"></label><label>Next number / suffix<span style="display:flex;gap:6px"><input id="psq" inputmode="numeric" style="width:90px" title="Keep leading zeros, e.g. 033"><input id="psf" placeholder="-UCA"></span></label>
  </div>
  <label>Bank / payment details (blank = company)<textarea id="pbk" rows="3"></textarea></label>
  <label>Invoice column names, one per line as Group=Heading <textarea id="psl" rows="3" placeholder="Sales Drawing=Sales&#10;Project and Others=Projects/Others"></textarea></label>
@@ -358,7 +358,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  </div>
  <div class="pgrid">
   <label>Invoice style<select id="colay"><option value="worklog">Category summary (Operations / Sales / Projects columns)</option><option value="items">Item list with PO no. (UCA / DMC style)</option></select></label><label>Worklog title (blue box)<input id="cowt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label>
-  <label>Invoice no. prefix<input id="copx" placeholder="INVOICE-"></label><label>Next number · suffix<span style="display:flex;gap:6px"><input type="number" id="cosq" min="0" style="width:90px"><input id="cosf" placeholder="-UCA"></span></label>
+  <label>Invoice no. prefix<input id="copx" placeholder="INVOICE-"></label><label>Next number · suffix<span style="display:flex;gap:6px"><input id="cosq" inputmode="numeric" style="width:90px" title="Keep leading zeros, e.g. 033"><input id="cosf" placeholder="-UCA"></span></label>
   <label>PO no.<input id="copo"></label><label>Invoice column names (Group=Heading, one per line)<textarea id="cosl" rows="2" placeholder="Sales Drawing=Sales"></textarea></label>
  </div>
  <b style="font-size:13px">Hourly rate per person <span style="font-weight:400;color:var(--mut)">(blank = default rate)</span></b><div id="cor" class="pgrid"></div>
@@ -617,12 +617,12 @@ $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(i
 let coId=0;
 async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
-  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=c.layout==="items"?"items":"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||1;$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=c.layout==="items"?"items":"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
   $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
   $("#codlg").showModal()}catch(e){alert(e.message)}}
 $("#cox").onclick=()=>$("#codlg").close();
 $("#cosv").onclick=async()=>{const rates={};document.querySelectorAll("#cor [data-cr]").forEach(i=>{if(i.value!=="")rates[i.dataset.cr]=+i.value});
-  const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,layout:$("#colay").value,wl_title:$("#cowt").value,prefix:$("#copx").value,suffix:$("#cosf").value,seq:+$("#cosq").value||1,po:$("#copo").value,sec_labels:$("#cosl").value,rates};
+  const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,layout:$("#colay").value,wl_title:$("#cowt").value,prefix:$("#copx").value,suffix:$("#cosf").value,seq:$("#cosq").value.replace(/\D/g,"")||"1",po:$("#copo").value,sec_labels:$("#cosl").value,rates};
   try{const w=wss.find(x=>x.id==coId),n=$("#con").value.trim();if(n&&w&&n!==w.name)await apiW("ws_rename",{id:coId,name:n},coId);
     await apiW("inv_set",{slot:0,profile},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
 // ---- Worklog & invoice reports ----
@@ -640,7 +640,7 @@ const hasM=p=>splitC(p.match_cust).length||String(p.match_order||"").trim();
 function rProfRows(p){const L=rList();return rrows.filter(x=>hasM(p)?rClaims(p,x):!L.some(q=>q!==p&&hasM(q)&&rClaims(q,x)))}
 const rRate=(p,uid)=>{const k=String(uid),v=p.rates&&p.rates[k];if(v!==undefined&&v!=="")return +v;if(+p.rate>0)return +p.rate;const c=rComp.rates&&rComp.rates[k];return c!==undefined&&c!==""?+c:(+rComp.rate||0)};
 const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank","wl_title","po","sec_labels","prefix","suffix"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});
-  if(rComp.layout==="items"||p.layout==="items")e.layout="items";else e.layout="worklog";if(!p.slot&&+rComp.seq>0)e.seq=+rComp.seq;if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
+  if(rComp.layout==="items"||p.layout==="items")e.layout="items";else e.layout="worklog";if(!p.slot&&+rComp.seq>0)e.seq=String(rComp.seq);if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
 const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
 function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
@@ -725,7 +725,7 @@ $("#pcc2").onclick=()=>{$("#ivdlg").close();$("#rpf").value=String(rCur().slot)}
 $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [data-pr]").forEach(i=>{if(i.value!=="")rates[i.dataset.pr]=+i.value});
   let slot=profEdit;if(!slot){const used=rprofs.map(p=>p.slot);for(let s=1;s<=9;s++)if(!used.includes(s)){slot=s;break}}
   if(!slot){alert("Maximum of 9 profiles");return}
-  const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,wl_title:$("#pwt").value,po:$("#ppo").value,sec_labels:$("#psl").value,client_addr:$("#pca").value,currency:$("#pcc").value||"",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
+  const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,wl_title:$("#pwt").value,po:$("#ppo").value,sec_labels:$("#psl").value,client_addr:$("#pca").value,currency:$("#pcc").value||"",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:$("#psq").value.replace(/\D/g,"")||"0",bank:$("#pbk").value,rates};
   try{await api("inv_set",{slot,profile});$("#ivdlg").close();await runReport();$("#rpf").value=String(slot);drawReport()}catch(e){alert(e.message)}};
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
 // ---- Personal hours check ----
@@ -1295,7 +1295,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=54;
+const BUILD=55;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

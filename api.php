@@ -1,5 +1,5 @@
 <?php
-const BUILD=54;
+const BUILD=55;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set'];
@@ -306,7 +306,7 @@ case 'inv_set':
   $rates=[];if(is_array($p['rates']??null))foreach($p['rates'] as $k=>$v)if(is_numeric($v)&&(float)$v>=0&&(float)$v<100000)$rates[(string)(int)$k]=round((float)$v,2);
   $clean=['name'=>$s('name',60),'match_cust'=>$s('match_cust',300),'match_order'=>$s('match_order',60),'client_name'=>$s('client_name',150),'client_addr'=>$s('client_addr',300),'wl_title'=>$s('wl_title',80),'po'=>$s('po',60),'sec_labels'=>$s('sec_labels',500),'currency'=>$s('currency',8),'symbol'=>$s('symbol',4),
     'layout'=>(($p['layout']??'')==='items')?'items':'worklog','rate'=>round(max(0,min(100000,(float)($p['rate']??0))),2),'rates'=>$rates,
-    'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>max(0,min(99999999,(int)($p['seq']??1)))];
+    'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>(function($v){$v=substr(preg_replace('/\D/','',(string)$v),0,8);return $v===''?'1':$v;})($p['seq']??'1')];
   $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
 case 'my_hours':
   $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
