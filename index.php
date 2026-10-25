@@ -161,6 +161,18 @@ header .brand{color:var(--hfg)}
 dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw;max-height:98vh}dialog.dmv{margin:0;position:fixed}dialog>.acts:first-child,dialog>b:first-child,dialog>.dh{cursor:move}
 #rside{position:fixed;top:var(--hh,56px);right:0;bottom:0;width:340px;background:var(--card);border-left:1px solid var(--line);z-index:19;display:flex;flex-direction:column;overflow:hidden}#rside [hidden],#rside[hidden]{display:none!important}body.rp{padding-right:340px}#rside .rh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}#rside .rtabs{display:flex;border-bottom:1px solid var(--line)}#rside .rtabs button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px}#rside .rtabs button.on{border-bottom:2px solid var(--pri);font-weight:600}#rside .rbody{padding:10px;overflow:auto;flex:1}#rside label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}#rside input,#rside select,#rside textarea{width:100%;box-sizing:border-box}#rside .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rres{background:var(--col);border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}.rres b{font-size:18px}.wki{padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.wki:hover{background:var(--col)}.wki small{color:var(--mut);display:block}@media(max-width:900px){#rside{width:100%}body.rp{padding-right:0}}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
 @media print{body *{visibility:hidden!important}#rdlg,#rdlg *{visibility:visible!important}#rdlg{position:absolute;left:0;top:0;width:100%;max-height:none;overflow:visible;border:0;box-shadow:none}.noprint{display:none!important}}
+
+/* Glass look (optional, per device). Blur only on a few static surfaces; rows stay plain. */
+html.glass body{background:linear-gradient(135deg,#cfe0ff,#eadcff 55%,#cdeee6) fixed;--card:rgba(255,255,255,.74);--col:rgba(240,243,250,.55)}
+html.glass header{background:color-mix(in srgb,var(--nv) 72%,transparent);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:0 2px 18px rgba(20,30,70,.15)}
+html.glass #side{background:color-mix(in srgb,var(--sb) 74%,transparent);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+html.glass dialog{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);border-color:rgba(255,255,255,.7);box-shadow:0 18px 50px rgba(20,30,70,.28)}
+html.glass dialog::backdrop{background:rgba(15,25,60,.22);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+html.glass #rside{background:rgba(255,255,255,.74);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html.glass .ghead,html.glass .gname{background:#fff}
+html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,255,.6)}
+@media(prefers-color-scheme:dark){html.glass body{background:linear-gradient(135deg,#16213f,#2a1d44 55%,#10312f) fixed;--card:rgba(29,33,45,.72);--col:rgba(23,26,36,.55)}html.glass dialog,html.glass #rside{background:rgba(29,33,45,.8);border-color:rgba(255,255,255,.12)}html.glass .ghead,html.glass .gname{background:#1d212d}html.glass input,html.glass select,html.glass textarea{background:rgba(23,26,36,.6)}}
+@media(prefers-reduced-transparency:reduce){html.glass *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -250,6 +262,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <div id="pprev">TaskFlow – preview text</div>
  <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center;margin:0">Bar <input type="color" id="pbg" style="width:52px;height:34px;padding:2px"></label><label style="display:flex;gap:8px;align-items:center;margin:0">Text <input type="color" id="pfg" style="width:52px;height:34px;padding:2px"></label></div>
  <div id="psw" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+ <label style="display:flex;gap:8px;align-items:center;margin:12px 0 0;color:var(--ink)"><input type="checkbox" id="pgl"> <span>✨ Glass look <small style="color:var(--mut)">(this device only; turn off if the app feels slow)</small></span></label>
  <div class="acts"><button id="prs">Reset to default</button><span class="sp"></span><button id="pcx">Cancel</button><button class="p" id="psv">Save</button></div>
 </dialog>
 <dialog id="tldg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="tlord" style="color:var(--pri)"></b><div id="tltit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="tlcl">Close</button></div>
@@ -357,6 +370,8 @@ function applyTheme(v){const m=/^(#[0-9a-f]{6})\|(#[0-9a-f]{6})$/i.exec(v||""),b
   const h=document.querySelector("header");if(h){h.style.setProperty("--nv",bg);h.style.setProperty("--hfg",fg)}
   const lum=c=>{const n=parseInt(c.slice(1),16);return .3*(n>>16)+.59*((n>>8)&255)+.11*(n&255)};document.body.classList.toggle("hdark",lum(fg)<128)}
 try{applyTheme(localStorage.getItem("tf_theme")||"")}catch(e){}
+function setGlass(on){document.documentElement.classList.toggle("glass",!!on);try{localStorage.setItem("tf_glass",on?"1":"")}catch(e){}}
+try{if(localStorage.getItem("tf_glass"))document.documentElement.classList.add("glass")}catch(e){}
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const fmtD=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||"");if(!m)return"?";return MON[+m[2]-1]+" "+(+m[3])+(+m[1]!==new Date().getFullYear()?", "+m[1]:"")};
 const fmtRange=t=>t.start_date&&t.end_date&&t.start_date===t.end_date?fmtD(t.start_date):fmtD(t.start_date)+" – "+fmtD(t.end_date);
@@ -1049,7 +1064,8 @@ $("#dlist").addEventListener("click",async e=>{try{
 }catch(err){alert(err.message)}});
 function pPrev(){const bg=$("#pbg").value,fg=$("#pfg").value,p=$("#pprev");p.style.background=bg;p.style.color=fg;applyTheme(bg+"|"+fg)}
 $("#pm").onclick=()=>{const t=(me.theme||"#0f2a5c|#ffffff").split("|");$("#pbg").value=t[0];$("#pfg").value=t[1];
-  $("#psw").innerHTML=THEMES.map((x,i)=>`<button type="button" class="sw" data-sw="${i}" title="${x[2]}" style="background:${x[0]};color:${x[1]}">Aa</button>`).join("");pPrev();$("#pdlg").showModal()};
+  $("#psw").innerHTML=THEMES.map((x,i)=>`<button type="button" class="sw" data-sw="${i}" title="${x[2]}" style="background:${x[0]};color:${x[1]}">Aa</button>`).join("");pPrev();$("#pgl").checked=document.documentElement.classList.contains("glass");$("#pdlg").showModal()};
+$("#pgl").addEventListener("change",()=>setGlass($("#pgl").checked));
 $("#psw").addEventListener("click",e=>{const i=e.target.dataset.sw;if(i==null)return;$("#pbg").value=THEMES[i][0];$("#pfg").value=THEMES[i][1];pPrev()});
 $("#pbg").addEventListener("input",pPrev);$("#pfg").addEventListener("input",pPrev);
 $("#pcx").onclick=()=>$("#pdlg").close();
