@@ -138,7 +138,7 @@ body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightnes
 #rpop .rd.in{background:color-mix(in srgb,var(--pri) 16%,transparent);border-radius:0}#rpop .rd.on{background:var(--pri);color:var(--priInk);border-radius:8px}#rpop .rd.td{box-shadow:inset 0 0 0 1.5px var(--pri)}
 #rpop .rf{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--mut)}#rpop .rf .sp{flex:1}
 .hd{display:inline-block;cursor:grab;color:var(--mut);padding:2px 5px 2px 0;touch-action:none;user-select:none;font-size:13px;letter-spacing:-2px}.hd:hover{color:var(--ink)}
-tr.rdrag{opacity:.4}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{box-shadow:inset 0 -3px 0 var(--pri)}.gh.rd-g td,.gh.rd-g{outline:2px solid var(--pri);outline-offset:-2px}body.rdg{cursor:grabbing;user-select:none}
+tr.rdrag{opacity:.4}.ghd{display:inline-block;cursor:grab;touch-action:none;user-select:none;letter-spacing:-2px;margin-right:6px;opacity:.55;font-size:13px}.gh.gdr{opacity:.45}.gh.gd-b th{box-shadow:inset 0 3px 0 var(--pri)}.gh.gd-a th{box-shadow:inset 0 -3px 0 var(--pri)}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{box-shadow:inset 0 -3px 0 var(--pri)}.gh.rd-g td,.gh.rd-g{outline:2px solid var(--pri);outline-offset:-2px}body.rdg{cursor:grabbing;user-select:none}
 #mdlg{width:min(580px,94vw)}#mdlg #thr{margin-top:0;border-top:1px solid var(--line)}#mdlg #thl{max-height:46vh;min-height:120px}
 .brand{display:flex;flex-direction:column;line-height:1.05;margin-right:6px;padding-right:14px;border-right:1px solid color-mix(in srgb,var(--hfg) 28%,transparent)}.brand b{font-size:23px;letter-spacing:.2px}.brand small{font-size:9px;opacity:.75;letter-spacing:.6px;margin-top:3px;text-transform:uppercase}
 header .brand{color:var(--hfg)}
@@ -583,7 +583,7 @@ function render(){
         if(sc.id==="none"&&!items.length&&!dn&&!hasD)continue;
         if(filt&&!tot&&!totd&&!hasD)continue;
         const col=gc.has(sc.id);
-        rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
+        rows+=`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" title="Click to show or hide"><th colspan="${span}">${LV!=="view"&&sc.id!=="none"?'<span class="ghd" title="Drag to reorder this group">⋮⋮</span>':""}${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
         if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv);
           const dl=done_.filter(t=>inSec(t,sc));
           if(dl.length){const cc=getCC().has(sc.id);rows+=`<tr class="dh" data-dh="${sc.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} ✔ ${esc(sc.id==="none"?"No group":gname(sc.id)||sc.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))}}
@@ -999,6 +999,22 @@ async function rdEnd(cancel){const g=rowDrag;if(!g)return;rowDrag=null;rdClear()
   await load(true)}
 document.addEventListener("pointerup",()=>rdEnd(false));document.addEventListener("pointercancel",()=>rdEnd(true));
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&rowDrag){rdEnd(true)}});
+// ---- Drag groups up and down ----
+let grDrag=null,grSwallow=false;
+const grSibs=id=>{const g=groups.find(x=>String(x.id)===String(id));return g?groups.filter(x=>String(x.parent_id||"")===String(g.parent_id||"")).map(x=>String(x.id)):[]};
+function grClear(){document.querySelectorAll(".gd-b,.gd-a,.gdr").forEach(x=>x.classList.remove("gd-b","gd-a","gdr"));document.body.classList.remove("rdg")}
+$("#main").addEventListener("pointerdown",e=>{const h=e.target.closest&&e.target.closest(".ghd");if(!h||LV==="view"||(e.button||0)>0)return;const tr=h.closest("tr.gh");e.preventDefault();grDrag={id:tr.dataset.gh,tr,moved:false,tgt:null,pos:"before"}});
+document.addEventListener("pointermove",e=>{const g=grDrag;if(!g)return;if(!g.moved){g.moved=true;g.tr.classList.add("gdr");document.body.classList.add("rdg")}
+  if(e.clientY<70)window.scrollBy(0,-16);else if(window.innerHeight-e.clientY<70)window.scrollBy(0,16);
+  document.querySelectorAll(".gd-b,.gd-a").forEach(x=>x.classList.remove("gd-b","gd-a"));g.tgt=null;
+  const el=document.elementFromPoint(e.clientX,e.clientY)||document.body,gh=el.closest&&el.closest("tr.gh");
+  if(gh&&gh!==g.tr&&grSibs(g.id).includes(gh.dataset.gh)){const r=gh.getBoundingClientRect();g.pos=e.clientY<r.top+r.height/2?"before":"after";gh.classList.add(g.pos==="before"?"gd-b":"gd-a");g.tgt=gh.dataset.gh}});
+async function grEnd(cancel){const g=grDrag;if(!g)return;grDrag=null;grClear();if(!g.moved)return;grSwallow=true;setTimeout(()=>grSwallow=false,50);if(cancel||!g.tgt)return;
+  const sib=grSibs(g.id).filter(x=>x!==g.id);let before=0;const k=sib.indexOf(g.tgt);before=g.pos==="before"?+g.tgt:(sib[k+1]?+sib[k+1]:0);
+  try{await api("gr_order",{id:+g.id,before})}catch(err){alert(err.message)}await load(true)}
+document.addEventListener("pointerup",()=>grEnd(false));document.addEventListener("pointercancel",()=>grEnd(true));
+document.addEventListener("click",e=>{if(grSwallow||(e.target.closest&&e.target.closest(".ghd"))){e.stopPropagation();e.preventDefault()}},true);
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&grDrag)grEnd(true)});
 // ---- Gantt: drag to move / resize / reassign ----
 const iso=ms=>new Date(ms).toISOString().slice(0,10);
 function gTipShow(e,txt){let g=$("#gtip");if(!g){g=document.createElement("div");g.id="gtip";document.body.appendChild(g)}g.textContent=txt;g.style.left=(e.clientX+14)+"px";g.style.top=(e.clientY+14)+"px"}
@@ -1278,7 +1294,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=50;
+const BUILD=51;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

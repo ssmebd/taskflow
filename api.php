@@ -1,8 +1,8 @@
 <?php
-const BUILD=50;
+const BUILD=51;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -374,6 +374,17 @@ case 'gr_add':
   foreach($all as $x)if((int)($x['parent_id']??0)===$par&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
   $mx=$db->prepare("SELECT COALESCE(MAX(sort_no),0)+1 FROM task_groups WHERE ws_id=?");$mx->execute([$W]);
   $db->prepare("INSERT INTO task_groups(ws_id,name,sort_no,parent_id) VALUES(?,?,?,?)")->execute([$W,$n,(int)$mx->fetchColumn(),$par?:null]);out(['ok'=>1,'id'=>(int)$db->lastInsertId()]);
+case 'gr_order':
+  need_level('full');$id=(int)($in['id']??0);$before=(int)($in['before']??0);
+  $q=$db->prepare("SELECT id,parent_id,sort_no FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$all=$q->fetchAll();$me_=null;foreach($all as $x)if((int)$x['id']===$id)$me_=$x;if(!$me_)out(['error'=>'Group not found']);
+  $par=(int)($me_['parent_id']??0);$sib=[];foreach($all as $x)if((int)($x['parent_id']??0)===$par)$sib[]=$x;
+  $slots=array_map(fn($x)=>(int)$x['sort_no'],$sib);sort($slots);$ids=array_map(fn($x)=>(int)$x['id'],$sib);
+  $ids=array_values(array_filter($ids,fn($x)=>$x!==$id));$pos=$before?array_search($before,$ids,true):false;if($pos===false)$ids[]=$id;else array_splice($ids,$pos,0,[$id]);
+  // give every sibling a distinct, ascending number so order is stable even if old numbers repeated
+  $base=0;foreach($slots as $s)$base=max($base,$s);$n=count($ids);$up=$db->prepare("UPDATE task_groups SET sort_no=? WHERE id=? AND ws_id=?");
+  $vals=$slots;for($i=count($vals);$i<$n;$i++)$vals[]=++$base;for($i=1;$i<$n;$i++)if($vals[$i]<=$vals[$i-1])$vals[$i]=$vals[$i-1]+1;
+  foreach($ids as $i=>$gid)$up->execute([$vals[$i],$gid,$W]);
+  out(['ok'=>1]);
 case 'gr_ren':
   need_level('full');$n=mb_substr(trim($in['name']??''),0,80);$id=(int)($in['id']??0);if($n==='')out(['error'=>'Enter a name']);
   $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);$all=$q->fetchAll();$cur=null;foreach($all as $x)if((int)$x['id']===$id)$cur=$x;if(!$cur)out(['error'=>'Group not found']);
