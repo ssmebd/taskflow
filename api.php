@@ -248,7 +248,10 @@ case 'tl_add':
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
-  $who=(int)$tr['assigned_to']?:$uid;
+  $who=(int)$tr['assigned_to'];
+  if(!$who){$as=(int)($in['assign_to']??0);if(!$as)out(['error'=>'This task is unassigned. Choose who it is assigned to.','need_assign'=>1]);
+    $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$as]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);
+    $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
   $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,created_at) VALUES(?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n]);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();

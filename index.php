@@ -252,8 +252,9 @@ header .brand{color:var(--hfg)}
 <dialog id="tldg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="tlord" style="color:var(--pri)"></b><div id="tltit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="tlcl">Close</button></div>
  <div id="tll"></div>
  <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><select id="tlk" title="Regular or overtime"><option value="R">Regular</option><option value="OT">OT</option></select><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
- <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (or under you if it is unassigned). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
+ <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
+<dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><button id="r14">Last 14 days</button><button id="rp14">Previous 14 days</button></div>
  <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="log">Daily work logs</option><option value="inv">Invoice</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
@@ -537,8 +538,13 @@ async function openTL(id){const t=tasks.find(x=>x.id==id);if(!t)return;tlId=id;
   document.querySelectorAll("#tldg .tlf input,#tldg .tlf button").forEach(x=>x.disabled=LV==="view");$("#tll").innerHTML="";$("#tldg").showModal();await tlLoad()}
 async function tlLoad(){try{const r=await api("tl_list",{task_id:tlId});let tot=0;r.logs.forEach(l=>tot+=+l.hours);
   $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th><th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}${l.logged_by&&l.logged_by!=l.user_id?' <small style="color:var(--mut)">(logged by someone else)</small>':""}</td><td class="n">${fmtH(l.hours)}${l.kind==="OT"?" <b>OT</b>":""}</td><td>${esc(l.note)}</td><td>${l.user_id==r.me||l.logged_by==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="2"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
-$("#tla").onclick=async()=>{const h=parseFloat($("#tlh").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
-  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,kind:$("#tlk").value,note:$("#tln").value});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}};
+async function tlSend(assign){const h=parseFloat($("#tlh").value);
+  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,kind:$("#tlk").value,note:$("#tln").value,assign_to:assign||0});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}}
+$("#tla").onclick=()=>{const h=parseFloat($("#tlh").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
+  const t=tasks.find(x=>x.id==tlId);if(t&&!t.assigned_to){$("#asw").innerHTML='<option value="">Choose a person…</option>'+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");$("#asw").value=String(me.id||"");$("#asdg").showModal();return}
+  tlSend(0)};
+$("#asx").onclick=()=>$("#asdg").close();
+$("#asok").onclick=()=>{const v=+$("#asw").value;if(!v){alert("Choose a person");return}$("#asdg").close();tlSend(v)};
 $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!id)return;try{await api("tl_del",{id});await tlLoad();await load(true)}catch(err){alert(err.message)}});
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
