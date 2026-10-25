@@ -44,6 +44,7 @@ table td{overflow:hidden}table .ed{min-width:0}
 th.ch{position:relative;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
 .rz{position:absolute;right:0;top:0;bottom:0;width:8px;cursor:col-resize;touch-action:none}.rz:hover,.rz.on{background:var(--pri);opacity:.5}
 th,td{text-align:left;padding:3px 6px;border-bottom:1px solid var(--line)}th{color:var(--mut);font-size:12px;padding:9px 10px}
+select.ed.pill{appearance:none;-webkit-appearance:none;width:auto;min-width:0;max-width:100%;padding:3px 10px;border-radius:5px;font-weight:600;font-size:12px;text-transform:uppercase;cursor:pointer;background:color-mix(in srgb,var(--pc) 24%,transparent);color:color-mix(in srgb,var(--pc) 55%,#000);border:1px solid color-mix(in srgb,var(--pc) 50%,transparent)}select.ed.pill:disabled{opacity:1;cursor:default}@media(prefers-color-scheme:dark){select.ed.pill{color:color-mix(in srgb,var(--pc) 55%,#fff)}}
 .ed{width:100%;min-width:100px;border:1px solid transparent;background:transparent;padding:5px 6px;border-radius:6px}
 .ed:hover{border-color:var(--line)}.ed:focus{border-color:var(--pri);background:var(--card);outline:none}
 .dates{white-space:nowrap;color:var(--mut)}.dates .ed{width:calc(50% - 12px);min-width:0;display:inline-block}
@@ -400,6 +401,7 @@ async function load(force){
 }
 const cmBadge=t=>{const m=cmeta[t.id];if(!m)return"";return `<span class="cmb o${m[2]?" me":m[1]?" un":""}" title="${m[2]?"Message for you":m[1]?"New messages":"Messages"}">💬${m[0]}</span>`};
 function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const cur=(wss.find(w=>w.id==W)||{}).name;document.title=(inboxN?"("+inboxN+") ":"")+(cur?cur+" – ":"")+"TaskFlow"}
+const dtCol=n=>{const i=dtypes.findIndex(d=>d.name===n);if(i<0)return"#94a3b8";return dtypes[i].color||GPAL[i%GPAL.length]};
 const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
   return `<option value="">—</option>`+names.map(n=>`<option value="${ea(n)}"${n===cur?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`)};
 async function addDtype(){const n=prompt("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
@@ -487,9 +489,9 @@ const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
  {id:"customer",label:"Customer",cell:t=>`<input class="ed" data-f="customer" list="pjl" value="${ea(t.customer)}">`},
- {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed" data-f="drawing_type">${dtOpts(t.drawing_type)}</select>`},
+ {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed pill" data-f="drawing_type" style="--pc:${t.drawing_type?dtCol(t.drawing_type):"#94a3b8"}">${dtOpts(t.drawing_type)}</select>`},
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
- {id:"status",label:"Status",cell:t=>`<select class="ed" data-f="status">${stOpts(t.status)}</select>`},
+ {id:"status",label:"Status",cell:t=>`<select class="ed pill" data-f="status" style="--pc:${scol(t.status||ST[0][0])||"#94a3b8"}">${stOpts(t.status)}</select>`},
  {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
  {id:"hours",label:"Hours",cell:t=>t.id?`<button type="button" class="hbtn" data-hrs="${t.id}" title="Log or see hours">⏱ ${hoursMap[t.id]?fmtH(hoursMap[t.id]):"Log"}</button>`:""},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
@@ -1203,9 +1205,10 @@ function renderGr(){
   $("#glist").innerHTML=groups.map(g=>`<div class="acts" style="${g.level?"margin-left:26px":""}"><span style="flex:1">${g.level?"↳ ":""}📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${LV!=="view"&&!g.level?`<button data-gs="${g.id}">+ Sub-group</button>`:""}${full?`<button data-gr="${g.id}">✎ Edit</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
 }
 function renderDt(){const full=LV==="full";
-  $("#dlist").innerHTML=dtypes.map(d=>`<div class="acts"><span style="flex:1">${esc(d.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.drawing_type===d.name).length} task(s)</small></span>${full?`<button data-dr="${d.id}">Rename</button><button data-dd="${d.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No drawing types yet</div>'}
+  $("#dlist").innerHTML=dtypes.map(d=>`<div class="acts"><span style="flex:1">${esc(d.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.drawing_type===d.name).length} task(s)</small></span>${full?`<input type="color" data-dcol="${d.id}" value="${dtCol(d.name)}" title="Box colour" style="width:34px;padding:1px"><button data-dr="${d.id}">Rename</button><button data-dd="${d.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No drawing types yet</div>'}
 $("#dm").onclick=()=>{renderDt();$("#ddlg").showModal()};
 $("#dc").onclick=()=>$("#ddlg").close();
+$("#dlist").addEventListener("change",async e=>{const i=e.target.dataset&&e.target.dataset.dcol;if(!i)return;try{await api("dt_color",{id:+i,color:e.target.value});await load(true)}catch(er){alert(er.message)}});
 $("#da").onclick=async()=>{try{await api("dt_add",{name:$("#dn").value});$("#dn").value="";await load(true);renderDt()}catch(e){alert(e.message)}};
 $("#dlist").addEventListener("click",async e=>{try{
   if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=prompt("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
@@ -1357,7 +1360,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=71;
+const BUILD=72;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

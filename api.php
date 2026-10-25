@@ -1,8 +1,8 @@
 <?php
-const BUILD=71;
+const BUILD=72;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v22']))return;
+  if(!empty($_SESSION['schema_v23']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -53,7 +53,8 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'color'")->fetch())$db->exec("ALTER TABLE task_groups ADD color VARCHAR(7) NULL");
   if(!$db->query("SHOW COLUMNS FROM invoices LIKE 'seq'")->fetch())$db->exec("ALTER TABLE invoices ADD seq VARCHAR(12) NOT NULL DEFAULT '', ADD amend_note VARCHAR(500) NULL");
   if($db->query("SHOW INDEX FROM invoices WHERE Key_name='ws_id'")->fetch())$db->exec("ALTER TABLE invoices DROP INDEX ws_id");
-  $_SESSION['schema_v22']=1;
+  if(!$db->query("SHOW COLUMNS FROM drawing_types LIKE 'color'")->fetch())$db->exec("ALTER TABLE drawing_types ADD color VARCHAR(7) NULL");
+  $_SESSION['schema_v23']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -159,7 +160,7 @@ case 'list':
       $db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name,sort_no) SELECT ?,TRIM(drawing_type),0 FROM tasks WHERE ws_id=? AND drawing_type IS NOT NULL AND TRIM(drawing_type)<>'' GROUP BY TRIM(drawing_type)")->execute([$W,$W]);
       $db->prepare("INSERT INTO meta(k,v) VALUES(?,1) ON DUPLICATE KEY UPDATE v=1")->execute([$sk]);
     }
-    $q=$db->prepare("SELECT id,name FROM drawing_types WHERE ws_id=? ORDER BY name");$q->execute([$W]);$res['dtypes']=$q->fetchAll();$res['cols']=get_cols($db);
+    $q=$db->prepare("SELECT id,name,color FROM drawing_types WHERE ws_id=? ORDER BY name");$q->execute([$W]);$res['dtypes']=$q->fetchAll();$res['cols']=get_cols($db);
   }
   if($me['role']==='admin'){
     $res['allUsers']=$db->query("SELECT id,name,username,role FROM users ORDER BY name")->fetchAll();
@@ -371,6 +372,8 @@ case 'dt_ren':
   $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=? AND name=? AND id<>?");$q->execute([$W,$n,$id]);if($q->fetchColumn())out(['error'=>'That drawing type already exists']);
   $db->prepare("UPDATE drawing_types SET name=? WHERE id=?")->execute([$n,$id]);
   $db->prepare("UPDATE tasks SET drawing_type=?,updated_at=NOW() WHERE ws_id=? AND drawing_type=?")->execute([$n,$W,$old]);out(['ok'=>1]);
+case 'dt_color':
+  need_level('full');$c=(string)($in['color']??'');$db->prepare("UPDATE drawing_types SET color=? WHERE id=? AND ws_id=?")->execute([preg_match('/^#[0-9a-fA-F]{6}$/',$c)?strtolower($c):null,(int)($in['id']??0),$W]);out(['ok'=>1]);
 case 'dt_del':
   need_level('full');$db->prepare("DELETE FROM drawing_types WHERE id=? AND ws_id=?")->execute([(int)($in['id']??0),$W]);out(['ok'=>1]);
 case 'col_add':
