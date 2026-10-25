@@ -1177,7 +1177,7 @@ $("#slist").addEventListener("click",async e=>{
   }catch(err){alert(err.message)}
 });
 $("#slist").addEventListener("change",async e=>{const id=e.target.dataset.sc;if(!id)return;try{await api("st_color",{id,color:e.target.value});await load(true);renderSt()}catch(err){alert(err.message)}});
-$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}const el=e.target.closest("[data-fs]");if(!el)return;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;render()});
+$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}const el=e.target.closest("[data-fs]");if(!el)return;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;try{localStorage.setItem("tf_gc_"+W,"[]")}catch(x){}render()});
 $("#gtabs").addEventListener("click",e=>{const a=e.target.closest("[data-g]");if(!a)return;G=a.dataset.g;try{localStorage.setItem("tf_g_"+W,G)}catch(x){}try{const c=getGC();if(G==="")c.clear();else{c.delete(G);if(gParent(G))c.delete(gParent(G))}localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(x){}sel.clear();render()});
 function renderGr(){
   const full=LV==="full";
@@ -1338,7 +1338,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=63;
+const BUILD=64;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
