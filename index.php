@@ -1,7 +1,7 @@
 <?php require 'config.php';require 'remember.php'; if(empty($_SESSION['uid'])){header('Location: login.php');exit;} ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a5c"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes">
 <title>TaskFlow</title>
 <style>
 :root{--bg:#f4f5f9;--card:#fff;--ink:#1d2433;--mut:#6b7385;--line:#e2e5ee;--pri:#4f46e5;--priInk:#fff;--col:#eceef5;--hi:#dc2626;--lo:#16a34a;color-scheme:light}
@@ -331,7 +331,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
-  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
@@ -1398,6 +1398,12 @@ async function apOpen(){const l=$("#apl");l.innerHTML='<div class="empty">Loadin
 $("#apm").onclick=apOpen;$("#apx").onclick=()=>$("#apdlg").close();
 $("#apl").addEventListener("click",async e=>{const b=e.target.closest("[data-ap]");if(!b)return;b.disabled=true;try{await api("dr_act",{id:b.dataset.ap,act:b.dataset.act});await load(true);apOpen()}catch(err){alert(err.message);b.disabled=false}});
 function delNote(r){if(r&&r.pending)alert("Sent to an admin for approval. It will be removed once an admin approves it.")}
+let instEv=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();instEv=e;$("#ainst").hidden=false});
+window.addEventListener("appinstalled",()=>{instEv=null;$("#ainst").hidden=true});
+$("#ainst").onclick=async e=>{e.preventDefault();$("#umenu").hidden=true;if(instEv){instEv.prompt();try{await instEv.userChoice}catch(x){}instEv=null;$("#ainst").hidden=true}};
+if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if(new URLSearchParams(location.search).get("chat")==="1")addEventListener("load",()=>setTimeout(()=>{const b=$("#mgb");if(b&&$("#msgw").hidden)b.click()},1200));
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
 $("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
 $("#cpx").onclick=cpClose;$("#rchat").onclick=()=>$("#mgb").click();$("#rtools").onclick=()=>$("#tbtn").click();$("#mfb").onclick=()=>document.body.classList.toggle("mf");
@@ -1615,7 +1621,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=122;
+const BUILD=123;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

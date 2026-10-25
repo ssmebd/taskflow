@@ -1,5 +1,5 @@
 <?php
-const BUILD=122;
+const BUILD=123;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];

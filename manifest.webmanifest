@@ -1,0 +1,15 @@
+{
+  "name": "TaskFlow",
+  "short_name": "TaskFlow",
+  "description": "Task manager for the GURUCADD drawing team",
+  "start_url": "index.php?home=1",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f2a5c",
+  "theme_color": "#0f2a5c",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
