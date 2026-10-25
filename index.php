@@ -1172,6 +1172,8 @@ $("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidde
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
 document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#smenu").hidden=true;$("#umenu").hidden=true}});
+(()=>{let t=0,act=0;const idle=()=>{if(document.body.classList.contains("sc")||$("#side").matches(":hover")||!$("#smenu").hidden)return;document.body.classList.add("sc");$("#stg").textContent="▶"};
+  const reset=()=>{clearTimeout(t);t=setTimeout(idle,60000)};["mousemove","keydown","click","scroll","touchstart"].forEach(ev=>document.addEventListener(ev,reset,{passive:true,capture:true}));reset()})();
 $("#stg").onclick=()=>{const c=document.body.classList.toggle("sc");$("#stg").textContent=c?"▶":"◀";try{localStorage.setItem("tf_sc",c?"1":"0")}catch(e){}};
 $("#wf").addEventListener("change",async e=>{const f=e.target.files[0];if(!f||!logoFor)return;
   try{const data=await fileToLogo(f);await api("ws_logo",{id:logoFor,data});await load(true);renderWs()}catch(err){alert(err.message)}logoFor=null});
@@ -1368,7 +1370,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=81;
+const BUILD=82;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
