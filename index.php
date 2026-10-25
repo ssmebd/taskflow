@@ -478,7 +478,7 @@ function toggleCC(id){const c=getCC();c.has(id)?c.delete(id):c.add(id);try{local
 function vis(){return filtered().filter(t=>!hiddenRow(t))}
 function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...g]))}catch(e){}
   for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
-function lockView(){if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
+function lockView(){$("#mhm").hidden=LV==="view"&&!(me&&me.role==="admin");if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
 function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to company…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
@@ -1357,7 +1357,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=70;
+const BUILD=71;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}

@@ -1,5 +1,5 @@
 <?php
-const BUILD=70;
+const BUILD=71;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','inv_create','inv_step','inv_pay','inv_del'];
@@ -346,6 +346,7 @@ case 'inv_set':
     'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>(function($v){$v=substr(preg_replace('/\D/','',(string)$v),0,8);return $v===''?'1':$v;})($p['seq']??'1')];
   $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
 case 'my_hours':
+  if($LV==='view'&&$me['role']!=='admin')out(['error'=>'Hours are not available with view-only access']);
   $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $who=$uid;if(!empty($in['user'])&&$me['role']==='admin')$who=(int)$in['user'];
   $q=$db->prepare("SELECT l.id,l.work_date,l.hours,l.kind,w.name AS ws,t.title,t.order_no FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);
