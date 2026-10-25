@@ -278,7 +278,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
  <label>Username</label><input id="uu" name="nf_user" autocomplete="off" readonly>
  <label>Password (8+ characters)</label><span class="pw"><input id="up" name="nf_pass" type="password" autocomplete="new-password" readonly><button type="button" class="eye" title="Show / hide">👁</button></span>
- <label>User type</label><select id="ur"><option value="member">Member</option><option value="admin">Admin</option></select>
+ <label>User type</label><select id="ur"><option value="member">Member</option><option value="guest">Guest (view only)</option><option value="admin">Admin</option></select>
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
@@ -878,7 +878,7 @@ function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={};
     rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
   $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
   $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">Tick one or more days above</td></tr>'}</table>`}
-function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
+function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.filter(x=>x.role!=="guest").map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
   $("#mhdg").showModal();mhRange(ltoday(),ltoday())}
 $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
 $("#mhcl").onclick=()=>$("#mhdg").close();
@@ -1251,7 +1251,7 @@ function renderWs(){
   const members=allUsers.filter(u=>u.role!=="admin");
   $("#wlist").innerHTML=wss.map(w=>`<div class="wrow"><div class="acts"><span class="wl" style="width:44px;height:44px;flex:none;padding:2px;pointer-events:none">${wlogo(w)}</span><span style="flex:1"><b>${esc(w.name)}</b>${w.id==W?' <small style="color:var(--mut)">(current)</small>':""}</span><button data-cod="${w.id}" title="Company details and hourly rates">💲 Details &amp; rates</button><button data-wr="${w.id}">Rename</button><button data-wlg="${w.id}">Logo</button>${+w.hl?`<button data-wlx="${w.id}" title="Remove logo">✕</button>`:""}<button data-wacc="${w.id}">Access</button><button data-wd="${w.id}">Delete</button></div>
     <div class="wp" ${openWp==w.id?"":"hidden"}><small style="color:var(--mut)">Admins always see every company. Tick the members who may open this one and choose what they can do:</small>
-    ${members.map(u=>`<label><input type="checkbox" data-wu="${u.id}"${(access[w.id]||{})[u.id]?" checked":""}> <span style="flex:1">${esc(u.name)}</span><select data-wl="${u.id}">${Object.entries(LVN).map(([k,n])=>`<option value="${k}"${((access[w.id]||{})[u.id]||"edit")===k?" selected":""}>${n}</option>`).join("")}</select></label>`).join("")||'<div class="empty">No members yet</div>'}
+    ${members.map(u=>`<label><input type="checkbox" data-wu="${u.id}"${(access[w.id]||{})[u.id]?" checked":""}> <span style="flex:1">${esc(u.name)}</span><select data-wl="${u.id}"${u.role==="guest"?" disabled":""}>${Object.entries(LVN).map(([k,n])=>`<option value="${k}"${(u.role==="guest"?"view":((access[w.id]||{})[u.id]||"edit"))===k?" selected":""}>${n}</option>`).join("")}</select></label>`).join("")||'<div class="empty">No members yet</div>'}
     <div class="acts"><span class="sp"></span><button class="p" data-wsave="${w.id}">Save access</button></div></div></div>`).join("");
 }
 $("#wm").onclick=()=>{renderWs();$("#wdlg").showModal()};
@@ -1434,9 +1434,9 @@ $("#clist").addEventListener("click",async e=>{
   try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
 });
 function renderUsers(){
-  $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b></span><span>${esc(u.username||"")}</span>
+  $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
-   <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"?" selected":""}>Member</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
+   <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
    <span style="display:flex;gap:4px"><button data-pw="${u.id}" title="Save the new password">Set</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
 $("#tm").onclick=()=>{renderUsers();$("#tdlg").showModal()};
@@ -1458,7 +1458,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=94;
+const BUILD=95;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

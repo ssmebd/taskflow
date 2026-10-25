@@ -1,5 +1,5 @@
 <?php
-const BUILD=94;
+const BUILD=95;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v24']))return;
+  if(!empty($_SESSION['schema_v25']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -56,7 +56,8 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM drawing_types LIKE 'color'")->fetch())$db->exec("ALTER TABLE drawing_types ADD color VARCHAR(7) NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v24']=1;
+  try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
+  $_SESSION['schema_v25']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -157,7 +158,7 @@ case 'list':
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];
   $res=['build'=>BUILD,'inbox'=>inbox_sql($db,true),'v'=>$ver,'me'=>$me,'ws'=>$WS,'w'=>$W,'level'=>$LV,'names'=>(object)$names,'users'=>[],'cols'=>[],'tasks'=>[]];
   if($W){
-    $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR id IN(SELECT user_id FROM ws_users WHERE ws_id=? AND level<>'view') ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
+    $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR (role<>'guest' AND id IN(SELECT user_id FROM ws_users WHERE ws_id=? AND level<>'view')) ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
     $q=$db->prepare("SELECT * FROM tasks WHERE ws_id=? ORDER BY sort_no ASC,id DESC");$q->execute([$W]);$tasks=$q->fetchAll();
     foreach($tasks as &$t){$t['x']=(object)(json_decode((string)($t['extra']??''),true)?:[]);unset($t['extra']);}
     $ov=[];$wn=array_column($WS,'name','id');
@@ -556,22 +557,26 @@ case 'ws_access':
   admin();$id=(int)($in['id']??0);$us=is_array($in['users']??null)?$in['users']:[];
   $db->prepare("DELETE FROM ws_users WHERE ws_id=?")->execute([$id]);
   foreach($us as $u){$lv=in_array($u['level']??'',['view','edit','full'],true)?$u['level']:'edit';
-    $db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT ?,id,? FROM users WHERE id=?")->execute([$id,$lv,(int)($u['id']??0)]);}
+    $db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT ?,id,IF(role='guest','view',?) FROM users WHERE id=?")->execute([$id,$lv,(int)($u['id']??0)]);}
   out(['ok'=>1]);
 case 'user_add':
-  admin();$n=trim($in['name']??'');$u=trim($in['username']??'');$p=$in['password']??'';$r=($in['role']??'')==='admin'?'admin':'member';
+  admin();$n=trim($in['name']??'');$u=trim($in['username']??'');$p=$in['password']??'';$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
   if($n===''||!preg_match('/^[A-Za-z0-9_.-]{3,40}$/',$u)||strlen($p)<8)out(['error'=>'Need a name, a username (3-40 chars) and an 8+ character password']);
   try{$db->prepare("INSERT INTO users(name,username,pass_hash,role) VALUES(?,?,?,?)")->execute([mb_substr($n,0,100),$u,password_hash($p,PASSWORD_DEFAULT),$r]);}
   catch(PDOException $e){out(['error'=>'That username is already taken']);}
-  if($W)$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id) VALUES(?,?)")->execute([$W,(int)$db->lastInsertId()]);
+  $nid=(int)$db->lastInsertId();
+  if($r==='guest')$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT id,?,'view' FROM workspaces")->execute([$nid]);
+  elseif($W)$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id) VALUES(?,?)")->execute([$W,$nid]);
   out(['ok'=>1]);
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
   $db->prepare("UPDATE users SET pass_hash=? WHERE id=?")->execute([password_hash($in['password'],PASSWORD_DEFAULT),(int)$in['id']]);try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([(int)$in['id']]);}catch(Throwable $e){}out(['ok'=>1]);
 case 'user_role':
-  admin();$id=(int)($in['id']??0);$r=($in['role']??'')==='admin'?'admin':'member';
+  admin();$id=(int)($in['id']??0);$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
   if($id===$uid)out(['error'=>'You cannot change your own type']);
-  $db->prepare("UPDATE users SET role=? WHERE id=?")->execute([$r,$id]);out(['ok'=>1]);
+  $db->prepare("UPDATE users SET role=? WHERE id=?")->execute([$r,$id]);
+  if($r==='guest'){$db->prepare("UPDATE ws_users SET level='view' WHERE user_id=?")->execute([$id]);$db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT id,?,'view' FROM workspaces")->execute([$id]);}
+  out(['ok'=>1]);
 case 'user_del':
   admin();$id=(int)($in['id']??0);if($id===$uid)out(['error'=>'You cannot remove yourself']);
   $db->prepare("UPDATE tasks SET assigned_to=NULL WHERE assigned_to=?")->execute([$id]);
