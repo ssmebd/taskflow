@@ -1,5 +1,5 @@
 <?php
-const BUILD=75;
+const BUILD=76;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v23']))return;
+  if(!empty($_SESSION['schema_v24']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -54,7 +54,9 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM invoices LIKE 'seq'")->fetch())$db->exec("ALTER TABLE invoices ADD seq VARCHAR(12) NOT NULL DEFAULT '', ADD amend_note VARCHAR(500) NULL");
   if($db->query("SHOW INDEX FROM invoices WHERE Key_name='ws_id'")->fetch())$db->exec("ALTER TABLE invoices DROP INDEX ws_id");
   if(!$db->query("SHOW COLUMNS FROM drawing_types LIKE 'color'")->fetch())$db->exec("ALTER TABLE drawing_types ADD color VARCHAR(7) NULL");
-  $_SESSION['schema_v23']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v24']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -130,7 +132,26 @@ function clean($f,$v){
 }
 switch($a){
 case 'ping':
-  out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD]);
+  $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
+  out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>(int)$q->fetchColumn()]);
+case 'msg_users':
+  $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
+  $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];
+  $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
+  $us=[];foreach($db->query("SELECT id,name FROM users ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0];
+  out(['users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]]);
+case 'msg_list':
+  $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
+  if($peer){$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
+  else{$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
+  $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;}unset($m);
+  if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
+  out(['messages'=>$ms]);
+case 'msg_send':
+  $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);if($b==='')out(['error'=>'Write a message first']);
+  if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
+  $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
 case 'list':
   $ver=(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn();
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];
