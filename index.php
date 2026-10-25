@@ -555,7 +555,7 @@ document.addEventListener("dragover",e=>{if(!dragCol)return;const th=e.target.cl
 document.addEventListener("drop",e=>{if(!dragCol)return;const th=e.target.closest&&e.target.closest("th.ch");if(th){e.preventDefault();const from=dragCol;dragCol=null;moveCol(from,th.dataset.col)}});
 document.addEventListener("dragend",()=>{dragCol=null;document.querySelectorAll("th.ch.over").forEach(x=>x.classList.remove("over"))});
 $("#cr").onclick=()=>{try{localStorage.removeItem(coKey());localStorage.removeItem(cwKey())}catch(e){}render()};
-function render(){
+function render(){const noG=LV==="view"&&!(me&&me.role==="admin");$("#vg").hidden=noG;if(noG&&view==="gantt"){view="list";syncViewBtns()}
   const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f&&$("#main").contains(ae)){pend=true;return}
   pend=false;for(const id of [...sel])if(!tasks.some(t=>t.id==id))sel.delete(id);
   updBar();syncFilters();
@@ -1458,7 +1458,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=92;
+const BUILD=93;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
