@@ -635,34 +635,38 @@ $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [dat
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
 // ---- Personal hours check ----
 const ltoday=()=>new Date().toLocaleDateString("en-CA");
-let mhRows=[],mhUser=0,mhAddDate="";
-const mhDays=()=>{try{return JSON.parse(localStorage.getItem("tf_mhd")||"[1,2,3,4,5]")}catch(e){return[1,2,3,4,5]}};
+let mhRows=[],mhUser=0,mhAddDate="",mhSel=new Set(),mhWk="";
 const isoAdd=(s,n)=>{const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
 const wkStart=s=>{const d=new Date(s+"T00:00:00Z");return isoAdd(s,-((d.getUTCDay()+6)%7))};
 const WDN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-function mhSet(a,b){$("#mhf").value=a;$("#mht").value=b;mhLoad()}
-function mhChips(){const on=mhDays();$("#mhdays").innerHTML=[1,2,3,4,5,6,0].map(d=>`<label style="margin:0 4px 0 0;display:inline-flex;gap:2px;align-items:center"><input type="checkbox" data-mhd="${d}" ${on.includes(d)?"checked":""}>${WDN[d]}</label>`).join("")}
-async function mhLoad(){const from=$("#mhf").value,to=$("#mht").value;if(!from||!to||from>to)return;
-  try{const r=await api("my_hours",{from,to,user:+$("#mhu").value||0});mhRows=r.rows;mhUser=r.user;mhDraw()}catch(e){alert(e.message)}}
-function mhDraw(){const tg=+$("#mhg").value||0,wd=mhDays(),from=$("#mhf").value,to=$("#mht").value,td=ltoday();
-  const by={};mhRows.forEach(x=>(by[x.work_date]=by[x.work_date]||[]).push(x));
-  let exp=0,got=0,miss=0,rows="";
-  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow)||from===to,l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;
-    if(!work&&!l.length)continue;
-    const past=d<=td;if(work&&past){exp+=tg;if(rg<tg)miss++}
-    let st="",cl="";if(work){if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}}else{st="Day off";cl="color:var(--mut)"}
+const mhSorted=()=>[...mhSel].sort();
+function mhRange(a,b){mhSel=new Set();for(let d=a,n=0;d<=b&&n<400;d=isoAdd(d,1),n++)mhSel.add(d);mhWk=wkStart(a);mhSync();mhLoad()}
+function mhSync(){const s=mhSorted();if(s.length){$("#mhf").value=s[0];$("#mht").value=s[s.length-1]}mhChips()}
+function mhChips(){$("#mhdays").innerHTML=`<button data-mhwk="-7" title="Previous week" style="padding:2px 8px">‹</button>`+[0,1,2,3,4,5,6].map(i=>{const d=isoAdd(mhWk,i),dow=(i+1)%7;return `<label style="margin:0 2px;display:inline-flex;gap:2px;align-items:center;white-space:nowrap"><input type="checkbox" data-mhd="${d}" ${mhSel.has(d)?"checked":""}>${WDN[dow]} ${+d.slice(8)}</label>`}).join("")+`<button data-mhwk="7" title="Next week" style="padding:2px 8px">›</button>`}
+async function mhLoad(){const s=mhSorted();if(!s.length){mhRows=[];mhDraw();return}
+  try{const r=await api("my_hours",{from:s[0],to:s[s.length-1],user:+$("#mhu").value||0});mhRows=r.rows;mhUser=r.user;mhDraw()}catch(e){alert(e.message)}}
+function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={};
+  mhRows.forEach(x=>{if(mhSel.has(x.work_date))(by[x.work_date]=by[x.work_date]||[]).push(x)});
+  let exp=0,miss=0,rows="",R=0,O=0;
+  for(const d of mhSorted()){const dow=new Date(d+"T00:00:00Z").getUTCDay(),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;R+=rg;O+=ot;
+    const past=d<=td;if(past){exp+=tg;if(rg<tg)miss++}
+    let st="",cl="";if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
     const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
-    rows+=`<tr${work?"":' style="opacity:.7"'}><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
-  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(mhRows.filter(x=>x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0))} h regular</b> + <b>${fmtH(mhRows.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0))} h OT</b> · expected regular so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
-  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">No working days in this range</td></tr>'}</table>`}
-function mhOpen(){const u=me.id;$("#mhf").value=ltoday();$("#mht").value=ltoday();
-  const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");if(!sel.value||!sel.dataset.set){sel.value=String(u);sel.dataset.set=1}}else sel.hidden=true;
-  mhChips();$("#mhdg").showModal();mhLoad()}
+    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
+  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h regular</b> + <b>${fmtH(O)} h OT</b> · expected regular so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
+  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">Tick one or more days above</td></tr>'}</table>`}
+function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
+  $("#mhdg").showModal();mhRange(ltoday(),ltoday())}
 $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
 $("#mhcl").onclick=()=>$("#mhdg").close();
-$("#mhtd").onclick=()=>mhSet(ltoday(),ltoday());$("#mhw").onclick=()=>mhSet(wkStart(ltoday()),ltoday());$("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhSet(s,isoAdd(s,6))};$("#mh14").onclick=()=>mhSet(isoAdd(ltoday(),-13),ltoday());
-["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",mhLoad));$("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
-$("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;const on=[...document.querySelectorAll("#mhdays [data-mhd]:checked")].map(x=>+x.dataset.mhd);try{localStorage.setItem("tf_mhd",JSON.stringify(on))}catch(x){}mhDraw()});
+$("#mhtd").onclick=()=>mhRange(ltoday(),ltoday());
+$("#mhw").onclick=()=>{const s=wkStart(ltoday());mhRange(s,isoAdd(s,6))};
+$("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhRange(s,isoAdd(s,6))};
+$("#mh14").onclick=()=>mhRange(isoAdd(ltoday(),-13),ltoday());
+["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",()=>{const a=$("#mhf").value,b=$("#mht").value;if(a&&b&&a<=b)mhRange(a,b)}));
+$("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
+$("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]");if(w){mhWk=isoAdd(mhWk,+w.dataset.mhwk);mhChips()}});
+$("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
 $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const uid=mhUser||me.id;
   const mine=tasks.filter(t=>String(t.assigned_to)===String(uid)&&t.status!=="done");
   if(!mine.length){alert("No open tasks assigned to this person in the current workspace. Switch workspace or assign a task first.");return}
