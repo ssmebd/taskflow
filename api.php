@@ -109,7 +109,8 @@ function inbox_sql($db,$count){
   return $db->query("SELECT c.id,c.task_id,c.ws_id,t.title,c.kind,c.body,c.created_at,COALESCE(us.name,'Former member') AS from_name $from ORDER BY c.id DESC LIMIT 50")->fetchAll();
 }
 function inv_defaults(){return ['name'=>'Invoice','match_cust'=>'','match_order'=>'','client_name'=>'','client_addr'=>'','currency'=>'AUD','symbol'=>'$','layout'=>'worklog','rate'=>0,'rates'=>new stdClass(),'ot'=>1,'bank'=>'','prefix'=>'INVOICE-','suffix'=>'','seq'=>1];}
-function inv_profiles($db){global $W;$q=$db->prepare("SELECT slot,data FROM invoice_profiles WHERE ws_id=? ORDER BY slot");$q->execute([$W]);$o=[];foreach($q->fetchAll() as $r){$j=json_decode((string)$r['data'],true);$d=inv_defaults();if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();$d['slot']=(int)$r['slot'];$o[]=$d;}return $o;}
+function inv_profiles($db){global $W;$q=$db->prepare("SELECT slot,data FROM invoice_profiles WHERE ws_id=? AND slot>0 ORDER BY slot");$q->execute([$W]);$o=[];foreach($q->fetchAll() as $r){$j=json_decode((string)$r['data'],true);$d=inv_defaults();if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();$d['slot']=(int)$r['slot'];$o[]=$d;}return $o;}
+function inv_company($db){global $W;$q=$db->prepare("SELECT data FROM invoice_profiles WHERE ws_id=? AND slot=0");$q->execute([$W]);$j=json_decode((string)$q->fetchColumn(),true);$d=inv_defaults();$d['prefix']='';$d['name']='';if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();return $d;}
 function admin(){global $me;if($me['role']!=='admin')out(['error'=>'Admins only']);}
 $F=['title','order_no','customer','drawing_type','start_date','end_date','status','assigned_to','notes','group_id'];
 function clean($f,$v){
@@ -262,9 +263,11 @@ case 'tl_report':
   admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $q=$db->prepare("SELECT l.user_id,COALESCE(u.name,'Former member') AS person,l.work_date,l.hours,l.kind,l.note,t.id AS task_id,t.order_no,t.title,t.customer,t.drawing_type,COALESCE(pg.name,g.name) AS top_name,COALESCE(pg.id,g.id) AS top_id,IF(pg.id IS NULL,NULL,g.name) AS sub_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.ws_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$W,$f,$t]);
-  out(['rows'=>$q->fetchAll(),'profiles'=>inv_profiles($db)]);
+  out(['rows'=>$q->fetchAll(),'profiles'=>inv_profiles($db),'company'=>inv_company($db)]);
+case 'co_get':
+  admin();out(['company'=>inv_company($db)]);
 case 'inv_set':
-  admin();$slot=(int)($in['slot']??0);if($slot<1||$slot>9)out(['error'=>'Bad profile']);
+  admin();$slot=(int)($in['slot']??0);if($slot<0||$slot>9)out(['error'=>'Bad profile']);
   if(!empty($in['remove'])){$db->prepare("DELETE FROM invoice_profiles WHERE ws_id=? AND slot=?")->execute([$W,$slot]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);}
   $p=is_array($in['profile']??null)?$in['profile']:[];$d=inv_defaults();
   $s=fn($k,$n)=>mb_substr(trim((string)($p[$k]??$d[$k])),0,$n);

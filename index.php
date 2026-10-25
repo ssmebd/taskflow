@@ -204,7 +204,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
    <button id="xm">⬇ Export to Excel</button>
    <button id="tm" hidden>👥 Users</button>
    <button id="om" hidden>⚠ Overlap rules</button>
-  </div></span><button id="wm" hidden title="Manage workspaces and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
+  </div></span><button id="wm" hidden title="Manage companies and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
 <div id="bar" hidden></div>
 <aside id="rside" hidden><div class="rh"><b style="flex:1">📐 Tools</b><button id="rsx" title="Close">✕</button></div>
  <div class="rtabs"><button data-rt="ct" class="on">Containers</button><button data-rt="cv">Convert</button><button data-rt="wk">Wiki</button></div>
@@ -286,23 +286,23 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  <div id="rout"></div>
 </dialog>
 <dialog id="ivdlg"><b>Invoice profile</b>
- <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
+ <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Company details and hourly rates are set in Manage → company → Details &amp; rates; fill the boxes below only to override them for this invoice. Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
  <div class="pgrid">
   <label>Profile name<input id="pn"></label><label>Layout<select id="pl"><option value="worklog">Daily work logs per group + summary invoice</option><option value="items">Item list (actioned items / hours / sub-total)</option></select></label>
   <label>Match Customer (comma separated)<input id="pmc" placeholder="e.g. UCA, Allshelter LLC"></label><label>Match Order No. starting with<input id="pmo" placeholder="e.g. UCA"></label>
-  <label>Client name<input id="pcn"></label><label>Client address<input id="pca"></label>
-  <label>Currency code<input id="pcc" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="pcs" maxlength="4" placeholder="$"></label>
-  <label>Default rate / hour<input type="number" id="prt" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="pot" min="0" step="0.05"></label>
+  <label>Client name (blank = company)<input id="pcn"></label><label>Client address (blank = company)<input id="pca"></label>
+  <label>Currency code<input id="pcc" maxlength="8" placeholder="blank = company"></label><label>Currency symbol<input id="pcs" maxlength="4" placeholder="blank = company"></label>
+  <label>Rate / hour for everyone (blank = use company rates)<input type="number" id="prt" min="0" step="0.01"></label><label>OT multiplier (1 = company setting)<input type="number" id="pot" min="0" step="0.05"></label>
   <label>Invoice no. prefix<input id="ppx" placeholder="INVOICE-"></label><label>Next number / suffix<span style="display:flex;gap:6px"><input type="number" id="psq" min="0" style="width:90px"><input id="psf" placeholder="-UCA"></span></label>
  </div>
- <label>Bank / payment details<textarea id="pbk" rows="3"></textarea></label>
- <b style="font-size:13px">Rate per person <span style="font-weight:400;color:var(--mut)">(blank = default rate)</span></b><div id="prl" class="pgrid"></div>
+ <label>Bank / payment details (blank = company)<textarea id="pbk" rows="3"></textarea></label>
+ <b style="font-size:13px">Rate per person for THIS invoice only <span style="font-weight:400;color:var(--mut)">(blank = rate set in the company window)</span></b><div id="prl" class="pgrid"></div>
  <div class="acts"><button id="pdel" class="danger">Delete</button><span class="sp"></span><button id="pcc2">Cancel</button><button class="p" id="ivsv">Save</button></div>
 </dialog>
 <dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
 <dialog id="odlg"><b>Overlap rules</b>
- <p style="color:var(--mut);font-size:13px;margin:8px 0">A task is flagged ⚠ when the same person has another open task on overlapping dates, in any workspace. These rules apply to everyone.</p>
+ <p style="color:var(--mut);font-size:13px;margin:8px 0">A task is flagged ⚠ when the same person has another open task on overlapping dates, in any company. These rules apply to everyone.</p>
  <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink)"><input type="checkbox" id="oh"> <span>Allow a hand-over day: a task may start on the same day another one ends</span></label>
  <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink)"><input type="checkbox" id="oo"> <span>Accept same-day tasks: tasks that start and finish on the same day (small jobs) are never flagged</span></label>
  <div class="acts"><span class="sp"></span><button id="oc">Cancel</button><button class="p" id="os">Save</button></div>
@@ -333,8 +333,19 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label>Options (comma separated)</label><input id="ceo"></div><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="ceh"> <span>Hide this column on this device</span></label><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
 
 <input type="file" id="wf" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
-<dialog id="wdlg"><b>Workspaces</b><div id="wlist"></div>
- <label>New workspace (e.g. a client name)</label><input id="wn" placeholder="e.g. Allshelter">
+<dialog id="codlg"><b id="cot">Company details &amp; hourly rates</b>
+ <p style="color:var(--mut);font-size:13px;margin:6px 0">Only admins can see this. Rates are used to calculate invoice amounts.</p>
+ <div class="pgrid">
+  <label>Company name (shown in the app)<input id="con" maxlength="60"></label><label>Name on invoice<input id="coc"></label>
+  <label>Address<input id="coa"></label><label>Bank / payment details<input id="cob"></label>
+  <label>Currency code<input id="coy" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="cos" maxlength="4" placeholder="$"></label>
+  <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label>
+ </div>
+ <b style="font-size:13px">Hourly rate per person <span style="font-weight:400;color:var(--mut)">(blank = default rate)</span></b><div id="cor" class="pgrid"></div>
+ <div class="acts"><span class="sp"></span><button id="cox">Cancel</button><button class="p" id="cosv">Save</button></div>
+</dialog>
+<dialog id="wdlg"><b>Companies</b><div id="wlist"></div>
+ <label>New company (e.g. a client name)</label><input id="wn" placeholder="e.g. Allshelter">
  <div class="acts"><span class="sp"></span><button id="wc">Close</button><button class="p" id="wa">Add</button></div>
 </dialog>
 
@@ -444,7 +455,7 @@ function toggleGroup(id){const g=getGC();g.has(id)?g.delete(id):g.add(id);try{lo
 function lockView(){if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
-function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to workspace…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
+function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to company…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
 const fmtH=n=>{n=+n||0;return n.toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1")};
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed" data-f="title" value="${ea(t.title)}"></div>`},
@@ -515,7 +526,7 @@ function render(){
   $("#who").textContent=(me.name||"")+(LV==="view"?" · view only":LV==="full"&&me.role!=="admin"?" · full access":"");
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
-  if(!W){$("#stats").innerHTML="";$("#main").innerHTML='<div class="empty">You have not been given access to any workspace yet. Please ask an admin.</div>';return}
+  if(!W){$("#stats").innerHTML="";$("#main").innerHTML='<div class="empty">You have not been given access to any company yet. Please ask an admin.</div>';return}
   const list=filtered();
   const gt=tasks.filter(inGroup);
   const fsv=$("#fs").value;
@@ -582,12 +593,24 @@ $("#asok").onclick=()=>{const v=+$("#asw").value;if(!v){alert("Choose a person")
 $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!id)return;try{await api("tl_del",{id});await tlLoad();await load(true)}catch(err){alert(err.message)}});
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
+// ---- Company details & hourly rates (admin) ----
+let coId=0;
+async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
+async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;
+  $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
+  $("#codlg").showModal()}catch(e){alert(e.message)}}
+$("#cox").onclick=()=>$("#codlg").close();
+$("#cosv").onclick=async()=>{const rates={};document.querySelectorAll("#cor [data-cr]").forEach(i=>{if(i.value!=="")rates[i.dataset.cr]=+i.value});
+  const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,prefix:"",suffix:"",seq:1,rates};
+  try{const w=wss.find(x=>x.id==coId),n=$("#con").value.trim();if(n&&w&&n!==w.name)await apiW("ws_rename",{id:coId,name:n},coId);
+    await apiW("inv_set",{slot:0,profile},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
 // ---- Worklog & invoice reports ----
-let rrows=[],rprofs=[],rcsvRows=[];
+let rrows=[],rprofs=[],rcsvRows=[],rComp={rates:{},rate:0,ot:1};
 const rShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")};
 const rPreset=(a,b)=>{$("#rf").value=rShift(a);$("#rt").value=rShift(b);runReport()};
 const money=n=>(+n).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
-const rDef=()=>({slot:0,name:"Invoice",match_cust:"",match_order:"",client_name:"",client_addr:"",currency:"AUD",symbol:"$",layout:"worklog",rate:0,rates:{},ot:1,bank:"",prefix:"INVOICE-",suffix:"",seq:1});
+const rDef=()=>({slot:0,name:"Invoice",match_cust:"",match_order:"",client_name:"",client_addr:"",currency:"",symbol:"",layout:"worklog",rate:0,rates:{},ot:1,bank:"",prefix:"INVOICE-",suffix:"",seq:1});
 function isoWeek(s){const d=new Date(s+"T00:00:00Z");const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil(((d-y)/864e5+1)/7)}
 const rList=()=>rprofs.length?rprofs:[rDef()];
 const rCur=()=>{const l=rList(),v=$("#rpf").value;return l.find(p=>String(p.slot)===v)||l[0]};
@@ -595,7 +618,8 @@ const splitC=s=>String(s||"").split(",").map(x=>x.trim().toLowerCase()).filter(B
 const rClaims=(p,x)=>{const mc=splitC(p.match_cust),mo=String(p.match_order||"").trim().toLowerCase();return (mc.length&&mc.includes(String(x.customer||"").trim().toLowerCase()))||(mo&&String(x.order_no||"").toLowerCase().indexOf(mo)===0)};
 const hasM=p=>splitC(p.match_cust).length||String(p.match_order||"").trim();
 function rProfRows(p){const L=rList();return rrows.filter(x=>hasM(p)?rClaims(p,x):!L.some(q=>q!==p&&hasM(q)&&rClaims(q,x)))}
-const rRate=(p,uid)=>{const v=p.rates&&p.rates[String(uid)];return v!==undefined&&v!==""?+v:+p.rate||0};
+const rRate=(p,uid)=>{const k=String(uid),v=p.rates&&p.rates[k];if(v!==undefined&&v!=="")return +v;if(+p.rate>0)return +p.rate;const c=rComp.rates&&rComp.rates[k];return c!==undefined&&c!==""?+c:(+rComp.rate||0)};
+const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
 const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
 function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
@@ -616,7 +640,7 @@ function itemsTable(p,rows,csv){const m=new Map();for(const x of rows){let r=m.g
     return `<tr><td>${esc(r.x.order_no||"")} ${esc(r.x.title)}</td><td>${esc(g)}</td><td class="n">${fmtH(r.h)}</td><td class="n">${esc(p.symbol)}${money(r.c)}</td></tr>`}).join("");
   return {th,tc,html:`<table class="rt"><tr><th>Actioned items</th><th>Item group</th><th class="n">Hours spent</th><th class="n">Sub-total (${esc(p.currency)})</th></tr>${body}<tr class="tot"><td colspan="2">Total</td><td class="n">${fmtH(th)}</td><td class="n">${esc(p.symbol)}${money(tc)}</td></tr></table>`}}
 function drawReport(){
-  const p=rCur(),rows=rProfRows(p),vw=$("#rvw").value,wsn=(wss.find(w=>w.id==W)||{}).name||"",csv=[],S=p.symbol||"";let h="",h0="";
+  const p=rEff(rCur()),rows=rProfRows(rCur()),vw=$("#rvw").value,wsn=(wss.find(w=>w.id==W)||{}).name||"",csv=[],S=p.symbol||"";let h="",h0="";
   if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this profile in this period.</div>';return}
   const period=`${$("#rf").value} to ${$("#rt").value}`;
   if(p.layout==="items"){
@@ -631,11 +655,11 @@ function drawReport(){
     if(vw==="inv"){h=invHead(p,period)+`<table class="rt"><tr><th>Description</th><th class="n">Hours</th><th class="n">Amount (${esc(p.currency)})</th></tr>${lines.map(l=>`<tr><td>${esc(l[0])}</td><td class="n">${fmtH(l[1])}</td><td class="n">${esc(S)}${money(l[2])}</td></tr>`).join("")}<tr class="tot"><td>Total</td><td class="n">${fmtH(tot)}</td><td class="n">${esc(S)}${money(tc)}</td></tr></table>`+invFoot(p)}
     else h=`<div style="margin:6px 0"><b style="font-size:18px">${esc(p.name)}</b><div style="color:var(--mut)">${esc(wsn)} · ${period} · Total ${fmtH(tot)} h · ${esc(S)}${money(tc)}</div></div>`+parts.join("")}
   $("#rout").innerHTML=h0+h}
-const RWARN='<div style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set for this profile, so cost shows 0. Click <b>⚙ Edit profile</b> and fill the default rate or each person\'s rate.</div>';
+const RWARN='<div style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set, so cost shows 0. Set them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
 function invHead(p,period){return `<div class="rinv"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px"><div><b style="font-size:20px">INVOICE</b><div>No. <b>${esc(rInvNo(p))}</b></div><div>Date: ${esc(new Date().toLocaleDateString("en-GB"))}</div><div>Period: ${esc(period)}</div></div><div style="text-align:right"><b>${esc(p.client_name||"")}</b><div style="white-space:pre-line">${esc(p.client_addr||"")}</div></div></div></div>`}
 const invFoot=p=>p.bank?`<div style="white-space:pre-line;margin-top:10px;font-size:13px"><b>Payment details</b>\n${esc(p.bank)}</div>`:"";
 async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
-  try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];const cur=$("#rpf").value;
+  try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];rComp=r.company||rComp;const cur=$("#rpf").value;
     $("#rpf").innerHTML=rList().map(p=>`<option value="${p.slot}">${esc(p.name)}</option>`).join("")+`<option value="new">＋ New profile…</option>`;$("#rpf").value=rList().some(p=>String(p.slot)===cur)?cur:rList()[0].slot;drawReport()}catch(e){alert(e.message)}}
 $("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}$("#rdlg").showModal();runReport()};
 $("#rcl").onclick=()=>$("#rdlg").close();
@@ -657,7 +681,7 @@ $("#pcc2").onclick=()=>{$("#ivdlg").close();$("#rpf").value=String(rCur().slot)}
 $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [data-pr]").forEach(i=>{if(i.value!=="")rates[i.dataset.pr]=+i.value});
   let slot=profEdit;if(!slot){const used=rprofs.map(p=>p.slot);for(let s=1;s<=9;s++)if(!used.includes(s)){slot=s;break}}
   if(!slot){alert("Maximum of 9 profiles");return}
-  const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,client_addr:$("#pca").value,currency:$("#pcc").value||"AUD",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
+  const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,client_addr:$("#pca").value,currency:$("#pcc").value||"",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
   try{await api("inv_set",{slot,profile});$("#ivdlg").close();await runReport();$("#rpf").value=String(slot);drawReport()}catch(e){alert(e.message)}};
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
 // ---- Personal hours check ----
@@ -696,7 +720,7 @@ $("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]"
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
 $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const uid=mhUser||me.id;
   const mine=tasks.filter(t=>String(t.assigned_to)===String(uid)&&t.status!=="done");
-  if(!mine.length){alert("No open tasks assigned to this person in the current workspace. Switch workspace or assign a task first.");return}
+  if(!mine.length){alert("No open tasks assigned to this person in the current company. Switch company or assign a task first.");return}
   $("#mhat").textContent="Add hours · "+mhAddDate;$("#mhtk").innerHTML=mine.map(t=>`<option value="${t.id}">${esc((t.order_no?t.order_no+" · ":"")+t.title)}</option>`).join("");
   const have=mhRows.filter(x=>x.work_date===mhAddDate&&x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0);$("#mhah").value=Math.max(0,(+$("#mhg").value||8)-have)||"";$("#mhan").value="";$("#mhad").showModal()});
 $("#mhax").onclick=()=>$("#mhad").close();
@@ -968,10 +992,10 @@ async function gEnd(cancel){
 document.addEventListener("pointerup",()=>gEnd(false));document.addEventListener("pointercancel",()=>gEnd(true));
 document.addEventListener("click",e=>{if(gSwallow){e.stopPropagation();e.preventDefault();gSwallow=false}},true);
 
-// ---- Move selected tasks to another workspace ----
+// ---- Move selected tasks to another company ----
 $("#bar").addEventListener("change",async e=>{
   if(e.target.id!=="bws"||!e.target.value)return;const to=+e.target.value,ids=[...sel],w=wss.find(x=>x.id==to);
-  if(!confirm("Move "+ids.length+" task(s) to \""+(w?w.name:"")+"\"?\n\nThey leave this workspace. Group is cleared; status, people and matching custom columns are carried over where possible."))return load(true);
+  if(!confirm("Move "+ids.length+" task(s) to \""+(w?w.name:"")+"\"?\n\nThey leave this company. Group is cleared; status, people and matching custom columns are carried over where possible."))return load(true);
   sel.clear();try{await api("task_move",{ids,to})}catch(err){alert(err.message)}await load(true);
 });
 
@@ -1007,8 +1031,8 @@ let logoFor=null;
 function renderWs(){
   const LVN={view:"View only",edit:"Can edit",full:"Edit + delete"};
   const members=allUsers.filter(u=>u.role!=="admin");
-  $("#wlist").innerHTML=wss.map(w=>`<div class="wrow"><div class="acts"><span class="wl" style="width:44px;height:44px;flex:none;padding:2px;pointer-events:none">${wlogo(w)}</span><span style="flex:1"><b>${esc(w.name)}</b>${w.id==W?' <small style="color:var(--mut)">(current)</small>':""}</span><button data-wr="${w.id}">Rename</button><button data-wlg="${w.id}">Logo</button>${+w.hl?`<button data-wlx="${w.id}" title="Remove logo">✕</button>`:""}<button data-wacc="${w.id}">Access</button><button data-wd="${w.id}">Delete</button></div>
-    <div class="wp" ${openWp==w.id?"":"hidden"}><small style="color:var(--mut)">Admins always see every workspace. Tick the members who may open this one and choose what they can do:</small>
+  $("#wlist").innerHTML=wss.map(w=>`<div class="wrow"><div class="acts"><span class="wl" style="width:44px;height:44px;flex:none;padding:2px;pointer-events:none">${wlogo(w)}</span><span style="flex:1"><b>${esc(w.name)}</b>${w.id==W?' <small style="color:var(--mut)">(current)</small>':""}</span><button data-cod="${w.id}" title="Company details and hourly rates">💲 Details &amp; rates</button><button data-wr="${w.id}">Rename</button><button data-wlg="${w.id}">Logo</button>${+w.hl?`<button data-wlx="${w.id}" title="Remove logo">✕</button>`:""}<button data-wacc="${w.id}">Access</button><button data-wd="${w.id}">Delete</button></div>
+    <div class="wp" ${openWp==w.id?"":"hidden"}><small style="color:var(--mut)">Admins always see every company. Tick the members who may open this one and choose what they can do:</small>
     ${members.map(u=>`<label><input type="checkbox" data-wu="${u.id}"${(access[w.id]||{})[u.id]?" checked":""}> <span style="flex:1">${esc(u.name)}</span><select data-wl="${u.id}">${Object.entries(LVN).map(([k,n])=>`<option value="${k}"${((access[w.id]||{})[u.id]||"edit")===k?" selected":""}>${n}</option>`).join("")}</select></label>`).join("")||'<div class="empty">No members yet</div>'}
     <div class="acts"><span class="sp"></span><button class="p" data-wsave="${w.id}">Save access</button></div></div></div>`).join("");
 }
@@ -1025,12 +1049,13 @@ $("#wc").onclick=()=>$("#wdlg").close();
 $("#wa").onclick=async()=>{try{const r=await api("ws_add",{name:$("#wn").value});location="index.php?w="+r.id}catch(e){alert(e.message)}};
 $("#wlist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
-    if(d.wr){const w=wss.find(x=>x.id==d.wr),n=prompt("New name for this workspace:",w.name);if(n&&n.trim()){await api("ws_rename",{id:d.wr,name:n});await load(true);renderWs()}}
+    if(d.cod){await coOpen(d.cod);return}
+    if(d.wr){const w=wss.find(x=>x.id==d.wr),n=prompt("New name for this company:",w.name);if(n&&n.trim()){await api("ws_rename",{id:d.wr,name:n});await load(true);renderWs()}}
     if(d.wlg){logoFor=d.wlg;$("#wf").value="";$("#wf").click()}
     if(d.wlx){await api("ws_logo",{id:d.wlx,data:""});await load(true);renderWs()}
     if(d.wacc){openWp=openWp==d.wacc?null:d.wacc;renderWs()}
     if(d.wsave){const us=[...e.target.closest(".wp").querySelectorAll("[data-wu]:checked")].map(c=>({id:+c.dataset.wu,level:c.closest("label").querySelector("[data-wl]").value}));await api("ws_access",{id:d.wsave,users:us});await load(true);renderWs();alert("Access saved.")}
-    if(d.wd){const w=wss.find(x=>x.id==d.wd);if(confirm("Delete the workspace \""+w.name+"\" and ALL its tasks and custom columns? This cannot be undone.")){await api("ws_del",{id:d.wd});if(d.wd==W){location="index.php"}else{await load(true);renderWs()}}}
+    if(d.wd){const w=wss.find(x=>x.id==d.wd);if(confirm("Delete the company \""+w.name+"\" and ALL its tasks and custom columns? This cannot be undone.")){await api("ws_del",{id:d.wd});if(d.wd==W){location="index.php"}else{await load(true);renderWs()}}}
   }catch(err){alert(err.message)}
 });
 function renderSt(){
