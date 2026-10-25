@@ -156,6 +156,7 @@ header .brand{color:var(--hfg)}
 .rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
 .rcust{margin:16px 0 4px;font-size:16px}
 #ivdlg{width:min(720px,96vw);max-height:92vh;overflow:auto}.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0}.pgrid label{font-size:12px;color:var(--mut)}.pgrid input,.pgrid select{width:100%}@media(max-width:600px){.pgrid{grid-template-columns:1fr}}.rt.wl{font-size:11px}
+.addcol{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:8px 0}.addcol .acr{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}.addcol .acr input,.addcol .acr select{width:auto;box-sizing:border-box}#cdlg{width:min(560px,94vw)}
 #mhdg{width:min(760px,96vw)}#mhdg td,#mhdg th{vertical-align:top}#mhdg td:first-child,#mhdg td:last-child button{white-space:nowrap}#mhdg .rctl input[type=date]{width:auto}#mhad{width:min(420px,94vw)}
 dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw;max-height:98vh}dialog.dmv{margin:0;position:fixed}dialog>.acts:first-child,dialog>b:first-child,dialog>.dh{cursor:move}
 #rside{position:fixed;top:var(--hh,56px);right:0;bottom:0;width:340px;background:var(--card);border-left:1px solid var(--line);z-index:19;display:flex;flex-direction:column;overflow:hidden}#rside [hidden],#rside[hidden]{display:none!important}body.rp{padding-right:340px}#rside .rh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}#rside .rtabs{display:flex;border-bottom:1px solid var(--line)}#rside .rtabs button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px}#rside .rtabs button.on{border-bottom:2px solid var(--pri);font-weight:600}#rside .rbody{padding:10px;overflow:auto;flex:1}#rside label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}#rside input,#rside select,#rside textarea{width:100%;box-sizing:border-box}#rside .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rres{background:var(--col);border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}.rres b{font-size:18px}.wki{padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.wki:hover{background:var(--col)}.wki small{color:var(--mut);display:block}@media(max-width:900px){#rside{width:100%}body.rp{padding-right:0}}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
@@ -305,12 +306,14 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <div class="acts"><span class="sp"></span><button id="sc">Close</button><button class="p" id="sa">Add status</button></div>
 </dialog>
 
-<dialog id="cdlg"><b>Custom columns</b><div id="clist"></div>
- <label>New column name</label><input id="cn" placeholder="e.g. Revision, Sheet size, Priority">
- <label>Type</label><select id="ct"><option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="dropdown">Dropdown</option></select>
- <input id="co" placeholder="Options, separated by commas" style="display:none;margin-top:6px">
- <div class="acts"><button id="cr" disabled title="Put columns back in the original order and width (only for you, on this device)">↺ Reset column order &amp; widths</button><span class="sp"></span><button id="cc">Close</button><button class="p" id="ca">Add column</button></div>
+<dialog id="cdlg"><b>Columns</b>
+ <div id="clist" style="margin:8px 0"></div>
+ <div class="addcol"><b style="font-size:12px;color:var(--mut)">ADD COLUMN</b>
+  <div class="acr"><input id="cn" placeholder="Column name, e.g. Revision" style="flex:2;min-width:120px"><select id="ct" style="flex:1;min-width:100px"><option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="dropdown">Dropdown</option></select><input id="co" placeholder="Options, comma separated" style="display:none;flex:2;min-width:140px"><button class="p" id="ca">Add</button></div>
+ </div>
+ <div class="acts"><button id="cr" disabled title="Put columns back in the original order and width (only for you, on this device)">↺ Reset</button><span class="sp"></span><button id="cc">Close</button></div>
 </dialog>
+<dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label>Options (comma separated)</label><input id="ceo"></div><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
 
 <input type="file" id="wf" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
 <dialog id="wdlg"><b>Workspaces</b><div id="wlist"></div>
@@ -1132,8 +1135,11 @@ $("#main").addEventListener("change",e=>{
 });
 $("#main").addEventListener("click",e=>{if(e.target.id==="gtoday"){const w=document.querySelector(".gwrap"),t=document.querySelector(".gtoday");if(w&&t)w.scrollLeft=Math.max(0,parseInt(t.style.left)-(gMode==="task"?250:170)-220)}});
 function renderCols(){
-  $("#clist").innerHTML=cols.map(c=>`<div class="acts"><span style="flex:1">${esc(c.name)} <small style="color:var(--mut)">${c.ctype}${c.ctype==="dropdown"?": "+esc((c.options||[]).join(", ")):""}</small></span>${me.role==="admin"?`<button data-cd="${c.id}">Remove</button>`:""}</div>`).join("")||'<div class="empty">No custom columns yet</div>';
+  $("#clist").innerHTML=cols.map(c=>`<div class="acts"><span style="flex:1">${esc(c.name)} <small style="color:var(--mut)">${c.ctype}${c.ctype==="dropdown"?": "+esc((c.options||[]).join(", ")):""}</small></span>${LV!=="view"?`<button data-ce="${c.id}">✎ Edit</button>`:""}${me.role==="admin"?`<button data-cd="${c.id}">Remove</button>`:""}</div>`).join("")||'<div class="empty">No custom columns yet</div>';
 }
+let ceId=0;
+$("#cex").onclick=()=>$("#cedlg").close();
+$("#cesv").onclick=async()=>{try{await api("col_edit",{id:ceId,name:$("#cen").value,options:$("#ceo").value});$("#cedlg").close();await load(true);renderCols()}catch(e){alert(e.message)}};
 $("#cm").onclick=()=>{renderCols();$("#cdlg").showModal()};
 $("#cc").onclick=()=>$("#cdlg").close();
 $("#ct").onchange=()=>{$("#co").style.display=$("#ct").value==="dropdown"?"":"none"};
@@ -1142,6 +1148,7 @@ $("#ca").onclick=async()=>{
     $("#cn").value="";$("#co").value="";await load(true);renderCols()}catch(e){alert(e.message)}
 };
 $("#clist").addEventListener("click",async e=>{
+  const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceId=c.id;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=c.ctype!=="dropdown";$("#cet").textContent="Type: "+c.ctype+" (the type cannot be changed)";$("#cedlg").showModal();return}
   const id=e.target.dataset.cd;if(!id||!confirm("Remove this column? The values entered in it will be deleted."))return;
   try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
 });

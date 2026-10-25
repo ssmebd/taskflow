@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -310,6 +310,12 @@ case 'col_add':
   foreach(get_cols($db) as $e)if(mb_strtolower($e['name'])===mb_strtolower($n))out(['error'=>'A column with that name already exists']);
   $db->prepare("INSERT INTO custom_cols(name,ctype,options,sort_no,ws_id) VALUES(?,?,?,?,?)")->execute([$n,$t,$o?json_encode($o,JSON_UNESCAPED_UNICODE):null,(int)$db->query("SELECT COALESCE(MAX(sort_no),0)+1 FROM custom_cols")->fetchColumn(),$W]);
   out(['ok'=>1]);
+case 'col_edit':
+  need_level('edit');$id=(int)($in['id']??0);$n=mb_substr(trim($in['name']??''),0,60);if($n==='')out(['error'=>'Enter a column name']);
+  $cur=null;foreach(get_cols($db) as $e){if((int)$e['id']===$id)$cur=$e;}if(!$cur)out(['error'=>'Column not found']);
+  foreach(get_cols($db) as $e)if((int)$e['id']!==$id&&mb_strtolower($e['name'])===mb_strtolower($n))out(['error'=>'A column with that name already exists']);
+  $o=null;if($cur['ctype']==='dropdown'){$l=[];foreach(explode(',',(string)($in['options']??'')) as $p){$p=mb_substr(trim($p),0,60);if($p!==''&&!in_array($p,$l,true))$l[]=$p;}if(!$l)out(['error'=>'Enter at least one option, separated by commas']);$o=json_encode($l,JSON_UNESCAPED_UNICODE);}
+  $db->prepare("UPDATE custom_cols SET name=?,options=? WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);out(['ok'=>1]);
 case 'col_del':
   need_level('full');$id=(int)($in['id']??0);$k='x_'.$id;
   $db->prepare("DELETE FROM custom_cols WHERE id=? AND ws_id=?")->execute([$id,$W]);
