@@ -674,7 +674,7 @@ function wlPage(p,name,rows,P,csv){
   csv.push([name,"","","","","TOTAL"].concat(P.map(([id])=>+pt[id].toFixed(2)),["",+th.toFixed(2)],sp.map(()=>""),["",+tc.toFixed(2),""]));
   const nr=sp.length+1,ncol=5+P.length+2+nr+2;
   return {th,tc,html:`<div class="pg pgwl"><table class="wlt"><tr class="band"><td colspan="3" class="gtt"><b style="font-size:13px">DailyWorkLog:</b> &nbsp; <span>${esc(name)}</span><br><b>Wk: ${wk}</b></td><td colspan="2" class="bt">${esc(p.wl_title||p.client_name||"")}</td><td colspan="${P.length}" class="gtt"></td><td class="gtt c"></td><td colspan="${nr+3}" class="gtt"></td></tr>
-   <tr class="wlh"><th class="lg">Date</th><th class="lg c">Week</th><th class="lg">Project Group</th><th class="lg">Project No</th><th class="lg">Project Name</th>${P.map(([,n],i)=>`<th class="c" style="background:${cc(i)};min-width:62px;white-space:nowrap!important">${esc(first(n))}<br>Hrs</th>`).join("")}<th class="pk">Regular/ OT</th><th class="rt1">Total Hrs</th>${rateH}<th class="rt1">Total Cost<br>(${esc(p.currency)})</th><th class="rt1">Remarks</th></tr>${body}
+   <tr class="wlh"><th class="lg">Date</th><th class="lg c">Week</th><th class="lg">Project Group</th><th class="lg">Project No</th><th class="lg">Project Name</th>${P.map(([,n],i)=>`<th class="c" style="background:${cc(i)};min-width:62px">${esc(n)}</th>`).join("")}<th class="pk">Regular/ OT</th><th class="rt1">Total Hrs</th>${rateH}<th class="rt1">Total Cost<br>(${esc(p.currency)})</th><th class="rt1">Remarks</th></tr>${body}
    <tr class="ft"><td colspan="5"></td>${P.map(([id])=>`<td class="c">${h1(pt[id])}</td>`).join("")}<td class="k"><b>Total Hours:</b></td><td class="c">${h1(th)}</td>${sp.map(()=>"<td></td>").join("")}<td class="c"><b>Total Amount:</b></td><td class="c">${num(tc)}</td><td></td></tr></table></div>`}}
 function invTop(p){const to=$("#rt").value;return `<img class="lh" src="${LH}" alt=""><div class="invt">INVOICE</div>`}
 const invBottom=p=>`<div class="invf"><div class="ifbar"></div><div class="ifad">${esc(ISSUER_ADDR)}</div></div>`;
@@ -1357,7 +1357,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=69;
+const BUILD=70;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
