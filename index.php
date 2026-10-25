@@ -232,6 +232,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 @media(max-width:600px){.hrow{grid-template-columns:minmax(0,1fr) auto}.hrow .hco{grid-column:1}}
 #side .rlogo{flex-direction:column;width:52px;height:auto;line-height:1;gap:1px;margin:2px 0 10px;text-decoration:none;color:var(--sf);font-weight:800;font-size:14px;letter-spacing:.2px}#side .rlogo .fl{color:#22c55e;text-shadow:0 0 8px rgba(34,197,94,.55)}
 .apn{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px}.apr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}.apr small{color:var(--mut)}.apr .acts{margin:0}
+#umenu a[hidden],#umenu [hidden]{display:none!important}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -1544,7 +1545,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=115;
+const BUILD=116;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
