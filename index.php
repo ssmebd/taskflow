@@ -627,7 +627,10 @@ function ctCalc(){const sel=$("#ct_t").value;$("#ct_cw").hidden=sel!=="c";const 
 ["ct_t","ct_c","ct_n","ct_g","ct_x"].forEach(i=>$("#"+i).addEventListener("input",ctCalc));
 const CVU=[["mm",0.001,"L"],["cm",0.01,"L"],["m",1,"L"],["inch",0.0254,"L"],["feet",0.3048,"L"],["yard",0.9144,"L"],["kg",1,"M"],["g",0.001,"M"],["lb",0.45359237,"M"],["tonne",1000,"M"]];
 $("#cv_u").innerHTML=CVU.map((u,i)=>`<option value="${i}">${u[0]}</option>`).join("");$("#cv_u").value="0";
-function cvCalc(){const v=+$("#cv_v").value||0,u=CVU[+$("#cv_u").value],base=v*u[1];$("#cv_o").innerHTML=CVU.filter(x=>x[2]===u[2]&&x!==u).map(x=>`<div>${f3(base/x[1],4)} <b style="font-size:14px">${x[0]}</b></div>`).join("")+(u[2]==="L"?`<div style="color:var(--mut)">${ftIn(base)}</div>`:"")}
+function fracIn(t,den){let n=Math.round(t*den),neg=n<0;n=Math.abs(n);let w=Math.floor(n/den),r=n%den,d=den;while(r&&r%2===0&&d%2===0){r/=2;d/=2}const ft=Math.floor(w/12),wi=w%12,fr=r?`<sup>${r}</sup>⁄<sub>${d}</sub>`:"";const err=(n/den-Math.abs(t))*25.4;
+  return `${neg?"−":""}${w?w+(r?" ":""):""}${r?fr:(w?"":"0")}″ <span style="color:var(--mut);font-size:12px">${ft?"("+ft+"′ "+(wi||r?(wi?wi+" ":"")+fr:"0")+"″) ":""}${err>=0?"+":"−"}${f3(Math.abs(err),2)} mm</span>`}
+const fracRows=m=>{const t=m/0.0254;return `<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b style="font-size:13px">Nearest inch fraction</b>`+[8,16,32].map(d=>`<div>1/${d}: ${fracIn(t,d)}</div>`).join("")+`</div>`};
+function cvCalc(){const v=+$("#cv_v").value||0,u=CVU[+$("#cv_u").value],base=v*u[1];$("#cv_o").innerHTML=CVU.filter(x=>x[2]===u[2]&&x!==u).map(x=>`<div>${f3(base/x[1],4)} <b style="font-size:14px">${x[0]}</b></div>`).join("")+(u[2]==="L"?`<div style="color:var(--mut)">${ftIn(base)}</div>`+fracRows(base):"")}
 $("#cv_v").addEventListener("input",cvCalc);$("#cv_u").addEventListener("change",cvCalc);
 let wkPages=[],wkId=0;
 async function wkLoad(){try{const r=await api("wiki_list",{});wkPages=r.pages||[];wkDraw()}catch(e){alert(e.message)}}
