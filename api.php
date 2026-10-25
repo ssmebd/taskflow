@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v17']))return;
+  if(!empty($_SESSION['schema_v18']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -46,7 +46,8 @@ function ensure_schema($db){
     $db->exec("INSERT INTO workspaces(id,name,sort_no) VALUES(1,'General',1)");
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
-  $_SESSION['schema_v17']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS wiki_pages(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(150) NOT NULL,body MEDIUMTEXT NOT NULL,updated_by INT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v18']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -267,6 +268,15 @@ case 'inv_set':
     'layout'=>(($p['layout']??'')==='items')?'items':'worklog','rate'=>round(max(0,min(100000,(float)($p['rate']??0))),2),'rates'=>$rates,
     'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>max(0,min(99999999,(int)($p['seq']??1)))];
   $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
+case 'wiki_list':
+  out(['pages'=>$db->query("SELECT p.id,p.title,p.body,p.updated_at,COALESCE(u.name,'') AS by_name FROM wiki_pages p LEFT JOIN users u ON u.id=p.updated_by ORDER BY p.title")->fetchAll()]);
+case 'wiki_save':
+  $id=(int)($in['id']??0);$t=mb_substr(trim((string)($in['title']??'')),0,150);$b=mb_substr((string)($in['body']??''),0,60000);if($t==='')out(['error'=>'Give the page a title']);
+  if($id){$db->prepare("UPDATE wiki_pages SET title=?,body=?,updated_by=?,updated_at=NOW() WHERE id=?")->execute([$t,$b,$uid,$id]);}
+  else{$db->prepare("INSERT INTO wiki_pages(title,body,updated_by,updated_at) VALUES(?,?,?,NOW())")->execute([$t,$b,$uid]);$id=(int)$db->lastInsertId();}
+  out(['ok'=>1,'id'=>$id]);
+case 'wiki_del':
+  $db->prepare("DELETE FROM wiki_pages WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'dt_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
   $q=$db->prepare("SELECT COUNT(*) FROM drawing_types WHERE ws_id=?");$q->execute([$W]);if((int)$q->fetchColumn()>=200)out(['error'=>'Maximum 200 drawing types']);

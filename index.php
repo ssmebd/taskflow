@@ -155,7 +155,8 @@ header .brand{color:var(--hfg)}
 #rdlg{width:min(1000px,96vw);max-height:92vh;overflow:auto}#rdlg .rctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#rdlg .rctl input,#rdlg .rctl select{width:auto}
 .rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
 .rcust{margin:16px 0 4px;font-size:16px}
-#ivdlg{width:min(720px,96vw);max-height:92vh;overflow:auto}.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0}.pgrid label{font-size:12px;color:var(--mut)}.pgrid input,.pgrid select{width:100%}@media(max-width:600px){.pgrid{grid-template-columns:1fr}}.rt.wl{font-size:11px}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
+#ivdlg{width:min(720px,96vw);max-height:92vh;overflow:auto}.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0}.pgrid label{font-size:12px;color:var(--mut)}.pgrid input,.pgrid select{width:100%}@media(max-width:600px){.pgrid{grid-template-columns:1fr}}.rt.wl{font-size:11px}
+#rside{position:fixed;top:var(--hh,56px);right:0;bottom:0;width:340px;background:var(--card);border-left:1px solid var(--line);z-index:19;display:flex;flex-direction:column;overflow:hidden}#rside [hidden],#rside[hidden]{display:none!important}body.rp{padding-right:340px}#rside .rh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}#rside .rtabs{display:flex;border-bottom:1px solid var(--line)}#rside .rtabs button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px}#rside .rtabs button.on{border-bottom:2px solid var(--pri);font-weight:600}#rside .rbody{padding:10px;overflow:auto;flex:1}#rside label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}#rside input,#rside select,#rside textarea{width:100%;box-sizing:border-box}#rside .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rres{background:var(--col);border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}.rres b{font-size:18px}.wki{padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.wki:hover{background:var(--col)}.wki small{color:var(--mut);display:block}@media(max-width:900px){#rside{width:100%}body.rp{padding-right:0}}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
 @media print{body *{visibility:hidden!important}#rdlg,#rdlg *{visibility:visible!important}#rdlg{position:absolute;left:0;top:0;width:100%;max-height:none;overflow:visible;border:0;box-shadow:none}.noprint{display:none!important}}
 </style></head><body>
 <header>
@@ -166,6 +167,7 @@ header .brand{color:var(--hfg)}
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
  <span class="sp"></span>
  <span id="live" style="font-size:12px;color:var(--mut)">○ …</span>
+ <button id="tbtn" title="Tools: containers, converter, wiki">📐 Tools</button>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
  <button class="p" id="add">+ New task</button>
  <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="login.php?logout=1">⎋ Log out</a></div></span>
@@ -185,6 +187,26 @@ header .brand{color:var(--hfg)}
    <button id="om" hidden>⚠ Overlap rules</button>
   </div></span><button id="wm" hidden title="Manage workspaces and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
 <div id="bar" hidden></div>
+<aside id="rside" hidden><div class="rh"><b style="flex:1">📐 Tools</b><button id="rsx" title="Close">✕</button></div>
+ <div class="rtabs"><button data-rt="ct" class="on">Containers</button><button data-rt="cv">Convert</button><button data-rt="wk">Wiki</button></div>
+ <div id="rt_ct" class="rbody">
+  <label>Container<select id="ct_t"><option value="6.058">20 ft (6.058 m)</option><option value="12.192">40 ft (12.192 m)</option><option value="2.991">10 ft (2.991 m)</option><option value="13.716">45 ft (13.716 m)</option><option value="c">Custom length…</option></select></label>
+  <label id="ct_cw" hidden>Custom length (mm)<input type="number" id="ct_c" step="any" min="0"></label>
+  <div class="two"><label>How many (×)<input type="number" id="ct_n" value="2" min="1" step="1"></label><label>Gap between (mm)<input type="number" id="ct_g" value="76" min="0" step="any"></label></div>
+  <label>Extra length (mm)<input type="number" id="ct_x" value="0" step="any"></label>
+  <div id="ct_o" class="rres"></div>
+  <small style="color:var(--mut)">Gap is added once per join: 2 containers = 1 gap, 3 = 2 gaps. Example: 2 × 20 ft + 76 mm = 12.192 m = one 40 ft.</small>
+ </div>
+ <div id="rt_cv" class="rbody" hidden>
+  <div class="two"><label>Value<input type="number" id="cv_v" step="any" value="1"></label><label>From<select id="cv_u"></select></label></div>
+  <div id="cv_o" class="rres"></div>
+ </div>
+ <div id="rt_wk" class="rbody" hidden>
+  <div id="wk_list"><div class="two" style="grid-template-columns:1fr auto"><input id="wk_q" placeholder="Search wiki…"><button class="p" id="wk_new">+ Page</button></div><div id="wk_items"></div></div>
+  <div id="wk_ed" hidden><input id="wk_t" placeholder="Title (e.g. Roof drawing rules)" maxlength="150"><textarea id="wk_b" rows="14" placeholder="Write rules, notes, sizes…"></textarea>
+   <div class="acts"><button id="wk_del" class="danger">Delete</button><span class="sp"></span><button id="wk_back">Back</button><button class="p" id="wk_save">Save</button></div><small id="wk_meta" style="color:var(--mut)"></small></div>
+ </div>
+</aside>
 <div id="main"></div>
 
 <dialog id="dlg">
@@ -594,6 +616,30 @@ $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [dat
   const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,client_addr:$("#pca").value,currency:$("#pcc").value||"AUD",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
   try{await api("inv_set",{slot,profile});$("#ivdlg").close();await runReport();$("#rpf").value=String(slot);drawReport()}catch(e){alert(e.message)}};
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
+// ---- Right-hand tools panel ----
+const toolsOpen=on=>{$("#rside").hidden=!on;document.body.classList.toggle("rp",on);try{localStorage.setItem("tf_rp",on?"1":"")}catch(e){}if(on){$("#rside").style.setProperty("--hh","0");const hh=document.querySelector("header").getBoundingClientRect().bottom;document.documentElement.style.setProperty("--hh",Math.max(0,Math.round(hh))+"px");ctCalc();cvCalc()}};
+$("#tbtn").onclick=()=>toolsOpen($("#rside").hidden);$("#rsx").onclick=()=>toolsOpen(false);
+document.querySelectorAll("#rside .rtabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#rside .rtabs button").forEach(x=>x.classList.toggle("on",x===b));["ct","cv","wk"].forEach(k=>$("#rt_"+k).hidden=k!==b.dataset.rt);if(b.dataset.rt==="wk")wkLoad()});
+const f3=(n,d=3)=>(+n).toLocaleString("en",{minimumFractionDigits:0,maximumFractionDigits:d});
+const ftIn=m=>{const t=m/0.0254,ft=Math.floor(t/12+1e-9),i=t-ft*12;return ft+"′ "+f3(i,2)+"″"};
+function ctCalc(){const sel=$("#ct_t").value;$("#ct_cw").hidden=sel!=="c";const L=sel==="c"?(+$("#ct_c").value||0)/1000:+sel,n=Math.max(1,Math.floor(+$("#ct_n").value)||1),g=(+$("#ct_g").value||0)/1000,x=(+$("#ct_x").value||0)/1000;
+  const tot=n*L+(n-1)*g+x;$("#ct_o").innerHTML=`<div>${n} × ${f3(L,3)} m${n>1?` + ${n-1} gap${n>2?"s":""} × ${f3(g*1000,1)} mm`:""}${x?` + ${f3(x*1000,1)} mm extra`:""}</div><b>${f3(tot,3)} m</b> &nbsp;(${f3(tot*1000,1)} mm)<div>${ftIn(tot)} · ${f3(tot/0.0254,2)} in</div>`}
+["ct_t","ct_c","ct_n","ct_g","ct_x"].forEach(i=>$("#"+i).addEventListener("input",ctCalc));
+const CVU=[["mm",0.001,"L"],["cm",0.01,"L"],["m",1,"L"],["inch",0.0254,"L"],["feet",0.3048,"L"],["yard",0.9144,"L"],["kg",1,"M"],["g",0.001,"M"],["lb",0.45359237,"M"],["tonne",1000,"M"]];
+$("#cv_u").innerHTML=CVU.map((u,i)=>`<option value="${i}">${u[0]}</option>`).join("");$("#cv_u").value="0";
+function cvCalc(){const v=+$("#cv_v").value||0,u=CVU[+$("#cv_u").value],base=v*u[1];$("#cv_o").innerHTML=CVU.filter(x=>x[2]===u[2]&&x!==u).map(x=>`<div>${f3(base/x[1],4)} <b style="font-size:14px">${x[0]}</b></div>`).join("")+(u[2]==="L"?`<div style="color:var(--mut)">${ftIn(base)}</div>`:"")}
+$("#cv_v").addEventListener("input",cvCalc);$("#cv_u").addEventListener("change",cvCalc);
+let wkPages=[],wkId=0;
+async function wkLoad(){try{const r=await api("wiki_list",{});wkPages=r.pages||[];wkDraw()}catch(e){alert(e.message)}}
+function wkDraw(){const q=$("#wk_q").value.trim().toLowerCase(),l=wkPages.filter(p=>!q||(p.title+" "+p.body).toLowerCase().includes(q));
+  $("#wk_items").innerHTML=l.map(p=>`<div class="wki" data-wk="${p.id}"><b>${esc(p.title)}</b><small>${esc((p.body||"").replace(/\s+/g," ").slice(0,80))}</small></div>`).join("")||'<div class="empty">No pages yet</div>'}
+$("#wk_q").addEventListener("input",wkDraw);
+$("#wk_items").addEventListener("click",e=>{const d=e.target.closest("[data-wk]");if(!d)return;wkEdit(wkPages.find(p=>p.id==d.dataset.wk))});
+function wkEdit(p){wkId=p?+p.id:0;$("#wk_t").value=p?p.title:"";$("#wk_b").value=p?p.body:"";$("#wk_meta").textContent=p&&p.by_name?"Last edited by "+p.by_name+" · "+p.updated_at:"";$("#wk_del").style.visibility=p?"visible":"hidden";$("#wk_list").hidden=true;$("#wk_ed").hidden=false}
+$("#wk_new").onclick=()=>wkEdit(null);$("#wk_back").onclick=()=>{$("#wk_ed").hidden=true;$("#wk_list").hidden=false};
+$("#wk_save").onclick=async()=>{try{await api("wiki_save",{id:wkId,title:$("#wk_t").value,body:$("#wk_b").value});$("#wk_back").onclick();await wkLoad()}catch(e){alert(e.message)}};
+$("#wk_del").onclick=async()=>{if(!wkId||!confirm("Delete this page?"))return;try{await api("wiki_del",{id:wkId});$("#wk_back").onclick();await wkLoad()}catch(e){alert(e.message)}};
+try{if(localStorage.getItem("tf_rp"))toolsOpen(true)}catch(e){}
 function startDraft(gid){if(LV==="view")return;const g=/^\d+$/.test(String(gid))?String(gid):"";
   if(g){const c=getGC();let ch=c.delete(g);if(gParent(g))ch=c.delete(gParent(g))||ch;if(ch)try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(e){}}
   draft={grp:g,t:{id:0,title:"",order_no:"",customer:"",drawing_type:"",start_date:"",end_date:"",status:ST[0][0],assigned_to:"",notes:"",group_id:g,x:{}}};
