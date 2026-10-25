@@ -1,7 +1,7 @@
 <?php
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','task_order','tl_add','tl_del','inv_set'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -225,6 +225,37 @@ case 'task_move':
     $db->prepare("UPDATE time_logs SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
     if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;
   }
+  out(['ok'=>1,'moved'=>$n]);
+case 'gr_move':
+  need_level('full');$id=(int)($in['id']??0);$to=(int)($in['to']??0);
+  if(!$to||$to===$W)out(['error'=>'Choose another company']);
+  $okTo=false;foreach($WS as $w)if((int)$w['id']===$to&&in_array($w['level'],['edit','full'],true))$okTo=true;
+  if(!$okTo)out(['error'=>'You cannot add to that company']);
+  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);$all=$q->fetchAll();$g=null;foreach($all as $x)if((int)$x['id']===$id)$g=$x;if(!$g)out(['error'=>'Group not found']);
+  $subs=[];foreach($all as $x)if((int)($x['parent_id']??0)===$id)$subs[]=$x;
+  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$to]);$dst=$q->fetchAll();
+  if(count($dst)+1+count($subs)>80)out(['error'=>'That company would have more than 80 groups']);
+  $find=function($name,$par)use(&$dst){foreach($dst as $x)if((int)($x['parent_id']??0)===(int)$par&&mb_strtolower($x['name'])===mb_strtolower($name))return (int)$x['id'];return 0;};
+  $mk=function($name,$par)use($db,$to,&$dst,$find){$e=$find($name,$par);if($e)return $e;$mx=$db->prepare("SELECT COALESCE(MAX(sort_no),0)+1 FROM task_groups WHERE ws_id=?");$mx->execute([$to]);
+    $db->prepare("INSERT INTO task_groups(ws_id,name,sort_no,parent_id) VALUES(?,?,?,?)")->execute([$to,$name,(int)$mx->fetchColumn(),$par?:null]);$nid=(int)$db->lastInsertId();$dst[]=['id'=>$nid,'name'=>$name,'parent_id'=>$par?:null];return $nid;};
+  $top=$mk($g['name'],0);$map=[$id=>$top];foreach($subs as $s)$map[(int)$s['id']]=$mk($s['name'],$top);
+  $q=$db->prepare("SELECT id,name,ctype FROM custom_cols WHERE ws_id=?");$q->execute([$W]);$sc=$q->fetchAll();
+  $q=$db->prepare("SELECT id,name,ctype FROM custom_cols WHERE ws_id=?");$q->execute([$to]);$dc=$q->fetchAll();
+  $cm=[];foreach($sc as $c)foreach($dc as $d)if(mb_strtolower($c['name'])===mb_strtolower($d['name'])&&$c['ctype']===$d['ctype'])$cm['x_'.$c['id']]='x_'.$d['id'];
+  $q=$db->prepare("SELECT skey FROM statuses WHERE ws_id=? ORDER BY (skey='done'),sort_no,id");$q->execute([$to]);$dk=$q->fetchAll(PDO::FETCH_COLUMN);if(!$dk)$dk=['todo','progress','review','done'];
+  $acc=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");
+  $n=0;
+  foreach($map as $from=>$gid){
+    $q=$db->prepare("SELECT id,status,assigned_to,extra,drawing_type FROM tasks WHERE group_id=? AND ws_id=?");$q->execute([$from,$W]);
+    foreach($q->fetchAll() as $t){
+      $st=in_array($t['status'],$dk,true)?$t['status']:$dk[0];
+      $as=$t['assigned_to'];if($as){$acc->execute([$as,$to]);if(!$acc->fetchColumn())$as=null;}
+      $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($cm[$k]))$nx[$cm[$k]]=$v;
+      $db->prepare("UPDATE tasks SET ws_id=?,group_id=?,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$gid,$st,$as,$nx?json_encode($nx):null,$t['id'],$W]);
+      $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$t['id']]);
+      $db->prepare("UPDATE time_logs SET ws_id=? WHERE task_id=?")->execute([$to,$t['id']]);
+      if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;}}
+  foreach(array_keys($map) as $gi)$db->prepare("DELETE FROM task_groups WHERE id=? AND ws_id=?")->execute([$gi,$W]);
   out(['ok'=>1,'moved'=>$n]);
 case 'task_order':
   need_level('edit');$id=(int)($in['id']??0);$before=(int)($in['before']??0);

@@ -308,7 +308,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  <div class="acts"><span class="sp"></span><button id="oc">Cancel</button><button class="p" id="os">Save</button></div>
 </dialog>
 
-<dialog id="gedlg"><b>Edit group</b><label>Name</label><input id="gen" maxlength="80"><label>Inside group</label><select id="gep"></select><small id="genote" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="gex">Cancel</button><button class="p" id="gesv">Save</button></div></dialog>
+<dialog id="gedlg"><b>Edit group</b><label>Name</label><input id="gen" maxlength="80"><label>Inside group</label><select id="gep"></select><small id="genote" style="color:var(--mut)"></small><div id="gemw" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><label>Move this group to another company</label><div style="display:flex;gap:6px"><select id="gemt"></select><button id="gemb">Move</button></div><small style="color:var(--mut)">The group, its sub-groups and all their tasks move together. People without access to the other company become unassigned.</small></div><div class="acts"><span class="sp"></span><button id="gex">Cancel</button><button class="p" id="gesv">Save</button></div></dialog>
 <dialog id="gdlg"><b>Groups (folders)</b><div id="glist"></div>
  <label>New group</label><input id="gn" placeholder="e.g. Production drawing, Sales drawing">
  <div class="acts"><span class="sp"></span><button id="gc">Close</button><button class="p" id="ga">Add group</button></div>
@@ -1106,6 +1106,9 @@ $("#oc").onclick=()=>$("#odlg").close();
 $("#os").onclick=async()=>{try{await api("ov_set",{hand:$("#oh").checked,one:$("#oo").checked});$("#odlg").close();await load(true)}catch(e){alert(e.message)}};
 let geId=0;
 $("#gex").onclick=()=>$("#gedlg").close();
+$("#gemb").onclick=async()=>{const to=+$("#gemt").value,w=wss.find(x=>x.id==to),g=groups.find(x=>x.id==geId);if(!to||!g)return;
+  if(!confirm("Move the group \""+g.name+"\""+(g.level?"":" with its sub-groups")+" and all its tasks to \""+(w?w.name:"")+"\"?"))return;
+  try{const r=await api("gr_move",{id:geId,to});$("#gedlg").close();if(G===String(geId))G="";await load(true);renderGr();alert("Moved "+r.moved+" task(s) to "+(w?w.name:"the other company")+".")}catch(e){alert(e.message)}};
 $("#gesv").onclick=async()=>{const n=$("#gen").value.trim();if(!n){alert("Enter a name");return}try{await api("gr_ren",{id:geId,name:n,parent_id:+$("#gep").value||0});$("#gedlg").close();await load(true);renderGr()}catch(e){alert(e.message)}};
 $("#gm").onclick=()=>{renderGr();$("#gdlg").showModal()};
 $("#gc").onclick=()=>$("#gdlg").close();
@@ -1115,7 +1118,7 @@ $("#glist").addEventListener("click",async e=>{
     if(d.gs){const n=prompt("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
     if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;$("#gen").value=cur.name;
       $("#gep").innerHTML='<option value="">— None (top level) —</option>'+groups.filter(x=>!x.level&&x.id!=cur.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#gep").value=cur.parent_id?String(cur.parent_id):"";
-      $("#gep").disabled=hasSub;$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
+      $("#gep").disabled=hasSub;const oth=wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level));$("#gemw").hidden=!oth.length;$("#gemt").innerHTML=oth.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
     if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
   }catch(err){alert(err.message)}
 });
