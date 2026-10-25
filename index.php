@@ -257,7 +257,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
- <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
+ <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
  <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select></div>
  <div id="mhs"></div><div id="mhout"></div></dialog>
 <dialog id="mhad"><b id="mhat">Add hours</b><div class="rctl" style="flex-direction:column;align-items:stretch"><label>Task<select id="mhtk"></select></label><div style="display:flex;gap:8px"><input type="number" id="mhah" step="0.25" min="0" max="24" placeholder="Hours"><select id="mhak" style="width:auto"><option value="R">Regular</option><option value="OT">OT</option></select></div><input id="mhan" placeholder="Note (optional)" maxlength="255"></div><div class="acts"><span class="sp"></span><button id="mhax">Cancel</button><button class="p" id="mhaok">Add</button></div></dialog>
@@ -655,12 +655,12 @@ function mhDraw(){const tg=+$("#mhg").value||0,wd=mhDays(),from=$("#mhf").value,
     rows+=`<tr${work?"":' style="opacity:.7"'}><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
   $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(mhRows.filter(x=>x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0))} h regular</b> + <b>${fmtH(mhRows.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0))} h OT</b> · expected regular so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
   $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">No working days in this range</td></tr>'}</table>`}
-function mhOpen(){const u=me.id;if(!$("#mhf").value){const ws=wkStart(ltoday());$("#mhf").value=ws;$("#mht").value=ltoday()}
+function mhOpen(){const u=me.id;$("#mhf").value=ltoday();$("#mht").value=ltoday();
   const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");if(!sel.value||!sel.dataset.set){sel.value=String(u);sel.dataset.set=1}}else sel.hidden=true;
   mhChips();$("#mhdg").showModal();mhLoad()}
 $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
 $("#mhcl").onclick=()=>$("#mhdg").close();
-$("#mhw").onclick=()=>mhSet(wkStart(ltoday()),ltoday());$("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhSet(s,isoAdd(s,6))};$("#mh14").onclick=()=>mhSet(isoAdd(ltoday(),-13),ltoday());
+$("#mhtd").onclick=()=>mhSet(ltoday(),ltoday());$("#mhw").onclick=()=>mhSet(wkStart(ltoday()),ltoday());$("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhSet(s,isoAdd(s,6))};$("#mh14").onclick=()=>mhSet(isoAdd(ltoday(),-13),ltoday());
 ["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",mhLoad));$("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;const on=[...document.querySelectorAll("#mhdays [data-mhd]:checked")].map(x=>+x.dataset.mhd);try{localStorage.setItem("tf_mhd",JSON.stringify(on))}catch(x){}mhDraw()});
 $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const uid=mhUser||me.id;
