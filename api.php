@@ -1,5 +1,5 @@
 <?php
-const BUILD=112;
+const BUILD=113;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -158,6 +158,15 @@ case 'msg_send':
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
+case 'my_tasks':
+  $ids=array_map(fn($w)=>(int)$w['id'],$WS);
+  if(!$ids)out(['tasks'=>[],'st'=>(object)[],'ws'=>(object)[]]);
+  $in=implode(',',$ids);
+  $q=$db->prepare("SELECT id,ws_id,title,order_no,customer,drawing_type,start_date,end_date,status FROM tasks WHERE assigned_to=? AND status<>'done' AND ws_id IN($in) ORDER BY (end_date IS NULL),end_date,id LIMIT 500");$q->execute([$uid]);
+  $tk=$q->fetchAll();$st=[];
+  foreach($db->query("SELECT ws_id,skey,name,color FROM statuses WHERE ws_id IN($in)")->fetchAll() as $r)$st[$r['ws_id']][$r['skey']]=['n'=>$r['name'],'c'=>$r['color']];
+  $wn=[];foreach($WS as $w)$wn[$w['id']]=$w['name'];
+  out(['tasks'=>$tk,'st'=>(object)$st,'ws'=>(object)$wn]);
 case 'list':
   $ver=(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn();
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];

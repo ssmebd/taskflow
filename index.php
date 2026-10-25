@@ -198,6 +198,38 @@ body.hs header input,body.hs header select,body.hs header button{padding:4px 8px
 body.hs header .brand{padding-right:10px;margin-right:2px}body.hs header .brand b{font-size:19px}body.hs header .brand small{font-size:7px;margin-top:1px}
 body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;margin-right:2px}body.hs #wlogo .ini{font-size:12px}body.hs header #bell b{font-size:10px;padding:0 5px}
 #wlogo{width:auto;min-width:36px;max-width:90px;height:34px;display:flex;align-items:center;justify-content:center;align-self:center;margin-right:6px}#wlogo img{height:100%;width:auto;max-width:90px;object-fit:contain}header h1{display:flex;align-items:center;align-self:center;line-height:1}
+
+body,body.sc{padding-left:56px}
+#side,body.sc #side{width:56px;align-items:center;overflow:visible;padding:10px 0 12px;gap:6px}
+@media(max-width:700px){body,body.sc{padding-left:56px}}
+#side .rlogo{display:flex;align-items:center;justify-content:center;width:44px;height:44px;margin-bottom:8px;border-radius:12px}
+#side .rb{width:42px;height:42px;padding:0;border:0;border-radius:11px;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--sf);text-decoration:none;cursor:pointer}
+#side .rb:hover,#side a.rb:hover{background:color-mix(in srgb,var(--sf) 16%,transparent)}
+#side .rb.on{background:color-mix(in srgb,var(--sf) 26%,transparent)}
+#side .sf,body.sc .sf{padding:0;margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+#side .sf .rb{width:42px;height:42px;padding:0;font-size:inherit}
+#side #setw{display:flex}
+#side #ubtn{width:38px;height:38px;border-radius:50%;padding:0;background:#6366f1;color:#fff;border:2px solid color-mix(in srgb,var(--sf) 40%,transparent);font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+#side #ubtn:hover{background:#7477f5}
+#umenu{min-width:210px}.umh{padding:8px 10px 6px;border-bottom:1px solid var(--line);margin-bottom:4px;display:flex;flex-direction:column}.umh small{color:var(--mut);font-size:12px}
+#cpanel{position:fixed;left:56px;top:0;bottom:0;width:290px;background:var(--card);color:var(--ink);border-right:1px solid var(--line);box-shadow:10px 0 28px rgba(0,0,0,.2);z-index:46;display:flex;flex-direction:column;gap:8px;padding:14px 12px;transform:translateX(-14px);opacity:0;pointer-events:none;transition:transform .16s,opacity .16s}
+#cpanel.open{transform:none;opacity:1;pointer-events:auto}
+#cpanel .cph{display:flex;align-items:center}#cpanel .cph b{flex:1;font-size:16px}#cpanel .cph button{border:0;background:none;font-size:15px;color:var(--mut)}
+#cpl{display:flex;flex-direction:column;gap:2px;overflow:auto}
+#cpanel .cr{display:flex;align-items:center;gap:11px;padding:7px 8px;border-radius:9px;color:var(--ink);text-decoration:none}
+#cpanel .cr:hover{background:var(--col)}#cpanel .cr.on{background:color-mix(in srgb,var(--pri) 16%,var(--card));font-weight:600}
+#cpanel .cr .wl{width:40px;height:40px;border-radius:10px;border:0;padding:3px;background:#0f2a5c;flex:none;pointer-events:none}
+#cpanel .cr .ini{border-radius:8px;font-size:15px}
+#cpanel .cr span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home #fa,body.home #add,body.home #gtabs,body.home #stats,body.home #gcb,body.home #bar{display:none!important}
+.hm{max-width:900px;margin:0 auto;padding:18px 16px 40px}.hm h2{margin:0 0 2px;font-size:22px}.hm .sub{color:var(--mut);margin-bottom:16px}
+.hsec{margin-top:18px}.hsec h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hsec h3 i{width:9px;height:9px;border-radius:50%;background:var(--c,#64748b)}.hsec h3 em{font-style:normal;font-weight:600;color:var(--ink)}
+.hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);text-decoration:none}
+.hrow:hover{border-color:var(--pri)}.hrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow small{color:var(--mut)}
+.hco{font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;background:var(--col);color:var(--mut);white-space:nowrap}
+.hdl{font-size:13px;white-space:nowrap;min-width:84px;text-align:right}.hdl.late{color:#dc2626;font-weight:600}
+.hst{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;text-transform:uppercase;background:color-mix(in srgb,var(--pc,#888) 22%,var(--card));color:color-mix(in srgb,var(--pc,#888) 60%,var(--ink));border:1px solid color-mix(in srgb,var(--pc,#888) 45%,transparent)}
+@media(max-width:600px){.hrow{grid-template-columns:minmax(0,1fr) auto}.hrow .hco{grid-column:1}}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -209,12 +241,14 @@ body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;mar
  <span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
  <button class="p" id="add">+ New task</button>
- <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="#" id="mhm">⏱ My hours check</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span>
 </header>
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
-<aside id="side"><div class="sh"><button id="stg" title="Collapse or expand the sidebar">◀</button></div><div id="vname"></div><nav id="wlinks"></nav><div class="sf"><span id="setw"><button id="sbtn" aria-haspopup="true" title="Settings"><span class="ic">⚙</span><span class="lbl"> Settings</span></button>
+<aside id="side"><a class="rlogo" href="index.php?home=1" title="TaskFlow"><svg viewBox="0 0 36 36" width="34" height="34" aria-hidden="true"><rect x="1" y="1" width="34" height="34" rx="9" fill="#16a34a"/><text x="18" y="24.5" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="#fff">TF</text></svg></a>
+<a class="rb" id="rhome" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
+<button class="rb" id="rco" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
+<div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div><div class="sf"><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
@@ -226,7 +260,8 @@ body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;mar
    <button id="xm">⬇ Export to Excel</button>
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
-  </div></span><button id="wm" hidden title="Manage companies and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
+  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+<div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
  <div class="mgbody"><div id="mgu"></div><div class="mgr"><div id="mgt" class="mgtt"></div><div id="mgm"></div><div class="mgin" style="position:relative"><div id="mge" hidden></div><button id="mgem" type="button" title="Emoji">😊</button><textarea id="mgi" rows="2" placeholder="Write a message… (Enter to send, Shift+Enter for a new line)" maxlength="2000"></textarea><button class="p" id="mgs">Send</button></div></div></div></aside>
@@ -393,8 +428,7 @@ let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return fals
 let hoursMap={},draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
-(function(){let c;try{const v=localStorage.getItem("tf_sc");c=v===null?innerWidth<700:v==="1"}catch(e){c=false}
-  document.body.classList.toggle("sc",c);const b=document.getElementById("stg");if(b){b.textContent=c?"▶":"◀";}})();
+const HOME=new URLSearchParams(location.search).get("home")==="1";document.body.classList.toggle("home",HOME);
 const esc=s=>{const d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML};
 const ea=s=>esc(s).replace(/"/g,"&quot;");
 async function api(a,data){
@@ -407,7 +441,7 @@ async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);chkBuild(rest.build);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
     tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
-    if(j.w!==W){W=j.w;if(history.replaceState)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
+    if(j.w!==W){W=j.w;if(history.replaceState&&!HOME)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
     render();bellUpd();if(deepT){const t=tasks.find(x=>x.id==deepT);deepT=0;if(t){if(deepM){deepM=null;openMsg(t.id)}else openDlg(t)}}}catch(e){}
@@ -563,6 +597,22 @@ document.addEventListener("drop",e=>{if(!dragCol)return;const th=e.target.closes
 document.addEventListener("dragend",()=>{dragCol=null;document.querySelectorAll("th.ch.over").forEach(x=>x.classList.remove("over"))});
 $("#cr").onclick=()=>{try{localStorage.removeItem(coKey());localStorage.removeItem(cwKey())}catch(e){}render()};
 (()=>{let on=false,tk=0;const f=()=>{tk=0;const y=window.scrollY;if(!on&&y>60){on=true;document.body.classList.add("hs")}else if(on&&y<8){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true})})();
+let homeData=null,homeAt=0,homeBusy=false;
+async function renderHome(){
+  const m=$("#main");
+  if(!homeData)m.innerHTML='<div class="hm"><div class="empty">Loading your tasks…</div></div>';
+  if(!homeData||Date.now()-homeAt>2500){if(homeBusy)return;homeBusy=true;try{homeData=await api("my_tasks");homeAt=Date.now()}catch(e){m.innerHTML='<div class="hm"><div class="empty">'+esc(e.message)+'</div></div>';homeBusy=false;return}homeBusy=false}
+  const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  const now=new Date(),td=ymd(now),wk=ymd(new Date(now.getTime()+7*864e5));
+  const B=[["late","Overdue","#dc2626"],["today","Due today","#f59e0b"],["week","Next 7 days","#2563eb"],["later","Later","#64748b"],["none","No deadline","#94a3b8"]];
+  const bk={late:[],today:[],week:[],later:[],none:[]};
+  for(const t of homeData.tasks){const e=t.end_date||"";bk[!e?"none":e<td?"late":e===td?"today":e<=wk?"week":"later"].push(t)}
+  const fd=s=>{const d=new Date(s+"T00:00:00");return d.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
+  const row=t=>{const st=(homeData.st[t.ws_id]||{})[t.status],nm=st?st.n:t.status,pc=st&&st.c?st.c:"#888";
+    return `<a class="hrow" href="index.php?w=${t.ws_id}&t=${t.id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ")}</small></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="hco">${esc(homeData.ws[t.ws_id]||"")}</span><span class="hst" style="--pc:${esc(pc)}">${esc(nm)}</span></div><span class="hdl${t.end_date&&t.end_date<td?" late":""}">${t.end_date?fd(t.end_date):"No deadline"}</span></a>`};
+  const n=homeData.tasks.length,lt=bk.late.length;
+  m.innerHTML=`<div class="hm"><h2>Hello, ${esc((me.name||"").split(" ")[0]||"there")}</h2><div class="sub">${n?`${n} open task${n===1?"":"s"} assigned to you across all your companies${lt?`, ${lt} overdue`:""}.`:"Nothing is assigned to you right now."}</div>`+
+    B.filter(b=>bk[b[0]].length).map(b=>`<div class="hsec" style="--c:${b[2]}"><h3><i></i>${b[1]} <em>${bk[b[0]].length}</em></h3>${bk[b[0]].map(row).join("")}</div>`).join("")+`</div>`}
 function render(){
   const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f&&$("#main").contains(ae)){pend=true;return}
   pend=false;for(const id of [...sel])if(!tasks.some(t=>t.id==id))sel.delete(id);
@@ -570,9 +620,11 @@ function render(){
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#wm").hidden=me.role!=="admin";
   $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
-  $("#who").textContent=(me.name||"")+(LV==="view"?" · view only":LV==="full"&&me.role!=="admin"?" · full access":"");
+  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
+  fillCp();
+  if(HOME){$("#wname").textContent="My tasks";$("#wlogo").innerHTML="";renderHome();return}
   if(!W){$("#stats").innerHTML="";$("#main").innerHTML='<div class="empty">You have not been given access to any company yet. Please ask an admin.</div>';return}
   const list=filtered();
   const gt=tasks.filter(inGroup);
@@ -1264,13 +1316,15 @@ function renderWs(){
 }
 $("#wm").onclick=()=>{renderWs();$("#wdlg").showModal()};
 $("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px"};
-$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#ubtn").getBoundingClientRect();m.style.top=(r.bottom+6)+"px";m.style.right=Math.max(8,window.innerWidth-r.right)+"px"};
+$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px"};
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
-document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#smenu").hidden=true;$("#umenu").hidden=true}});
-(()=>{let t=0,act=0;const idle=()=>{if(document.body.classList.contains("sc")||$("#side").matches(":hover")||!$("#smenu").hidden)return;document.body.classList.add("sc");$("#stg").textContent="▶"};
-  const reset=()=>{clearTimeout(t);t=setTimeout(idle,60000)};["mousemove","keydown","click","scroll","touchstart"].forEach(ev=>document.addEventListener(ev,reset,{passive:true,capture:true}));reset()})();
-$("#stg").onclick=()=>{const c=document.body.classList.toggle("sc");$("#stg").textContent=c?"▶":"◀";try{localStorage.setItem("tf_sc",c?"1":"0")}catch(e){}};
+document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true;if(!e.target.closest("#cpanel,#rco"))cpClose()});
+function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
+$("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
+$("#cpx").onclick=cpClose;$("#cps").addEventListener("input",fillCp);
+$("#amm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#wm").click()};
+function fillCp(){const q=($("#cps").value||"").trim().toLowerCase();$("#cpl").innerHTML=(wss||[]).filter(w=>!q||String(w.name).toLowerCase().includes(q)).map(w=>`<a class="cr${w.id==W&&!HOME?" on":""}" href="index.php?w=${w.id}"><span class="wl">${wlogo(w)}</span><span class="nm">${esc(w.name)}</span></a>`).join("")||'<div class="empty" style="padding:12px">No companies</div>'}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){cpClose();$("#smenu").hidden=true;$("#umenu").hidden=true}});
 $("#wf").addEventListener("change",async e=>{const f=e.target.files[0];if(!f||!logoFor)return;
   try{const data=await fileToLogo(f);await api("ws_logo",{id:logoFor,data});await load(true);renderWs()}catch(err){alert(err.message)}logoFor=null});
 $("#wc").onclick=()=>$("#wdlg").close();
@@ -1480,7 +1534,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=112;
+const BUILD=113;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
