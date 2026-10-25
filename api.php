@@ -335,10 +335,13 @@ case 'gr_add':
   $db->prepare("INSERT INTO task_groups(ws_id,name,sort_no,parent_id) VALUES(?,?,?,?)")->execute([$W,$n,(int)$mx->fetchColumn(),$par?:null]);out(['ok'=>1,'id'=>(int)$db->lastInsertId()]);
 case 'gr_ren':
   need_level('full');$n=mb_substr(trim($in['name']??''),0,80);$id=(int)($in['id']??0);if($n==='')out(['error'=>'Enter a name']);
-  $q=$db->prepare("SELECT parent_id FROM task_groups WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$pp=(int)$q->fetchColumn();
-  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);
-  foreach($q->fetchAll() as $x)if($x['id']!=$id&&(int)($x['parent_id']??0)===$pp&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
-  $db->prepare("UPDATE task_groups SET name=? WHERE id=? AND ws_id=?")->execute([$n,$id,$W]);out(['ok'=>1]);
+  $q=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=?");$q->execute([$W]);$all=$q->fetchAll();$cur=null;foreach($all as $x)if((int)$x['id']===$id)$cur=$x;if(!$cur)out(['error'=>'Group not found']);
+  $np=(int)($cur['parent_id']??0);
+  if(array_key_exists('parent_id',$in)){$np=(int)$in['parent_id'];
+    if($np){if($np===$id)out(['error'=>'A group cannot be inside itself']);$par=null;foreach($all as $x)if((int)$x['id']===$np)$par=$x;if(!$par||$par['parent_id'])out(['error'=>'Choose a top-level group']);
+      foreach($all as $x)if((int)($x['parent_id']??0)===$id)out(['error'=>'This group has sub-groups, so it cannot go inside another group']);}}
+  foreach($all as $x)if((int)$x['id']!==$id&&(int)($x['parent_id']??0)===$np&&mb_strtolower($x['name'])===mb_strtolower($n))out(['error'=>'That name already exists here']);
+  $db->prepare("UPDATE task_groups SET name=?,parent_id=? WHERE id=? AND ws_id=?")->execute([$n,$np?:null,$id,$W]);out(['ok'=>1]);
 case 'gr_del':
   need_level('full');$id=(int)($in['id']??0);
   $q=$db->prepare("SELECT id FROM task_groups WHERE parent_id=? AND ws_id=?");$q->execute([$id,$W]);$all=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$all[]=$id;

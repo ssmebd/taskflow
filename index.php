@@ -290,6 +290,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <div class="acts"><span class="sp"></span><button id="oc">Cancel</button><button class="p" id="os">Save</button></div>
 </dialog>
 
+<dialog id="gedlg"><b>Edit group</b><label>Name</label><input id="gen" maxlength="80"><label>Inside group</label><select id="gep"></select><small id="genote" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="gex">Cancel</button><button class="p" id="gesv">Save</button></div></dialog>
 <dialog id="gdlg"><b>Groups (folders)</b><div id="glist"></div>
  <label>New group</label><input id="gn" placeholder="e.g. Production drawing, Sales drawing">
  <div class="acts"><span class="sp"></span><button id="gc">Close</button><button class="p" id="ga">Add group</button></div>
@@ -1028,7 +1029,7 @@ $("#stats").addEventListener("click",e=>{if(e.target.closest("[data-ov]")){ovOnl
 $("#gtabs").addEventListener("click",e=>{const a=e.target.closest("[data-g]");if(!a)return;G=a.dataset.g;try{localStorage.setItem("tf_g_"+W,G)}catch(x){}sel.clear();render()});
 function renderGr(){
   const full=LV==="full";
-  $("#glist").innerHTML=groups.map(g=>`<div class="acts" style="${g.level?"margin-left:26px":""}"><span style="flex:1">${g.level?"↳ ":""}📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${LV!=="view"&&!g.level?`<button data-gs="${g.id}">+ Sub-group</button>`:""}${full?`<button data-gr="${g.id}">Rename</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
+  $("#glist").innerHTML=groups.map(g=>`<div class="acts" style="${g.level?"margin-left:26px":""}"><span style="flex:1">${g.level?"↳ ":""}📁 ${esc(g.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.group_id==g.id).length} task(s)</small></span>${LV!=="view"&&!g.level?`<button data-gs="${g.id}">+ Sub-group</button>`:""}${full?`<button data-gr="${g.id}">✎ Edit</button><button data-gd="${g.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No groups yet</div>';
 }
 function renderDt(){const full=LV==="full";
   $("#dlist").innerHTML=dtypes.map(d=>`<div class="acts"><span style="flex:1">${esc(d.name)} <small style="color:var(--mut)">${tasks.filter(t=>t.drawing_type===d.name).length} task(s)</small></span>${full?`<button data-dr="${d.id}">Rename</button><button data-dd="${d.id}">Delete</button>`:""}</div>`).join("")||'<div class="empty">No drawing types yet</div>'}
@@ -1051,13 +1052,18 @@ $("#prs").onclick=async()=>{try{await api("pref_theme",{v:""});me.theme="";try{l
 $("#om").onclick=()=>{$("#oh").checked=!!+ovset.hand;$("#oo").checked=!!+ovset.one;$("#odlg").showModal()};
 $("#oc").onclick=()=>$("#odlg").close();
 $("#os").onclick=async()=>{try{await api("ov_set",{hand:$("#oh").checked,one:$("#oo").checked});$("#odlg").close();await load(true)}catch(e){alert(e.message)}};
+let geId=0;
+$("#gex").onclick=()=>$("#gedlg").close();
+$("#gesv").onclick=async()=>{const n=$("#gen").value.trim();if(!n){alert("Enter a name");return}try{await api("gr_ren",{id:geId,name:n,parent_id:+$("#gep").value||0});$("#gedlg").close();await load(true);renderGr()}catch(e){alert(e.message)}};
 $("#gm").onclick=()=>{renderGr();$("#gdlg").showModal()};
 $("#gc").onclick=()=>$("#gdlg").close();
 $("#ga").onclick=async()=>{try{const r=await api("gr_add",{name:$("#gn").value});$("#gn").value="";await load(true);G=String(r.id);try{localStorage.setItem("tf_g_"+W,G)}catch(x){}render();renderGr()}catch(e){alert(e.message)}};
 $("#glist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
     if(d.gs){const n=prompt("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
-    if(d.gr){const cur=groups.find(g=>g.id==d.gr),n=prompt("New name for this group:",cur.name);if(n&&n.trim()){await api("gr_ren",{id:d.gr,name:n});await load(true);renderGr()}}
+    if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;$("#gen").value=cur.name;
+      $("#gep").innerHTML='<option value="">— None (top level) —</option>'+groups.filter(x=>!x.level&&x.id!=cur.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#gep").value=cur.parent_id?String(cur.parent_id):"";
+      $("#gep").disabled=hasSub;$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
     if(d.gd){const cur=groups.find(g=>g.id==d.gd);if(confirm("Delete the group \""+cur.name+"\""+(cur.level?"":" and its sub-groups")+"? Their tasks are kept and moved to No group.")){await api("gr_del",{id:d.gd});if(G===String(d.gd))G="";await load(true);renderGr()}}
   }catch(err){alert(err.message)}
 });
