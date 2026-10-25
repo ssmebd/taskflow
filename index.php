@@ -168,7 +168,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .wlt td.c{text-align:center}.wlt td.k{background:#f4cccc}.wlt .ft td{font-weight:700;border:1px solid #777}
 .pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
 .itb{table-layout:auto;border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap;overflow:visible}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
-.itb.nb td,.itb.nb th{border:0}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb tr:last-child td{border-top:1px solid #000;border-bottom:1px solid #000}.itb.nb td.spc{background:#d9ead3;border:0;height:7px}
+.itb.nb{border:1px solid #000}.itb.nb td,.itb.nb th{border:0}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb tr:last-child td{border-top:1px solid #000;border-bottom:1px solid #000}.itb.nb td.spc{background:#d9ead3;border:0;height:7px}
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
 .invf{position:absolute;left:0;right:0;bottom:6mm}.invf .ifbar{height:2.2mm;background:#22784b;margin:0 4mm}.invf .ifad{text-align:right;margin:1.5mm 5mm 0;font:9px Arial}
 @page wl{size:A3 landscape;margin:8mm}@page inv{size:A4 portrait;margin:0}
@@ -679,7 +679,7 @@ function invCatPage(p,secs){const from=$("#rf").value,to=$("#rt").value,yy=to.sl
   <tr><td class="c">${wk}</td><td class="c">${esc(from)}</td><td class="c">${esc(to)}</td>${cells}<td class="c">${esc(p.symbol)}${num(tot)}</td></tr><tr><td colspan="${3+secs.length}" style="height:14px"></td><td></td></tr>
   <tr><td colspan="${3+secs.length}">Invoiced Total</td><td class="c">${esc(p.symbol)}${num(tot)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}
 function invItemsPage(p,rows){const from=$("#rf").value,to=$("#rt").value,m=new Map();for(const x of rows){let r=m.get(x.task_id);if(!r){r={x,h:0,c:0};m.set(x.task_id,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
-  let th=0,tc=0;const body=[...m.values()].map(r=>{th+=r.h;tc+=r.c;return `<tr><td>${esc(r.x.order_no||"")}</td><td>${esc(r.x.title)}</td><td class="c">${num(r.h)}</td><td class="c">${num(r.c)}</td></tr>`}).join("");
+  let th=0,tc=0;const body=[...m.values()].map(r=>{th+=r.h;tc+=r.c;return `<tr><td>${esc(r.x.title)}</td><td>${esc(r.x.sub_name||r.x.top_name||"")}</td><td class="c">${num(r.h)}</td><td class="c">${num(r.c)}</td></tr>`}).join("");
   return {tc,th,html:`<div class="pg pginv">${invTop(p)}<table class="itb"><tr><th class="l">INVOICE NO:</th><td class="b c" style="font-size:10.5px">${esc(rInvNo(p))}</td><th class="l">DATE:</th><td class="b c">${esc(to)}</td><th class="l">PO NO</th><td class="po">${esc(p.po||"")}</td></tr><tr><td colspan="6" class="c"><b style="font-size:13px">CLIENT:</b> ${esc([p.client_name,p.client_addr].filter(Boolean).join(", "))}</td></tr><tr><td colspan="6" class="spc"></td></tr></table>
   <table class="itb nb"><tr><td colspan="3">INVOICE WEEK</td><td class="g c">${isoWeek(from)}-${isoWeek(to)}</td></tr><tr><td colspan="3">Duration:</td><td class="g c">${dmy(from)} - ${dmy(to)}</td></tr>
   <tr class="g"><th class="a">ACTIONED ITEMS</th><th class="a">ITEM GROUP</th><th class="c">HOURS<br>SPENT</th><th class="c">SUB-TOTAL<br>(${esc(p.currency)})</th></tr>${body}<tr><td colspan="4" class="spc"></td></tr><tr><td colspan="3">Invoiced Total (${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}}
@@ -689,7 +689,8 @@ function drawReport(){
   const pp=new Map();rrows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>(+a[0])-(+b[0]));
   let pages="",inv="";
   const secs=rSections(p,rows),names=secOrder([...secs.keys()]),lines=[];
-  for(const n of names){const t=wlPage(p,n,secs.get(n),P,csv);lines.push([n,t.th,t.tc]);pages+=t.html}
+  if(p.layout==="items"){const t=wlPage(p,(wss.find(w=>w.id==W)||{}).name||names.join(" / "),rows,P,csv);pages+=t.html}
+  else for(const n of names){const t=wlPage(p,n,secs.get(n),P,csv);lines.push([n,t.th,t.tc]);pages+=t.html}
   rcsvRows=[["Group","Date","Week","Project group","Project No","Project name"].concat(P.map(x=>x[1]),["Type","Total hrs"],"(rates)","Total cost "+p.currency,"Remarks")].concat(csv);
   if(p.layout==="items"){const it=invItemsPage(p,rows);inv=it.html;if(!it.tc)h0=RWARN}else{inv=invCatPage(p,lines);if(!lines.some(l=>l[2]))h0=RWARN}
   if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
@@ -1277,7 +1278,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=49;
+const BUILD=50;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
