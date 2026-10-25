@@ -1,5 +1,5 @@
 <?php
-const BUILD=102;
+const BUILD=103;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -131,6 +131,11 @@ function clean($f,$v){
   $lim=['title'=>255,'customer'=>255,'order_no'=>100,'drawing_type'=>100,'notes'=>5000][$f];
   return mb_substr((string)$v,0,$lim);
 }
+function notify_assign($db,$tid,$new,$old){global $uid,$W,$WS;$new=(int)$new;if(!$new||$new===(int)$old||$new===$uid)return;
+  try{$q=$db->prepare("SELECT title,order_no FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$t=$q->fetch();if(!$t)return;
+  $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
+  $b="📌 New task assigned to you: ".$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);}catch(Throwable $e){}}
 switch($a){
 case 'ping':
   $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
@@ -193,6 +198,7 @@ case 'list':
 case 'save':
   need_level('edit');$v=[];foreach($F as $f)$v[$f]=clean($f,$in[$f]??'');
   if($v['title']==='')out(['error'=>'Title required']);
+  $oldA=null;if(!empty($in['id'])){$q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([(int)$in['id'],$W]);$oldA=$q->fetchColumn();}
   if(!empty($in['id'])){
     $set=implode(',',array_map(fn($f)=>"$f=?",$F));
     $db->prepare("UPDATE tasks SET $set,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([...array_values($v),(int)$in['id'],$W]);
@@ -200,6 +206,7 @@ case 'save':
     $db->prepare("INSERT INTO tasks(".implode(',',$F).",ws_id,updated_at) VALUES(".implode(',',array_fill(0,count($F),'?')).",?,NOW())")->execute([...array_values($v),$W]);
     $in['id']=$db->lastInsertId();
   }
+  notify_assign($db,(int)$in['id'],$v['assigned_to'],$oldA);
   if(isset($in['x'])&&is_array($in['x'])){
     $vals=[];foreach(get_cols($db) as $c){$k='x_'.$c['id'];if(array_key_exists($k,$in['x']))$vals[$k]=clean_x($c,$in['x'][$k]);}
     if($vals)set_x($db,(int)$in['id'],$vals);
@@ -213,7 +220,9 @@ case 'field':
   }
   if(!in_array($f,$F,true))out(['error'=>'bad field']);
   $v=clean($f,$in['v']??'');if($f==='title'&&$v==='')out(['ok'=>1]);
-  $db->prepare("UPDATE tasks SET $f=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$v,(int)($in['id']??0),$W]);out(['ok'=>1]);
+  $oldA=null;if($f==='assigned_to'){$q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([(int)($in['id']??0),$W]);$oldA=$q->fetchColumn();}
+  $db->prepare("UPDATE tasks SET $f=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$v,(int)($in['id']??0),$W]);
+  if($f==='assigned_to')notify_assign($db,(int)($in['id']??0),$v,$oldA);out(['ok'=>1]);
 case 'delete':
   need_level('full');foreach($in['ids']??[] as $i){$db->prepare("DELETE FROM tasks WHERE id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM task_comments WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM time_logs WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);}out(['ok'=>1]);
 case 'dup':
@@ -229,8 +238,10 @@ case 'gantt_set':
     if($a){$q=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");$q->execute([$a,$W]);if(!$q->fetchColumn())out(['error'=>'That person cannot open this workspace']);}
     $set.=",assigned_to=?";$p[]=$a?:null;
   }
+  $oldA=null;if(array_key_exists('a',$in)){$q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$oldA=$q->fetchColumn();}
   $p[]=$id;$p[]=$W;
-  $db->prepare("UPDATE tasks SET $set,updated_at=NOW() WHERE id=? AND ws_id=?")->execute($p);out(['ok'=>1]);
+  $db->prepare("UPDATE tasks SET $set,updated_at=NOW() WHERE id=? AND ws_id=?")->execute($p);
+  if(array_key_exists('a',$in))notify_assign($db,$id,(int)$in['a'],$oldA);out(['ok'=>1]);
 case 'task_move':
   need_level('full');$to=(int)($in['to']??0);$ids=array_map('intval',$in['ids']??[]);
   if(!$to||$to===$W)out(['error'=>'Choose another workspace']);
