@@ -1,5 +1,5 @@
 <?php
-const BUILD=85;
+const BUILD=86;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -371,7 +371,7 @@ case 'my_hours':
   if($LV==='view'&&$me['role']!=='admin')out(['error'=>'Hours are not available with view-only access']);
   $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $who=$uid;if(!empty($in['user'])&&$me['role']==='admin')$who=(int)$in['user'];
-  $q=$db->prepare("SELECT l.id,l.work_date,l.hours,l.kind,w.name AS ws,t.title,t.order_no FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);
+  $q=$db->prepare("SELECT l.id,l.work_date,l.hours,l.kind,l.note,w.name AS ws,t.title,t.order_no,COALESCE(pg.name,g.name) AS top_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);
   out(['rows'=>$q->fetchAll(),'user'=>$who]);
 case 'wiki_list':
   out(['pages'=>$db->query("SELECT p.id,p.title,p.body,p.updated_at,COALESCE(u.name,'') AS by_name FROM wiki_pages p LEFT JOIN users u ON u.id=p.updated_by ORDER BY p.title")->fetchAll()]);
