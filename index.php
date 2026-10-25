@@ -233,6 +233,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 #side .rlogo{flex-direction:column;width:52px;height:auto;line-height:1;gap:1px;margin:2px 0 10px;text-decoration:none;color:var(--sf);font-weight:800;font-size:14px;letter-spacing:.2px}#side .rlogo .fl{color:#22c55e;text-shadow:0 0 8px rgba(34,197,94,.55)}
 .apn{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:0 6px;margin-left:4px}.apr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}.apr small{color:var(--mut)}.apr .acts{margin:0}
 #umenu a[hidden],#umenu [hidden]{display:none!important}
+#side .rlogo{flex-direction:row;align-items:center;gap:1px;font-size:22px;letter-spacing:0;width:52px;height:40px}#side .rlogo .fl{font-size:26px;line-height:1;margin-top:-3px;text-shadow:0 0 8px rgba(34,197,94,.7)}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -248,7 +249,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
-<aside id="side"><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>Task</span><span class="fl">Flow</span></a>
+<aside id="side"><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
 <a class="rb" id="rhome" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div><div class="sf"><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
@@ -1545,7 +1546,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=116;
+const BUILD=117;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
