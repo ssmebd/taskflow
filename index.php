@@ -196,7 +196,8 @@ header,html.glass header{position:sticky;top:0;z-index:45;transition:padding .15
 body.hs header,body.hs html.glass header{padding:6px 12px;gap:6px}
 body.hs header input,body.hs header select,body.hs header button{padding:4px 8px;font-size:12.5px;min-height:0}
 body.hs header .brand{padding-right:10px;margin-right:2px}body.hs header .brand b{font-size:19px}body.hs header .brand small{font-size:7px;margin-top:1px}
-body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{width:32px;height:32px;margin-right:2px}body.hs #wlogo .ini{font-size:12px}body.hs header #bell b{font-size:10px;padding:0 5px}
+body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;margin-right:2px}body.hs #wlogo .ini{font-size:12px}body.hs header #bell b{font-size:10px;padding:0 5px}
+#wlogo{width:auto;min-width:36px;max-width:90px;height:34px;display:flex;align-items:center;justify-content:center;align-self:center;margin-right:6px}#wlogo img{height:100%;width:auto;max-width:90px;object-fit:contain}header h1{display:flex;align-items:center;align-self:center;line-height:1}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -1479,7 +1480,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=109;
+const BUILD=110;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
