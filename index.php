@@ -25,7 +25,7 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .gt{padding:5px 14px;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:0;background:var(--col);cursor:pointer;white-space:nowrap;color:var(--ink)}
 .gt.on{background:var(--card);font-weight:600;box-shadow:inset 0 3px 0 var(--pri)}.gt small{color:var(--mut)}.ro #gm{display:none}
 .gh th,.dh th{background:var(--col);color:var(--ink);font-size:13px;cursor:pointer}
-.stat{cursor:pointer}.stat.on{border-color:var(--pri);outline:1px solid var(--pri)}.ro #sm{display:none}
+.stat{cursor:pointer}.stat.on{border-color:var(--pri);outline:1px solid var(--pri)}.ro #sm,.ro #tlb{display:none}
 .stat b{display:block;font-size:20px}.stat span{color:var(--mut);font-size:12px}
 .board{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;padding:0 16px 16px;overflow-x:auto}
 .col{background:var(--col);border-radius:12px;padding:10px;min-height:200px}
@@ -526,7 +526,7 @@ function colDefs(withHidden){
   const saved=colOrder(),out=[];
   for(const id of saved){const d=all.find(x=>x.id===id);if(d&&!out.includes(d))out.push(d)}
   for(const d of all)if(!out.includes(d))out.push(d);
-  return withHidden?out:out.filter(d=>d.id==="title"||!hc.includes(d.id));
+  return withHidden?out:out.filter(d=>d.id==="title"||(!hc.includes(d.id)&&!(LV==="view"&&d.id==="hours")));
 }
 function moveCol(from,to){
   if(from===to)return;
@@ -1338,7 +1338,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=64;
+const BUILD=65;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
