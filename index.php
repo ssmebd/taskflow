@@ -192,10 +192,11 @@ html.glass #smenu,html.glass #umenu,html.glass #rpop{background:#fff}
 html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,255,.6)}
 @media(prefers-color-scheme:dark){html.glass body{background:linear-gradient(135deg,#16213f,#2a1d44 55%,#10312f) fixed;--card:rgba(29,33,45,.72);--col:rgba(23,26,36,.55)}html.glass dialog,html.glass #rside{background:rgba(29,33,45,.8);border-color:rgba(255,255,255,.12)}html.glass .ghead,html.glass .gname{background:#1d212d}html.glass #smenu,html.glass #umenu,html.glass #rpop{background:#1d212d}html.glass input,html.glass select,html.glass textarea{background:rgba(23,26,36,.6)}}
 @media(prefers-reduced-transparency:reduce){html.glass *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
-header,html.glass header{position:sticky;top:0;z-index:45;padding:6px 12px;gap:6px}
-header input,header select,header button{padding:4px 8px;font-size:12.5px;min-height:0}
-header .brand{padding-right:10px;margin-right:2px}header .brand b{font-size:19px}header .brand small{font-size:7px;margin-top:1px}
-header h1{font-size:15px;margin-right:4px}#wlogo{width:32px;height:32px;margin-right:2px}#wlogo .ini{font-size:12px}header #bell b{font-size:10px;padding:0 5px}
+header,html.glass header{position:sticky;top:0;z-index:45;transition:padding .15s}
+body.hs header,body.hs html.glass header{padding:6px 12px;gap:6px}
+body.hs header input,body.hs header select,body.hs header button{padding:4px 8px;font-size:12.5px;min-height:0}
+body.hs header .brand{padding-right:10px;margin-right:2px}body.hs header .brand b{font-size:19px}body.hs header .brand small{font-size:7px;margin-top:1px}
+body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{width:32px;height:32px;margin-right:2px}body.hs #wlogo .ini{font-size:12px}body.hs header #bell b{font-size:10px;padding:0 5px}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD</small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -560,6 +561,7 @@ document.addEventListener("dragover",e=>{if(!dragCol)return;const th=e.target.cl
 document.addEventListener("drop",e=>{if(!dragCol)return;const th=e.target.closest&&e.target.closest("th.ch");if(th){e.preventDefault();const from=dragCol;dragCol=null;moveCol(from,th.dataset.col)}});
 document.addEventListener("dragend",()=>{dragCol=null;document.querySelectorAll("th.ch.over").forEach(x=>x.classList.remove("over"))});
 $("#cr").onclick=()=>{try{localStorage.removeItem(coKey());localStorage.removeItem(cwKey())}catch(e){}render()};
+(()=>{let on=false,tk=0;const f=()=>{tk=0;const y=window.scrollY;if(!on&&y>60){on=true;document.body.classList.add("hs")}else if(on&&y<8){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true})})();
 function render(){
   const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f&&$("#main").contains(ae)){pend=true;return}
   pend=false;for(const id of [...sel])if(!tasks.some(t=>t.id==id))sel.delete(id);
@@ -1477,7 +1479,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=108;
+const BUILD=109;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
