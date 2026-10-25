@@ -647,13 +647,13 @@ async function mhLoad(){const from=$("#mhf").value,to=$("#mht").value;if(!from||
 function mhDraw(){const tg=+$("#mhg").value||0,wd=mhDays(),from=$("#mhf").value,to=$("#mht").value,td=ltoday();
   const by={};mhRows.forEach(x=>(by[x.work_date]=by[x.work_date]||[]).push(x));
   let exp=0,got=0,miss=0,rows="";
-  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0);
+  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;
     if(!work&&!l.length)continue;
-    const past=d<=td;if(work&&past){exp+=tg;got+=Math.min(h,tg>0?h:h);if(h<tg)miss++}else got+=h;
-    let st="",cl="";if(work){if(!past){st="Upcoming";cl="color:var(--mut)"}else if(h>=tg){st="✓ Complete";cl="color:#188038"}else if(h>0){st="⚠ Short by "+fmtH(tg-h)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}}else{st="Day off";cl="color:var(--mut)"}
+    const past=d<=td;if(work&&past){exp+=tg;if(rg<tg)miss++}
+    let st="",cl="";if(work){if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}}else{st="Day off";cl="color:var(--mut)"}
     const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
-    rows+=`<tr${work?"":' style="opacity:.7"'}><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(h)}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
-  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(mhRows.reduce((s,x)=>s+ +x.hours,0))} h</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
+    rows+=`<tr${work?"":' style="opacity:.7"'}><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
+  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(mhRows.filter(x=>x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0))} h regular</b> + <b>${fmtH(mhRows.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0))} h OT</b> · expected regular so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
   $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">No working days in this range</td></tr>'}</table>`}
 function mhOpen(){const u=me.id;if(!$("#mhf").value){const ws=wkStart(ltoday());$("#mhf").value=ws;$("#mht").value=ltoday()}
   const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");if(!sel.value||!sel.dataset.set){sel.value=String(u);sel.dataset.set=1}}else sel.hidden=true;
@@ -667,7 +667,7 @@ $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");
   const mine=tasks.filter(t=>String(t.assigned_to)===String(uid)&&t.status!=="done");
   if(!mine.length){alert("No open tasks assigned to this person in the current workspace. Switch workspace or assign a task first.");return}
   $("#mhat").textContent="Add hours · "+mhAddDate;$("#mhtk").innerHTML=mine.map(t=>`<option value="${t.id}">${esc((t.order_no?t.order_no+" · ":"")+t.title)}</option>`).join("");
-  const have=mhRows.filter(x=>x.work_date===mhAddDate).reduce((s,x)=>s+ +x.hours,0);$("#mhah").value=Math.max(0,(+$("#mhg").value||8)-have)||"";$("#mhan").value="";$("#mhad").showModal()});
+  const have=mhRows.filter(x=>x.work_date===mhAddDate&&x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0);$("#mhah").value=Math.max(0,(+$("#mhg").value||8)-have)||"";$("#mhan").value="";$("#mhad").showModal()});
 $("#mhax").onclick=()=>$("#mhad").close();
 $("#mhaok").onclick=async()=>{const h=parseFloat($("#mhah").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
   try{await api("tl_add",{task_id:+$("#mhtk").value,date:mhAddDate,hours:h,kind:$("#mhak").value,note:$("#mhan").value});$("#mhad").close();await mhLoad();await load(true)}catch(e){alert(e.message)}};
