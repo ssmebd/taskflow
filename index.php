@@ -122,7 +122,7 @@ body.hdark #wlogo .wh,body.hdark #wlogo img[src^="data:"]{filter:brightness(0)}
 #pprev{border-radius:10px;padding:10px 14px;margin:10px 0;font-weight:600}
 #side{--sb:color-mix(in srgb,var(--nv,#0f2a5c) 86%,#000);--sf:var(--hfg,#fff);background:var(--sb);border-right-color:color-mix(in srgb,var(--sb) 80%,#000)}#side .sh{border-bottom-color:color-mix(in srgb,var(--sf) 18%,transparent)}
 #side button{background:color-mix(in srgb,var(--sf) 12%,transparent);color:var(--sf);border-color:color-mix(in srgb,var(--sf) 30%,transparent)}#side button:hover{background:color-mix(in srgb,var(--sf) 24%,transparent)}
-#side .wl{background:color-mix(in srgb,var(--sf) 10%,transparent)}#side .wl:hover{border-color:color-mix(in srgb,var(--sf) 50%,transparent)}#side .wl.on{border-color:var(--sf);box-shadow:0 0 0 3px color-mix(in srgb,var(--sf) 28%,transparent)}
+#side .wl{background:color-mix(in srgb,var(--sf) 10%,transparent)}#side .wl:hover{border-color:color-mix(in srgb,var(--sf) 50%,transparent)}#side .wl.on{border-color:transparent;box-shadow:none;background:color-mix(in srgb,var(--sf) 24%,transparent);position:relative}#side .wl.on:before{content:"";position:absolute;left:-2px;top:22%;bottom:22%;width:4px;border-radius:0 4px 4px 0;background:var(--sf)}
 body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightness(0)}
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
@@ -1477,7 +1477,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=105;
+const BUILD=106;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
