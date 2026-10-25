@@ -166,13 +166,13 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .wlt .band td{border:0;height:78px;background:#38761d;color:#fff;font-weight:700;vertical-align:middle;padding:4px 6px}.wlt .band .bt{background:#0f5499;font-size:17px;text-align:center;font-weight:700}.wlt .band .gtt{background:#38761d}
 .wlt .wlh th{color:#000;text-transform:none;background:#a9d08e;font-weight:700;font-size:11px;vertical-align:top;height:34px}.wlt .wlh th.c{text-align:center}.wlt .wlh th.pk{background:#f4cccc}.wlt .wlh th.rt1{text-align:center;background:#fce5cd}
 .wlt td.c{text-align:center}.wlt td.k{background:#f4cccc}.wlt .ft td{font-weight:700;border:1px solid #777}
-.pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
+.pgsm{width:210mm;min-height:297mm;padding:10mm;margin:10px auto;box-sizing:border-box}.smt{width:100%;border-collapse:collapse;table-layout:auto;font:12px Calibri,Arial,sans-serif}.smt td,.smt th{border:1px solid #000;padding:3px 6px;color:#000;text-transform:none;text-align:left}.smt .bar td{background:#134f5c;color:#fff;font:700 13px Arial;border:0}.smt th{background:#d9d9d9;font:700 13px Arial}.smt td.c{text-align:center}.smt td.cb{text-align:center;font-weight:700}.pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
 .itb{table-layout:auto;border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap;overflow:visible}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
 .itb.nb{border:1px solid #000}.itb.nb td,.itb.nb th{border:1px solid #000}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb td.spc{background:#d9ead3;height:7px;padding:0}
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
 .invf{position:absolute;left:0;right:0;bottom:6mm}.invf .ifbar{height:2.2mm;background:#22784b;margin:0 4mm}.invf .ifad{text-align:right;margin:1.5mm 5mm 0;font:9px Arial}
-@page wl{size:A3 landscape;margin:8mm}@page inv{size:A4 portrait;margin:0}
-@media print{body>*:not(#pbox){display:none!important}body{padding:0!important;background:#fff!important}#pbox{display:block}.pg{box-shadow:none;margin:0;overflow:visible;break-after:page}.pgwl{page:wl}.pginv{page:inv;margin:0;width:210mm;height:296mm;min-height:0;overflow:hidden}.noprint{display:none!important}.pgwl:last-child,.pginv:last-child{break-after:auto}}
+@page wl{size:A3 landscape;margin:8mm}@page inv{size:A4 portrait;margin:0}@page sm{size:A4 portrait;margin:0}
+@media print{body>*:not(#pbox){display:none!important}body{padding:0!important;background:#fff!important}#pbox{display:block}.pg{box-shadow:none;margin:0;overflow:visible;break-after:page}.pgwl{page:wl}.pgsm{page:sm;margin:0;width:210mm;height:296mm;min-height:0;overflow:hidden}.pginv{page:inv;margin:0;width:210mm;height:296mm;min-height:0;overflow:hidden}.noprint{display:none!important}.pgwl:last-child,.pginv:last-child,.pgsm:last-child{break-after:auto}}
 
 /* Glass look (optional, per device). Blur only on a few static surfaces; rows stay plain. */
 html.glass body{background:linear-gradient(135deg,#cfe0ff,#eadcff 55%,#cdeee6) fixed;--card:rgba(255,255,255,.74);--col:rgba(240,243,250,.55)}
@@ -301,7 +301,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="ivdlg"><b>Invoice profile</b>
  <p style="color:var(--mut);font-size:13px;margin:6px 0">One profile per invoice you send (e.g. Allshelter Pty Ltd, UCA). Company details and hourly rates are set in Manage → company → Details &amp; rates; fill the boxes below only to override them for this invoice. Hours are matched to a profile by Customer or Order No.; hours that match no profile go to the profile with both matching boxes empty.</p>
  <div class="pgrid">
-  <label>Profile name<input id="pn"></label><label>Layout<select id="pl"><option value="worklog">Daily work logs per group + summary invoice</option><option value="items">Item list (actioned items / hours / sub-total)</option></select></label>
+  <label>Profile name<input id="pn"></label><label>Layout<select id="pl"><option value="worklog">Daily work logs per group + summary invoice</option><option value="items">Item list (actioned items / hours / sub-total)</option><option value="summary">Client summary report + 2-column invoice (DMC style)</option></select></label>
   <label>Match Customer (comma separated)<input id="pmc" placeholder="e.g. UCA, Allshelter LLC"></label><label>Match Order No. starting with<input id="pmo" placeholder="e.g. UCA"></label>
   <label>Worklog title (blank = client name)<input id="pwt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label><label>PO no. (UCA-style invoice)<input id="ppo"></label>
   <label>Client name (blank = company)<input id="pcn"></label><label>Client address (blank = company)<input id="pca"></label>
@@ -357,7 +357,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
   <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label>
  </div>
  <div class="pgrid">
-  <label>Invoice style<select id="colay"><option value="worklog">Category summary (Operations / Sales / Projects columns)</option><option value="items">Item list with PO no. (UCA / DMC style)</option></select></label><label>Worklog title (blue box)<input id="cowt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label>
+  <label>Invoice style<select id="colay"><option value="worklog">Category summary (Operations / Sales / Projects columns)</option><option value="items">Item list with PO no. (UCA style)</option><option value="summary">Client summary report + Drawing/Others invoice (DMC style)</option></select></label><label>Worklog title (blue box)<input id="cowt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label>
   <label>Invoice no. prefix<input id="copx" placeholder="INVOICE-"></label><label>Next number · suffix<span style="display:flex;gap:6px"><input id="cosq" inputmode="numeric" style="width:90px" title="Keep leading zeros, e.g. 033"><input id="cosf" placeholder="-UCA"></span></label>
   <label>PO no.<input id="copo"></label><label>Invoice column names (Group=Heading, one per line)<textarea id="cosl" rows="2" placeholder="Sales Drawing=Sales"></textarea></label>
  </div>
@@ -617,7 +617,7 @@ $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(i
 let coId=0;
 async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
-  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=c.layout==="items"?"items":"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=["items","summary"].includes(c.layout)?c.layout:"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
   $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
   $("#codlg").showModal()}catch(e){alert(e.message)}}
 $("#cox").onclick=()=>$("#codlg").close();
@@ -640,7 +640,7 @@ const hasM=p=>splitC(p.match_cust).length||String(p.match_order||"").trim();
 function rProfRows(p){const L=rList();return rrows.filter(x=>hasM(p)?rClaims(p,x):!L.some(q=>q!==p&&hasM(q)&&rClaims(q,x)))}
 const rRate=(p,uid)=>{const k=String(uid),v=p.rates&&p.rates[k];if(v!==undefined&&v!=="")return +v;if(+p.rate>0)return +p.rate;const c=rComp.rates&&rComp.rates[k];return c!==undefined&&c!==""?+c:(+rComp.rate||0)};
 const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank","wl_title","po","sec_labels","prefix","suffix"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});
-  if(rComp.layout==="items"||p.layout==="items")e.layout="items";else e.layout="worklog";if(!p.slot&&+rComp.seq>0)e.seq=String(rComp.seq);if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
+  e.layout=[p.layout,rComp.layout].includes("summary")?"summary":[p.layout,rComp.layout].includes("items")?"items":"worklog";if(!p.slot&&+rComp.seq>0)e.seq=String(rComp.seq);if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
 const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
 function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
@@ -684,11 +684,24 @@ function invItemsPage(p,rows){const from=$("#rf").value,to=$("#rt").value,m=new 
   return {tc,th,html:`<div class="pg pginv">${invTop(p)}<table class="itb"><tr><th class="l">INVOICE NO:</th><td class="b c" style="font-size:10.5px">${esc(rInvNo(p))}</td><th class="l">DATE:</th><td class="b c">${esc(to)}</td><th class="l">PO NO</th><td class="po">${esc(p.po||"")}</td></tr><tr><td colspan="6" class="c"><b style="font-size:13px">CLIENT:</b> ${esc([p.client_name,p.client_addr].filter(Boolean).join(", "))}</td></tr><tr><td colspan="6" class="spc"></td></tr></table>
   <table class="itb nb"><tr><td colspan="3">INVOICE WEEK</td><td class="g c">${isoWeek(from)}-${isoWeek(to)}</td></tr><tr><td colspan="3">Duration:</td><td class="g c">${dmy(from)} - ${dmy(to)}</td></tr>
   <tr class="g"><th class="a">ACTIONED ITEMS</th><th class="a">ITEM GROUP</th><th class="c">HOURS<br>SPENT</th><th class="c">SUB-TOTAL<br>(${esc(p.currency)})</th></tr>${body}<tr><td colspan="4" class="spc"></td></tr><tr><td colspan="3">Invoiced Total (${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}}
+function smPage(p,rows,csv){const from=$("#rf").value,to=$("#rt").value,m=new Map();for(const x of rows){const k=x.task_id;let r=m.get(k);if(!r){r={x,h:0,c:0};m.set(k,r)}r.h+=+x.hours;r.c+=rCost(p,x)}
+  const go=groups.filter(g=>!g.level).map(g=>g.name.toLowerCase()),ix=r=>{const i=go.indexOf((r.x.top_name||"").toLowerCase());return i<0?999:i};
+  const L=[...m.values()].sort((a,b)=>ix(a)-ix(b)||String(a.x.top_name).localeCompare(String(b.x.top_name))||String(a.x.title).localeCompare(String(b.x.title)));let th=0,tc=0,oth=0,dr=0;
+  const body=L.map(r=>{th+=r.h;tc+=r.c;if(/^others?$/i.test(r.x.top_name||""))oth+=r.c;else dr+=r.c;const rt=r.h?r.c/r.h:0;csv.push([r.x.top_name||"",r.x.title,+r.h.toFixed(2),+rt.toFixed(2),+r.c.toFixed(2)]);
+    return `<tr><td>${esc(r.x.top_name||"")}</td><td>${esc(r.x.title)}</td><td class="c">${num(r.h)}</td><td class="c">${num(rt)}</td><td class="c">${num(r.c)}</td></tr>`}).join("");
+  csv.push(["","Total",+th.toFixed(2),"",+tc.toFixed(2)]);
+  const no=rInvNo(p).replace(/^INVOICE-/i,"");
+  return {th,tc,dr,oth,html:`<div class="pg pgsm"><table class="smt"><tr class="bar"><td colspan="5">Invoice Report: ${esc(no)}</td></tr><tr class="bar"><td colspan="5" style="text-align:center;font-size:17px">${esc(p.wl_title||p.client_name||"")}</td></tr><tr class="bar"><td colspan="5">Duration: ${dmy(from)} -${dmy(to)}</td></tr>
+  <tr><th>Client Name</th><th>ACTIONED ITEMS</th><th class="c">HOURS SPENT</th><th class="c">Hourly Rate</th><th class="c">Cost(${esc(p.currency)})</th></tr>${body}<tr><td></td><td></td><td colspan="2" class="cb">Total Cost(${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table></div>`}}
 function drawReport(){
   const p=rEff(rCur()),rows=rProfRows(rCur()),vw=$("#rvw").value,csv=[];let h0="";
   if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this company in this period.</div>';return}
   const pp=new Map();rrows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>(+a[0])-(+b[0]));
   let pages="",inv="";
+  if(p.layout==="summary"){const t=smPage(p,rows,csv);rcsvRows=[["Client Name","Actioned items","Hours spent","Hourly rate","Cost ("+p.currency+")"]].concat(csv);
+    const iv=invCatPage(p,[["DRAWING AND ERP SERVICE",0,t.dr],["Others",0,t.oth]]);if(!t.tc)h0=RWARN;
+    if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
+    $("#rout").innerHTML=h0+(vw==="inv"?"":t.html)+(vw==="log"?"":iv);return}
   const secs=rSections(p,rows),names=secOrder([...secs.keys()]),lines=[];
   if(p.layout==="items"){const t=wlPage(p,(wss.find(w=>w.id==W)||{}).name||names.join(" / "),rows,P,csv);pages+=t.html}
   else for(const n of names){const t=wlPage(p,n,secs.get(n),P,csv);lines.push([n,t.th,t.tc]);pages+=t.html}
@@ -1295,7 +1308,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=55;
+const BUILD=56;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
