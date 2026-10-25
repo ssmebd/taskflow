@@ -313,7 +313,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  </div>
  <div class="acts"><button id="cr" disabled title="Put columns back in the original order and width (only for you, on this device)">↺ Reset</button><span class="sp"></span><button id="cc">Close</button></div>
 </dialog>
-<dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label>Options (comma separated)</label><input id="ceo"></div><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
+<dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label>Options (comma separated)</label><input id="ceo"></div><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="ceh"> <span>Hide this column on this device</span></label><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
 
 <input type="file" id="wf" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
 <dialog id="wdlg"><b>Workspaces</b><div id="wlist"></div>
@@ -462,16 +462,20 @@ function endRz(){
 }
 document.addEventListener("pointerup",endRz);document.addEventListener("pointercancel",endRz);
 function colOrder(){try{return JSON.parse(localStorage.getItem(coKey())||"[]")}catch(e){return []}}
-function colDefs(){
-  const all=BASE_COLS.concat(cols.map(c=>({id:"x_"+c.id,label:c.name,cell:t=>c.ctype==="date"?dcell(c,t):xCtl(c,xv(t,c),"row")})));
+const hcKey=()=>"tf_ch_"+W,lbKey=()=>"tf_cl_"+W;
+function hiddenCols(){try{return JSON.parse(localStorage.getItem(hcKey())||"[]")}catch(e){return[]}}
+function colLabels(){try{return JSON.parse(localStorage.getItem(lbKey())||"{}")||{}}catch(e){return{}}}
+function colDefs(withHidden){
+  const lb=colLabels(),hc=hiddenCols();
+  const all=BASE_COLS.map(c=>Object.assign({},c,{label:lb[c.id]||c.label})).concat(cols.map(c=>({id:"x_"+c.id,label:c.name,cell:t=>c.ctype==="date"?dcell(c,t):xCtl(c,xv(t,c),"row")})));
   const saved=colOrder(),out=[];
   for(const id of saved){const d=all.find(x=>x.id===id);if(d&&!out.includes(d))out.push(d)}
   for(const d of all)if(!out.includes(d))out.push(d);
-  return out;
+  return withHidden?out:out.filter(d=>d.id==="title"||!hc.includes(d.id));
 }
 function moveCol(from,to){
   if(from===to)return;
-  const ids=colDefs().map(d=>d.id),a=ids.indexOf(from),b=ids.indexOf(to);if(a<0||b<0)return;
+  const ids=colDefs(true).map(d=>d.id),a=ids.indexOf(from),b=ids.indexOf(to);if(a<0||b<0)return;
   ids.splice(a,1);ids.splice(b,0,from);
   try{localStorage.setItem(coKey(),JSON.stringify(ids))}catch(e){}
   render();
@@ -1135,11 +1139,16 @@ $("#main").addEventListener("change",e=>{
 });
 $("#main").addEventListener("click",e=>{if(e.target.id==="gtoday"){const w=document.querySelector(".gwrap"),t=document.querySelector(".gtoday");if(w&&t)w.scrollLeft=Math.max(0,parseInt(t.style.left)-(gMode==="task"?250:170)-220)}});
 function renderCols(){
-  $("#clist").innerHTML=cols.map(c=>`<div class="acts"><span style="flex:1">${esc(c.name)} <small style="color:var(--mut)">${c.ctype}${c.ctype==="dropdown"?": "+esc((c.options||[]).join(", ")):""}</small></span>${LV!=="view"?`<button data-ce="${c.id}">✎ Edit</button>`:""}${me.role==="admin"?`<button data-cd="${c.id}">Remove</button>`:""}</div>`).join("")||'<div class="empty">No custom columns yet</div>';
-}
-let ceId=0;
+  const hc=hiddenCols(),lb=colLabels();
+  const built=BASE_COLS.map(c=>`<div class="acts"><span style="flex:1">${esc(lb[c.id]||c.label)} <small style="color:var(--mut)">built-in${hc.includes(c.id)?" · hidden":""}</small></span><button data-bce="${c.id}">✎ Edit</button></div>`).join("");
+  const cust=cols.map(c=>`<div class="acts"><span style="flex:1">${esc(c.name)} <small style="color:var(--mut)">${c.ctype}${c.ctype==="dropdown"?": "+esc((c.options||[]).join(", ")):""}${hc.includes("x_"+c.id)?" · hidden":""}</small></span>${LV!=="view"?`<button data-ce="${c.id}">✎ Edit</button>`:""}${me.role==="admin"?`<button data-cd="${c.id}">Remove</button>`:""}</div>`).join("");
+  $("#clist").innerHTML=built+(cust||"")}
+let ceId=0,ceBuilt="";
 $("#cex").onclick=()=>$("#cedlg").close();
-$("#cesv").onclick=async()=>{try{await api("col_edit",{id:ceId,name:$("#cen").value,options:$("#ceo").value});$("#cedlg").close();await load(true);renderCols()}catch(e){alert(e.message)}};
+$("#cesv").onclick=async()=>{const key=ceBuilt||"x_"+ceId,hc=hiddenCols().filter(x=>x!==key);if($("#ceh").checked&&key!=="title")hc.push(key);
+  try{if(ceBuilt){const lb=colLabels(),n=$("#cen").value.trim();if(n)lb[ceBuilt]=n;else delete lb[ceBuilt];localStorage.setItem(lbKey(),JSON.stringify(lb))}
+    else await api("col_edit",{id:ceId,name:$("#cen").value,options:$("#ceo").value});
+    localStorage.setItem(hcKey(),JSON.stringify(hc));$("#cedlg").close();await load(true);renderCols();render()}catch(e){alert(e.message)}};
 $("#cm").onclick=()=>{renderCols();$("#cdlg").showModal()};
 $("#cc").onclick=()=>$("#cdlg").close();
 $("#ct").onchange=()=>{$("#co").style.display=$("#ct").value==="dropdown"?"":"none"};
@@ -1148,7 +1157,8 @@ $("#ca").onclick=async()=>{
     $("#cn").value="";$("#co").value="";await load(true);renderCols()}catch(e){alert(e.message)}
 };
 $("#clist").addEventListener("click",async e=>{
-  const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceId=c.id;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=c.ctype!=="dropdown";$("#cet").textContent="Type: "+c.ctype+" (the type cannot be changed)";$("#cedlg").showModal();return}
+  const bb=e.target.dataset.bce;if(bb){const c=BASE_COLS.find(x=>x.id===bb);ceBuilt=bb;ceId=0;$("#cen").value=colLabels()[bb]||c.label;$("#ceow").hidden=true;$("#ceh").checked=hiddenCols().includes(bb);$("#ceh").disabled=bb==="title";$("#cet").textContent="Built-in column. The name and visibility apply only on this device.";$("#cedlg").showModal();return}
+  const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceBuilt="";ceId=c.id;$("#ceh").checked=hiddenCols().includes("x_"+c.id);$("#ceh").disabled=false;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=c.ctype!=="dropdown";$("#cet").textContent="Type: "+c.ctype+" (the type cannot be changed). Hiding applies only on this device.";$("#cedlg").showModal();return}
   const id=e.target.dataset.cd;if(!id||!confirm("Remove this column? The values entered in it will be deleted."))return;
   try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
 });
