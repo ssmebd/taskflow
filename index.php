@@ -172,7 +172,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
 .invf{position:absolute;left:0;right:0;bottom:6mm}.invf .ifbar{height:2.2mm;background:#22784b;margin:0 4mm}.invf .ifad{text-align:right;margin:1.5mm 5mm 0;font:9px Arial}
 @page wl{size:A3 landscape;margin:8mm}@page inv{size:A4 portrait;margin:0}@page sm{size:A4 portrait;margin:0}
-@media print{body>*:not(#pbox){display:none!important}body{padding:0!important;background:#fff!important}#pbox{display:block}.pg{box-shadow:none;margin:0;overflow:visible;break-after:page}.pgwl{page:wl}.pgsm{page:sm;margin:0;width:210mm;height:296mm;min-height:0;overflow:hidden}.pginv{page:inv;margin:0;width:210mm;height:296mm;min-height:0;overflow:hidden}.noprint{display:none!important}.pgwl:last-child,.pginv:last-child,.pgsm:last-child{break-after:auto}}
+@media print{body>*:not(#pbox){display:none!important}body{padding:0!important;background:#fff!important}#pbox{display:block}.pg{box-shadow:none;margin:0;overflow:visible;break-after:page}.pgwl{page:wl;width:402mm;max-width:402mm;overflow:hidden}.wlt td,.wlt th{white-space:normal!important;word-break:break-word}.wlt td.c{white-space:nowrap!important}.pgsm{page:sm;margin:0;width:210mm;height:295mm;min-height:0;overflow:hidden}.pginv{page:inv;margin:0;width:210mm;height:295mm;min-height:0;overflow:hidden;break-inside:avoid}.noprint{display:none!important}.pgwl:last-child,.pginv:last-child,.pgsm:last-child{break-after:auto}}
 
 /* Glass look (optional, per device). Blur only on a few static surfaces; rows stay plain. */
 html.glass body{background:linear-gradient(135deg,#cfe0ff,#eadcff 55%,#cdeee6) fixed;--card:rgba(255,255,255,.74);--col:rgba(240,243,250,.55)}
@@ -1357,7 +1357,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=67;
+const BUILD=68;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
