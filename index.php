@@ -748,7 +748,7 @@ function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={};
     let st="",cl="";if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
     const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
     rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
-  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h regular</b> + <b>${fmtH(O)} h OT</b> · expected regular so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
+  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
   $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">Tick one or more days above</td></tr>'}</table>`}
 function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
   $("#mhdg").showModal();mhRange(ltoday(),ltoday())}
@@ -1295,7 +1295,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=52;
+const BUILD=53;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
