@@ -80,7 +80,7 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 #smenu[hidden]{display:none}
 #smenu button{text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:6px;width:100%}
 #smenu button:hover{background:var(--col)}
-#smenu button[hidden]{display:none}
+#smenu button[hidden]{display:none}#tmw[hidden]{display:none}#tmw .tms{display:none;flex-direction:column;gap:2px;padding-left:14px}#tmw:hover .tms,#tmw:focus-within .tms{display:flex}
 .ro #smenu>button:not(#pm){display:none}
 .tc{display:flex;align-items:center;gap:2px}.tc .ed{flex:1;min-width:0}
 .ovb{color:#fff;background:#dc2626;border-radius:6px;font-size:11px;line-height:1;padding:3px 5px;cursor:help;flex:none}
@@ -218,7 +218,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
    <button id="rm" hidden>🧾 Worklog &amp; invoice</button>
    <button id="ivm" hidden>📋 Invoice tracking</button>
    <button id="xm">⬇ Export to Excel</button>
-   <button id="tm" hidden>👥 Users</button>
+   <div id="tmw" hidden><button id="tm">👥 Users ▾</button><div class="tms"><button id="tm1">Users</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
   </div></span><button id="wm" hidden title="Manage companies and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
 <div id="bar" hidden></div>
@@ -267,12 +267,13 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
  <div class="acts"><button id="del" style="display:none">Delete</button><button id="tlb" type="button" title="Log hours for this task">⏱ Hours</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
-<dialog id="tdlg" style="width:min(780px,94vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b><button class="p" id="tnew">+ New user</button></div>
+<dialog id="tdlg" style="width:min(780px,94vw)"><div class="acts" style="margin:0"><b style="flex:1">Users</b></div>
  <div class="uh"><span>Full name</span><span>Username</span><span>Password</span><span>User type</span><span></span></div>
  <div id="tlist"></div>
- <details open style="margin-top:12px"><summary><b>Who has access to what</b></summary><div id="tacc" style="overflow:auto;max-height:40vh;margin-top:6px"></div></details>
  <small style="color:var(--mut)">Saved passwords are stored scrambled, so they cannot be shown. Type a new one and press Set to change it.</small>
- <div class="acts"><span class="sp"></span><button id="tc">Close</button></div>
+ <div class="acts"><button class="p" id="tnew">+ New user</button><span class="sp"></span><button id="tc">Close</button></div>
+</dialog>
+<dialog id="acdlg" style="width:min(900px,96vw)"><b>Access Control</b> <small style="color:var(--mut)">choose what each person can do in each company. Admins always have full access everywhere; guests can only be view-only.</small><div id="acbody" style="overflow:auto;max-height:60vh;margin-top:8px"></div><div class="acts"><button class="p" id="acsave">Save access</button><span class="sp"></span><button id="acx">Close</button></div>
 </dialog>
 <dialog id="udlg"><b>New user</b>
  <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
@@ -456,7 +457,7 @@ function syncFilters(){
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
   a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
-  $("#who").textContent=me.name||"";$("#tm").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
+  $("#who").textContent=me.name||"";$("#tmw").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
@@ -1434,11 +1435,19 @@ $("#clist").addEventListener("click",async e=>{
   try{await api("col_del",{id});await load(true);renderCols()}catch(err){alert(err.message)}
 });
 function renderAcc(){
-  const L={view:["View only","#64748b"],edit:["Can edit","#2563eb"],full:["Edit + delete","#16a34a"]};
   const th="padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;white-space:nowrap";
-  const cell=(u,w)=>{if(u.role==="admin")return'<span style="color:var(--mut)">All (admin)</span>';const l=(access[w.id]||{})[u.id];if(!l)return'<span style="color:var(--mut)">—</span>';const [n,c]=L[l]||L.edit;return`<span style="background:color-mix(in srgb,${c} 18%,transparent);color:${c};border-radius:10px;padding:2px 8px;font-weight:600">${n}</span>`};
-  $("#tacc").innerHTML=`<table style="border-collapse:collapse;width:100%"><tr><th style="${th}">User</th>${wss.map(w=>`<th style="${th}">${esc(w.name)}</th>`).join("")}</tr>${allUsers.map(u=>`<tr><td style="${th}"><b>${esc(u.name)}</b> <small style="color:var(--mut)">${u.role==="admin"?"Admin":u.role==="guest"?"Guest":"Member"}</small></td>${wss.map(w=>`<td style="${th}">${cell(u,w)}</td>`).join("")}</tr>`).join("")}</table>`}
-function renderUsers(){renderAcc();
+  const mem=allUsers.filter(u=>u.role!=="admin");
+  const opt=(u,w)=>{const l=(access[w.id]||{})[u.id]||"";const o=[["","— no access"],["view","View only"]].concat(u.role==="guest"?[]:[["edit","Can edit"],["full","Edit + delete"]]);return`<select data-ac="${w.id}:${u.id}" style="font-size:12px">${o.map(([k,n])=>`<option value="${k}"${l===k||(u.role==="guest"&&l&&k==="view")?" selected":""}>${n}</option>`).join("")}</select>`};
+  $("#acbody").innerHTML=mem.length?`<table style="border-collapse:collapse;width:100%"><tr><th style="${th}">User</th>${wss.map(w=>`<th style="${th}">${esc(w.name)}</th>`).join("")}</tr>${mem.map(u=>`<tr><td style="${th}"><b>${esc(u.name)}</b> <small style="color:var(--mut)">${u.role==="guest"?"Guest":"Member"}</small></td>${wss.map(w=>`<td style="${th}">${opt(u,w)}</td>`).join("")}</tr>`).join("")}</table>`:'<div class="empty">No members yet</div>'}
+$("#tm1").onclick=()=>$("#tm").click();
+$("#tm2").onclick=()=>{renderAcc();$("#acdlg").showModal()};
+$("#acx").onclick=()=>$("#acdlg").close();
+$("#acsave").onclick=async()=>{try{
+  const by={};for(const w of wss)by[w.id]=[];
+  document.querySelectorAll("#acbody [data-ac]").forEach(el=>{if(!el.value)return;const [w,u]=el.dataset.ac.split(":");by[w].push({id:+u,level:el.value})});
+  for(const w of wss)await api("ws_access",{id:w.id,users:by[w.id]});
+  await load(true);alert("Access saved.");renderAcc()}catch(e){alert(e.message)}};
+function renderUsers(){
   $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
    <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
@@ -1463,7 +1472,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=99;
+const BUILD=100;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
