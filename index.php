@@ -238,10 +238,69 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 .ed.tt{cursor:pointer;text-overflow:ellipsis}.ed.tt:hover{text-decoration:underline;border-color:transparent}.ed.tt:focus{border-color:transparent;background:transparent}
 #acbody td.acc select{font-weight:600;border-color:transparent;color:#fff}#acbody td.acc select option{background:var(--card);color:var(--ink);font-weight:400}
 #acbody td.acc[data-lv="none"] select{background-color:#dc2626}#acbody td.acc[data-lv="view"] select{background-color:#f97316}#acbody td.acc[data-lv="edit"] select{background-color:#2563eb}#acbody td.acc[data-lv="full"] select{background-color:#16a34a}
+
+.mobonly,#side .rb.mobonly{display:none}
+@media(max-width:700px){
+ .mobonly{display:inline-flex}#side .rb.mobonly{display:flex}
+ body,body.sc{padding-left:0;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+ /* bottom bar */
+ #side,body.sc #side{top:auto;bottom:0;left:0;right:0;width:100%;height:calc(56px + env(safe-area-inset-bottom,0px));flex-direction:row;justify-content:space-around;align-items:center;padding:0 6px env(safe-area-inset-bottom,0px);gap:0;border-right:0;border-top:1px solid color-mix(in srgb,var(--sf) 20%,transparent);overflow:visible;z-index:50}
+ #side .rlogo{display:none}
+ #side .sf,body.sc .sf{flex-direction:row;width:auto;margin:0;gap:2px}
+ #side .rb,#side .sf .rb{width:48px;height:46px;position:relative}
+ #rchn{position:absolute;top:2px;right:2px}
+ #side #ubtn{width:36px;height:36px}
+ #sidetabs{display:none}
+ #cpanel{left:0;right:0;top:auto;bottom:calc(56px + env(safe-area-inset-bottom,0px));width:100%;max-height:65vh;border-right:0;border-radius:16px 16px 0 0;transform:translateY(16px);z-index:49}
+ #cpanel.open{transform:none}
+ #tmw .tms{position:static;display:flex;box-shadow:none;border:0;background:none;padding:0 0 0 14px;min-width:0}
+ #smenu{max-height:70vh}
+ /* header */
+ header,html.glass header{padding:6px 10px;gap:6px}
+ body.hs header{padding:6px 10px}
+ header .brand,#bld,#dv{display:none}
+ #wlogo{height:28px;max-width:70px}
+ header h1{font-size:15px;flex:1 1 auto;min-width:0}header h1 #wname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:34vw}
+ header .sp{display:none}
+ body:not(.mf) #q,body:not(.mf) #fs,body:not(.mf) #fp,body:not(.mf) #fa{display:none}
+ body.mf #q,body.mf #fs,body.mf #fp,body.mf #fa{display:block;flex:1 1 100%;width:100%;min-width:0}
+ #add{padding:6px 10px}
+ .tabs button{padding:6px 10px}
+ .gtabs{overflow-x:auto;flex-wrap:nowrap;white-space:nowrap;padding-left:10px;padding-right:10px;-webkit-overflow-scrolling:touch}
+ .stats{padding:8px 10px;gap:6px}.stat{padding:5px 9px}
+ /* list as cards */
+ .listwrap{padding:0 8px 12px;overflow-x:visible}
+ .listwrap table{width:100%!important;display:block;background:none;border:0}
+ .listwrap colgroup,.listwrap thead{display:none}
+ .listwrap tbody{display:block}
+ tr.row{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--sc,var(--line));border-radius:12px;margin:0 0 8px;padding:8px 10px;align-items:center}
+ tr.row>td{display:none;border:0;padding:0;overflow:visible;width:auto;background:transparent!important}
+ tr.row>td[data-c="title"]{display:block;grid-column:1/-1}
+ tr.row>td[data-c="order_no"],tr.row>td[data-c="customer"]{display:block;font-size:12px;color:var(--mut)}
+ tr.row>td[data-c="status"],tr.row>td[data-c="assigned_to"],tr.row>td[data-c="dates"]{display:block}
+ tr.row>td[data-c="dates"]{grid-column:1/-1}
+ tr.row .ed{min-width:0;width:100%}
+ tr.row .ed.tt{font-weight:600;font-size:15px;white-space:normal}
+ tr.row:not(.draft)>td:first-child,tr.row:not(.draft)>td:last-child{display:none}
+ tr.row.draft>td:first-child{display:none}tr.row.draft>td:last-child{display:flex;grid-column:1/-1;gap:8px;justify-content:flex-end}
+ tr.gh,tr.dh,tr.gsp,tr.gend,.addrow,tr.addrow{display:block}
+ tr.gh th,tr.dh th{display:block;width:auto}
+ tr.gsp td,tr.gend td{display:block;height:6px;padding:0}
+ tr.addrow td,.listwrap tr:not(.row) td{display:block;width:auto}
+ .ghd,.hd{display:none}
+ /* board + gantt */
+ .board{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:82vw;scroll-snap-type:x mandatory;padding:0 8px 12px}.board>.col{scroll-snap-align:start}
+ .gwrap{margin:0 8px 12px;max-height:calc(100dvh - 250px)}
+ /* windows */
+ dialog{width:100vw!important;max-width:100vw!important;height:100dvh;max-height:100dvh!important;margin:0;border-radius:0;border:0}
+ #rside,#msgw{left:0!important;top:0!important;width:100vw!important;height:calc(100dvh - 56px - env(safe-area-inset-bottom,0px))!important;max-width:100vw;max-height:none;border-radius:0;resize:none;z-index:48}
+ .hm{padding:12px 10px 30px}
+ select,input,button{min-height:36px}
+}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
- <span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
+ <button id="mfb" class="mobonly" type="button" title="Search and filters">⌕ Filter</button><span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
  <button id="dv" title="Choose which view opens first"></button>
  <input id="q" placeholder="Search tasks" style="min-width:140px">
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
@@ -256,7 +315,10 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <aside id="side"><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
 <a class="rb" id="rhome" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
-<div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div><div class="sf"><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+<div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
+<button class="rb mobonly" id="rchat" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.7 7L3 21l2-5.6A8 8 0 1121 12z"/></svg><b id="rchn" class="apn" hidden></b></button>
+<button class="rb mobonly" id="rtools" title="Tools"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3z"/><path d="M13 7l4 4M8 12l2 2"/></svg></button>
+<div class="sf"><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
@@ -659,8 +721,8 @@ function render(){
   }else{
     const defs=colDefs(),span=defs.length+2,gc=getGC();
     const act_=list.filter(t=>t.status!=="done"),done_=list.filter(t=>t.status==="done"),nd=done_.length;
-    const rowHTML=t=>`<tr class="row" data-id="${t.id}"${scol(t.status)?` style="--sc:${scol(t.status)}"`:""}><td style="white-space:nowrap">${LV==="view"?"":`<span class="hd" title="Drag to reorder">⋮⋮</span>`}<input type="checkbox" class="rc"${sel.has(t.id)?" checked":""}></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(t)}</td>`).join("")}<td><button class="o" title="Open details">⋯</button></td></tr>`;
-    const draftHTML=()=>`<tr class="row draft" data-id="0"><td></td>${defs.map(d=>`<td${d.cls?` class="${d.cls}"`:""}>${d.cell(draft.t)}</td>`).join("")}<td style="white-space:nowrap"><button class="o" data-dsave title="Add task (Enter)">✔</button><button class="o" data-dcancel title="Cancel (Esc)">✕</button></td></tr>`;
+    const rowHTML=t=>`<tr class="row" data-id="${t.id}"${scol(t.status)?` style="--sc:${scol(t.status)}"`:""}><td style="white-space:nowrap">${LV==="view"?"":`<span class="hd" title="Drag to reorder">⋮⋮</span>`}<input type="checkbox" class="rc"${sel.has(t.id)?" checked":""}></td>${defs.map(d=>`<td data-c="${d.id}"${d.cls?` class="${d.cls}"`:""}>${d.cell(t)}</td>`).join("")}<td><button class="o" title="Open details">⋯</button></td></tr>`;
+    const draftHTML=()=>`<tr class="row draft" data-id="0"><td></td>${defs.map(d=>`<td data-c="${d.id}"${d.cls?` class="${d.cls}"`:""}>${d.cell(draft.t)}</td>`).join("")}<td style="white-space:nowrap"><button class="o" data-dsave title="Add task (Enter)">✔</button><button class="o" data-dcancel title="Cancel (Esc)">✕</button></td></tr>`;
     let rows="";
     if(groups.length){
       const filt=$("#q").value||$("#fs").value||$("#fp").value||$("#fa").value;
@@ -1326,8 +1388,8 @@ function renderWs(){
     <div class="acts"><span class="sp"></span><button class="p" data-wsave="${w.id}">Save access</button></div></div></div>`).join("");
 }
 $("#wm").onclick=()=>{renderWs();$("#wdlg").showModal()};
-$("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px"};
-$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px"};
+$("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px"}};
+$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.right-m.offsetWidth,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px"}};
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
 document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true;if(!e.target.closest("#cpanel,#rco"))cpClose()});
 async function apOpen(){const l=$("#apl");l.innerHTML='<div class="empty">Loading…</div>';$("#apdlg").showModal();
@@ -1338,7 +1400,8 @@ $("#apl").addEventListener("click",async e=>{const b=e.target.closest("[data-ap]
 function delNote(r){if(r&&r.pending)alert("Sent to an admin for approval. It will be removed once an admin approves it.")}
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
 $("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
-$("#cpx").onclick=cpClose;$("#cps").addEventListener("input",fillCp);
+$("#cpx").onclick=cpClose;$("#rchat").onclick=()=>$("#mgb").click();$("#rtools").onclick=()=>$("#tbtn").click();$("#mfb").onclick=()=>document.body.classList.toggle("mf");
+$("#cps").addEventListener("input",fillCp);
 $("#amm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#wm").click()};
 function fillCp(){const q=($("#cps").value||"").trim().toLowerCase();$("#cpl").innerHTML=(wss||[]).filter(w=>!q||String(w.name).toLowerCase().includes(q)).map(w=>`<a class="cr${w.id==W&&!HOME?" on":""}" href="index.php?w=${w.id}"><span class="wl">${wlogo(w)}</span><span class="nm">${esc(w.name)}</span></a>`).join("")||'<div class="empty" style="padding:12px">No companies</div>'}
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){cpClose();$("#smenu").hidden=true;$("#umenu").hidden=true}});
@@ -1552,7 +1615,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=121;
+const BUILD=122;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
@@ -1560,8 +1623,8 @@ function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#2
 let mgPeer=0,mgLast=0,mgUsers=[],mgTeam={n:0},mgTimer=0;
 const mgOpen=()=>!$("#msgw").hidden;
 let mgPrev=null,mgRingT=0;
-function mgBadge(n){const b=$("#mgn");b.hidden=!n;b.textContent=n;
-  if(mgPrev!==null&&n>mgPrev&&$("#msgw").hidden){const t=$("#mgb");t.classList.remove("ring");void t.offsetWidth;t.classList.add("ring");clearTimeout(mgRingT);mgRingT=setTimeout(()=>t.classList.remove("ring"),5000)}
+function mgBadge(n){const b=$("#mgn");b.hidden=!n;b.textContent=n;{const c=$("#rchn");c.hidden=!n;c.textContent=n}
+  if(mgPrev!==null&&n>mgPrev&&$("#msgw").hidden){for(const t of [$("#mgb"),$("#rchat")]){t.classList.remove("ring");void t.offsetWidth;t.classList.add("ring")}clearTimeout(mgRingT);mgRingT=setTimeout(()=>{for(const t of [$("#mgb"),$("#rchat")])t.classList.remove("ring")},5000)}
   mgPrev=n}
 async function mgUsersLoad(){try{const r=await api("msg_users",{});mgUsers=r.users;mgTeam=r.team;mgUsersDraw()}catch(e){}}
 function mgUsersDraw(){const l=[...mgUsers].sort((a,b)=>b.last-a.last||a.name.localeCompare(b.name));
