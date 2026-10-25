@@ -108,7 +108,7 @@ function inbox_sql($db,$count){
   if($count)return (int)$db->query("SELECT COUNT(*) $from")->fetchColumn();
   return $db->query("SELECT c.id,c.task_id,c.ws_id,t.title,c.kind,c.body,c.created_at,COALESCE(us.name,'Former member') AS from_name $from ORDER BY c.id DESC LIMIT 50")->fetchAll();
 }
-function inv_defaults(){return ['name'=>'Invoice','match_cust'=>'','match_order'=>'','client_name'=>'','client_addr'=>'','currency'=>'AUD','symbol'=>'$','layout'=>'worklog','rate'=>0,'rates'=>new stdClass(),'ot'=>1,'bank'=>'','prefix'=>'INVOICE-','suffix'=>'','seq'=>1];}
+function inv_defaults(){return ['name'=>'Invoice','match_cust'=>'','match_order'=>'','client_name'=>'','client_addr'=>'','wl_title'=>'','po'=>'','sec_labels'=>'','currency'=>'AUD','symbol'=>'$','layout'=>'worklog','rate'=>0,'rates'=>new stdClass(),'ot'=>1,'bank'=>'','prefix'=>'INVOICE-','suffix'=>'','seq'=>1];}
 function inv_profiles($db){global $W;$q=$db->prepare("SELECT slot,data FROM invoice_profiles WHERE ws_id=? AND slot>0 ORDER BY slot");$q->execute([$W]);$o=[];foreach($q->fetchAll() as $r){$j=json_decode((string)$r['data'],true);$d=inv_defaults();if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();$d['slot']=(int)$r['slot'];$o[]=$d;}return $o;}
 function inv_company($db){global $W;$q=$db->prepare("SELECT data FROM invoice_profiles WHERE ws_id=? AND slot=0");$q->execute([$W]);$j=json_decode((string)$q->fetchColumn(),true);$d=inv_defaults();$d['prefix']='';$d['name']='';if(is_array($j))$d=array_merge($d,$j);if(empty($d['rates']))$d['rates']=new stdClass();return $d;}
 function admin(){global $me;if($me['role']!=='admin')out(['error'=>'Admins only']);}
@@ -303,7 +303,7 @@ case 'inv_set':
   $p=is_array($in['profile']??null)?$in['profile']:[];$d=inv_defaults();
   $s=fn($k,$n)=>mb_substr(trim((string)($p[$k]??$d[$k])),0,$n);
   $rates=[];if(is_array($p['rates']??null))foreach($p['rates'] as $k=>$v)if(is_numeric($v)&&(float)$v>=0&&(float)$v<100000)$rates[(string)(int)$k]=round((float)$v,2);
-  $clean=['name'=>$s('name',60),'match_cust'=>$s('match_cust',300),'match_order'=>$s('match_order',60),'client_name'=>$s('client_name',150),'client_addr'=>$s('client_addr',300),'currency'=>$s('currency',8),'symbol'=>$s('symbol',4),
+  $clean=['name'=>$s('name',60),'match_cust'=>$s('match_cust',300),'match_order'=>$s('match_order',60),'client_name'=>$s('client_name',150),'client_addr'=>$s('client_addr',300),'wl_title'=>$s('wl_title',80),'po'=>$s('po',60),'sec_labels'=>$s('sec_labels',500),'currency'=>$s('currency',8),'symbol'=>$s('symbol',4),
     'layout'=>(($p['layout']??'')==='items')?'items':'worklog','rate'=>round(max(0,min(100000,(float)($p['rate']??0))),2),'rates'=>$rates,
     'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>max(0,min(99999999,(int)($p['seq']??1)))];
   $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
