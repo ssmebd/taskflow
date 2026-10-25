@@ -164,14 +164,18 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 
 /* Glass look (optional, per device). Blur only on a few static surfaces; rows stay plain. */
 html.glass body{background:linear-gradient(135deg,#cfe0ff,#eadcff 55%,#cdeee6) fixed;--card:rgba(255,255,255,.74);--col:rgba(240,243,250,.55)}
-html.glass header{background:color-mix(in srgb,var(--nv) 72%,transparent);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);box-shadow:0 2px 18px rgba(20,30,70,.15)}
-html.glass #side{background:color-mix(in srgb,var(--sb) 74%,transparent);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+html.glass header{position:relative;isolation:isolate;background:transparent;box-shadow:0 2px 18px rgba(20,30,70,.15)}
+html.glass header::before{content:"";position:absolute;inset:0;z-index:-1;background:color-mix(in srgb,var(--nv) 72%,transparent);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
+html.glass #side{isolation:isolate;background:transparent}
+html.glass #side::before{content:"";position:fixed;left:0;top:0;bottom:0;width:112px;z-index:-1;background:color-mix(in srgb,var(--sb) 74%,transparent);-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+html.glass body.sc #side::before{width:44px}
 html.glass dialog{background:rgba(255,255,255,.78);-webkit-backdrop-filter:blur(16px) saturate(140%);backdrop-filter:blur(16px) saturate(140%);border-color:rgba(255,255,255,.7);box-shadow:0 18px 50px rgba(20,30,70,.28)}
 html.glass dialog::backdrop{background:rgba(15,25,60,.22);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
 html.glass #rside{background:rgba(255,255,255,.74);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
 html.glass .ghead,html.glass .gname{background:#fff}
+html.glass #smenu,html.glass #umenu,html.glass #rpop{background:#fff}
 html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,255,.6)}
-@media(prefers-color-scheme:dark){html.glass body{background:linear-gradient(135deg,#16213f,#2a1d44 55%,#10312f) fixed;--card:rgba(29,33,45,.72);--col:rgba(23,26,36,.55)}html.glass dialog,html.glass #rside{background:rgba(29,33,45,.8);border-color:rgba(255,255,255,.12)}html.glass .ghead,html.glass .gname{background:#1d212d}html.glass input,html.glass select,html.glass textarea{background:rgba(23,26,36,.6)}}
+@media(prefers-color-scheme:dark){html.glass body{background:linear-gradient(135deg,#16213f,#2a1d44 55%,#10312f) fixed;--card:rgba(29,33,45,.72);--col:rgba(23,26,36,.55)}html.glass dialog,html.glass #rside{background:rgba(29,33,45,.8);border-color:rgba(255,255,255,.12)}html.glass .ghead,html.glass .gname{background:#1d212d}html.glass #smenu,html.glass #umenu,html.glass #rpop{background:#1d212d}html.glass input,html.glass select,html.glass textarea{background:rgba(23,26,36,.6)}}
 @media(prefers-reduced-transparency:reduce){html.glass *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}}
 </style></head><body>
 <header>
