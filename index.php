@@ -647,7 +647,7 @@ async function mhLoad(){const from=$("#mhf").value,to=$("#mht").value;if(!from||
 function mhDraw(){const tg=+$("#mhg").value||0,wd=mhDays(),from=$("#mhf").value,to=$("#mht").value,td=ltoday();
   const by={};mhRows.forEach(x=>(by[x.work_date]=by[x.work_date]||[]).push(x));
   let exp=0,got=0,miss=0,rows="";
-  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;
+  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow)||from===to,l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;
     if(!work&&!l.length)continue;
     const past=d<=td;if(work&&past){exp+=tg;if(rg<tg)miss++}
     let st="",cl="";if(work){if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}}else{st="Day off";cl="color:var(--mut)"}
