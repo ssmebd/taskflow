@@ -236,6 +236,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 #side .rlogo{flex-direction:row;align-items:center;gap:1px;font-size:22px;letter-spacing:0;width:52px;height:40px}#side .rlogo .fl{font-size:26px;line-height:1;margin-top:-3px;text-shadow:0 0 8px rgba(34,197,94,.7)}
 #sidetabs .stab.ring,#sidetabs.hid .stab.ring{transform:translateX(0);opacity:1;animation:stbl .5s ease-in-out 10;z-index:2}@keyframes stbl{0%,100%{box-shadow:-2px 2px 8px rgba(0,0,0,.18);background:color-mix(in srgb,var(--pc) 26%,var(--card))}50%{box-shadow:0 0 0 3px color-mix(in srgb,var(--pc) 55%,transparent),-2px 2px 14px color-mix(in srgb,var(--pc) 70%,transparent);background:color-mix(in srgb,var(--pc) 70%,#fff)}}@media(prefers-reduced-motion:reduce){#sidetabs .stab.ring{animation:none;box-shadow:0 0 0 3px var(--pc)}}
 .ed.tt{cursor:pointer;text-overflow:ellipsis}.ed.tt:hover{text-decoration:underline;border-color:transparent}.ed.tt:focus{border-color:transparent;background:transparent}
+#acbody td.acc[data-lv="none"]{background:color-mix(in srgb,#dc2626 20%,var(--card))}#acbody td.acc[data-lv="view"]{background:color-mix(in srgb,#f97316 24%,var(--card))}#acbody td.acc[data-lv="edit"]{background:color-mix(in srgb,#3b82f6 20%,var(--card))}#acbody td.acc[data-lv="full"]{background:color-mix(in srgb,#16a34a 24%,var(--card))}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -1514,10 +1515,11 @@ function renderAcc(){
   const th="padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;white-space:nowrap";
   const mem=allUsers.filter(u=>u.role!=="admin");
   const opt=(u,w)=>{const l=(access[w.id]||{})[u.id]||"";const o=[["","— no access"],["view","View only"]].concat(u.role==="guest"?[]:[["edit","Can edit"],["full","Edit + delete"]]);return`<select data-ac="${w.id}:${u.id}" style="font-size:12px">${o.map(([k,n])=>`<option value="${k}"${l===k||(u.role==="guest"&&l&&k==="view")?" selected":""}>${n}</option>`).join("")}</select>`};
-  $("#acbody").innerHTML=mem.length?`<table style="border-collapse:collapse;width:100%"><tr><th style="${th}">User</th>${wss.map(w=>`<th style="${th}">${esc(w.name)}</th>`).join("")}</tr>${mem.map(u=>`<tr><td style="${th}"><b>${esc(u.name)}</b> <small style="color:var(--mut)">${u.role==="guest"?"Guest":"Member"}</small></td>${wss.map(w=>`<td style="${th}">${opt(u,w)}</td>`).join("")}</tr>`).join("")}</table>`:'<div class="empty">No members yet</div>'}
+  $("#acbody").innerHTML=mem.length?`<table style="border-collapse:collapse;width:100%"><tr><th style="${th}">User</th>${wss.map(w=>`<th style="${th}">${esc(w.name)}</th>`).join("")}</tr>${mem.map(u=>`<tr><td style="${th}"><b>${esc(u.name)}</b> <small style="color:var(--mut)">${u.role==="guest"?"Guest":"Member"}</small></td>${wss.map(w=>`<td class="acc" data-lv="${(access[w.id]||{})[u.id]||"none"}" style="${th}">${opt(u,w)}</td>`).join("")}</tr>`).join("")}</table>`:'<div class="empty">No members yet</div>'}
 $("#tmw").addEventListener("mouseenter",()=>{const r=$("#tmw").getBoundingClientRect(),m=$("#tmw .tms");m.style.left=(r.right+2)+"px";m.style.top=Math.max(8,Math.min(r.top-6,innerHeight-90))+"px"});
 $("#tm1").onclick=()=>$("#tm").click();
 $("#tm2").onclick=()=>{renderAcc();$("#acdlg").showModal()};
+$("#acbody").addEventListener("change",e=>{const sel=e.target.closest("[data-ac]");if(sel)sel.closest("td").dataset.lv=sel.value||"none"});
 $("#acx").onclick=()=>$("#acdlg").close();
 $("#acsave").onclick=async()=>{try{
   const by={};for(const w of wss)by[w.id]=[];
@@ -1549,7 +1551,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=119;
+const BUILD=120;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
