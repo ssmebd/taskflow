@@ -156,6 +156,7 @@ header .brand{color:var(--hfg)}
 .rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
 .rcust{margin:16px 0 4px;font-size:16px}
 #ivdlg{width:min(720px,96vw);max-height:92vh;overflow:auto}.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:6px 0}.pgrid label{font-size:12px;color:var(--mut)}.pgrid input,.pgrid select{width:100%}@media(max-width:600px){.pgrid{grid-template-columns:1fr}}.rt.wl{font-size:11px}
+#mhdg{width:min(760px,96vw)}#mhdg td,#mhdg th{vertical-align:top}#mhdg td:first-child,#mhdg td:last-child button{white-space:nowrap}#mhdg .rctl input[type=date]{width:auto}#mhad{width:min(420px,94vw)}
 dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw;max-height:98vh}dialog.dmv{margin:0;position:fixed}dialog>.acts:first-child,dialog>b:first-child,dialog>.dh{cursor:move}
 #rside{position:fixed;top:var(--hh,56px);right:0;bottom:0;width:340px;background:var(--card);border-left:1px solid var(--line);z-index:19;display:flex;flex-direction:column;overflow:hidden}#rside [hidden],#rside[hidden]{display:none!important}body.rp{padding-right:340px}#rside .rh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}#rside .rtabs{display:flex;border-bottom:1px solid var(--line)}#rside .rtabs button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px}#rside .rtabs button.on{border-bottom:2px solid var(--pri);font-weight:600}#rside .rbody{padding:10px;overflow:auto;flex:1}#rside label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}#rside input,#rside select,#rside textarea{width:100%;box-sizing:border-box}#rside .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rres{background:var(--col);border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}.rres b{font-size:18px}.wki{padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.wki:hover{background:var(--col)}.wki small{color:var(--mut);display:block}@media(max-width:900px){#rside{width:100%}body.rp{padding-right:0}}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
 @media print{body *{visibility:hidden!important}#rdlg,#rdlg *{visibility:visible!important}#rdlg{position:absolute;left:0;top:0;width:100%;max-height:none;overflow:visible;border:0;box-shadow:none}.noprint{display:none!important}}
@@ -171,7 +172,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <button id="tbtn" title="Tools: containers, converter, wiki">📐 Tools</button>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
  <button class="p" id="add">+ New task</button>
- <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="login.php?logout=1">⎋ Log out</a></div></span>
+ <span id="uw"><button id="ubtn" aria-haspopup="true"><span id="who"></span> ▾</button><div id="umenu" hidden><a href="#" id="mhm">⏱ My hours check</a><a href="login.php?logout=1">⎋ Log out</a></div></span>
 </header>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div class="stats" id="stats"></div>
@@ -255,6 +256,11 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
  <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><select id="tlk" title="Regular or overtime"><option value="R">Regular</option><option value="OT">OT</option></select><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
  <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
+<dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
+ <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
+ <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select></div>
+ <div id="mhs"></div><div id="mhout"></div></dialog>
+<dialog id="mhad"><b id="mhat">Add hours</b><div class="rctl" style="flex-direction:column;align-items:stretch"><label>Task<select id="mhtk"></select></label><div style="display:flex;gap:8px"><input type="number" id="mhah" step="0.25" min="0" max="24" placeholder="Hours"><select id="mhak" style="width:auto"><option value="R">Regular</option><option value="OT">OT</option></select></div><input id="mhan" placeholder="Note (optional)" maxlength="255"></div><div class="acts"><span class="sp"></span><button id="mhax">Cancel</button><button class="p" id="mhaok">Add</button></div></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><button id="r14">Last 14 days</button><button id="rp14">Previous 14 days</button></div>
@@ -627,6 +633,44 @@ $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [dat
   const profile={name:$("#pn").value||"Invoice",layout:$("#pl").value,match_cust:$("#pmc").value,match_order:$("#pmo").value,client_name:$("#pcn").value,client_addr:$("#pca").value,currency:$("#pcc").value||"AUD",symbol:$("#pcs").value,rate:+$("#prt").value||0,ot:$("#pot").value===""?1:+$("#pot").value,prefix:$("#ppx").value,suffix:$("#psf").value,seq:+$("#psq").value||0,bank:$("#pbk").value,rates};
   try{await api("inv_set",{slot,profile});$("#ivdlg").close();await runReport();$("#rpf").value=String(slot);drawReport()}catch(e){alert(e.message)}};
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
+// ---- Personal hours check ----
+const ltoday=()=>new Date().toLocaleDateString("en-CA");
+let mhRows=[],mhUser=0,mhAddDate="";
+const mhDays=()=>{try{return JSON.parse(localStorage.getItem("tf_mhd")||"[1,2,3,4,5]")}catch(e){return[1,2,3,4,5]}};
+const isoAdd=(s,n)=>{const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
+const wkStart=s=>{const d=new Date(s+"T00:00:00Z");return isoAdd(s,-((d.getUTCDay()+6)%7))};
+const WDN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function mhSet(a,b){$("#mhf").value=a;$("#mht").value=b;mhLoad()}
+function mhChips(){const on=mhDays();$("#mhdays").innerHTML=[1,2,3,4,5,6,0].map(d=>`<label style="margin:0 4px 0 0;display:inline-flex;gap:2px;align-items:center"><input type="checkbox" data-mhd="${d}" ${on.includes(d)?"checked":""}>${WDN[d]}</label>`).join("")}
+async function mhLoad(){const from=$("#mhf").value,to=$("#mht").value;if(!from||!to||from>to)return;
+  try{const r=await api("my_hours",{from,to,user:+$("#mhu").value||0});mhRows=r.rows;mhUser=r.user;mhDraw()}catch(e){alert(e.message)}}
+function mhDraw(){const tg=+$("#mhg").value||0,wd=mhDays(),from=$("#mhf").value,to=$("#mht").value,td=ltoday();
+  const by={};mhRows.forEach(x=>(by[x.work_date]=by[x.work_date]||[]).push(x));
+  let exp=0,got=0,miss=0,rows="";
+  for(let d=from,n=0;d<=to&&n<400;d=isoAdd(d,1),n++){const dow=new Date(d+"T00:00:00Z").getUTCDay(),work=wd.includes(dow),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0);
+    if(!work&&!l.length)continue;
+    const past=d<=td;if(work&&past){exp+=tg;got+=Math.min(h,tg>0?h:h);if(h<tg)miss++}else got+=h;
+    let st="",cl="";if(work){if(!past){st="Upcoming";cl="color:var(--mut)"}else if(h>=tg){st="✓ Complete";cl="color:#188038"}else if(h>0){st="⚠ Short by "+fmtH(tg-h)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}}else{st="Day off";cl="color:var(--mut)"}
+    const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
+    rows+=`<tr${work?"":' style="opacity:.7"'}><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(h)}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
+  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(mhRows.reduce((s,x)=>s+ +x.hours,0))} h</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
+  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">No working days in this range</td></tr>'}</table>`}
+function mhOpen(){const u=me.id;if(!$("#mhf").value){const ws=wkStart(ltoday());$("#mhf").value=ws;$("#mht").value=ltoday()}
+  const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");if(!sel.value||!sel.dataset.set){sel.value=String(u);sel.dataset.set=1}}else sel.hidden=true;
+  mhChips();$("#mhdg").showModal();mhLoad()}
+$("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
+$("#mhcl").onclick=()=>$("#mhdg").close();
+$("#mhw").onclick=()=>mhSet(wkStart(ltoday()),ltoday());$("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhSet(s,isoAdd(s,6))};$("#mh14").onclick=()=>mhSet(isoAdd(ltoday(),-13),ltoday());
+["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",mhLoad));$("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
+$("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;const on=[...document.querySelectorAll("#mhdays [data-mhd]:checked")].map(x=>+x.dataset.mhd);try{localStorage.setItem("tf_mhd",JSON.stringify(on))}catch(x){}mhDraw()});
+$("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const uid=mhUser||me.id;
+  const mine=tasks.filter(t=>String(t.assigned_to)===String(uid)&&t.status!=="done");
+  if(!mine.length){alert("No open tasks assigned to this person in the current workspace. Switch workspace or assign a task first.");return}
+  $("#mhat").textContent="Add hours · "+mhAddDate;$("#mhtk").innerHTML=mine.map(t=>`<option value="${t.id}">${esc((t.order_no?t.order_no+" · ":"")+t.title)}</option>`).join("");
+  const have=mhRows.filter(x=>x.work_date===mhAddDate).reduce((s,x)=>s+ +x.hours,0);$("#mhah").value=Math.max(0,(+$("#mhg").value||8)-have)||"";$("#mhan").value="";$("#mhad").showModal()});
+$("#mhax").onclick=()=>$("#mhad").close();
+$("#mhaok").onclick=async()=>{const h=parseFloat($("#mhah").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
+  try{await api("tl_add",{task_id:+$("#mhtk").value,date:mhAddDate,hours:h,kind:$("#mhak").value,note:$("#mhan").value});$("#mhad").close();await mhLoad();await load(true)}catch(e){alert(e.message)}};
 // ---- Movable / resizable dialogs ----
 (()=>{let dr=null;
  document.addEventListener("pointerdown",e=>{const d=e.target.closest&&e.target.closest("dialog");if(!d||e.button>0)return;

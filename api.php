@@ -273,6 +273,11 @@ case 'inv_set':
     'layout'=>(($p['layout']??'')==='items')?'items':'worklog','rate'=>round(max(0,min(100000,(float)($p['rate']??0))),2),'rates'=>$rates,
     'ot'=>round(max(0,min(10,(float)($p['ot']??1))),2),'bank'=>$s('bank',600),'prefix'=>$s('prefix',30),'suffix'=>$s('suffix',30),'seq'=>max(0,min(99999999,(int)($p['seq']??1)))];
   $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$W,$slot,json_encode($clean,JSON_UNESCAPED_UNICODE)]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);
+case 'my_hours':
+  $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
+  $who=$uid;if(!empty($in['user'])&&$me['role']==='admin')$who=(int)$in['user'];
+  $q=$db->prepare("SELECT l.id,l.work_date,l.hours,l.kind,w.name AS ws,t.title,t.order_no FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);
+  out(['rows'=>$q->fetchAll(),'user'=>$who]);
 case 'wiki_list':
   out(['pages'=>$db->query("SELECT p.id,p.title,p.body,p.updated_at,COALESCE(u.name,'') AS by_name FROM wiki_pages p LEFT JOIN users u ON u.id=p.updated_by ORDER BY p.title")->fetchAll()]);
 case 'wiki_save':
