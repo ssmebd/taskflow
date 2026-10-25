@@ -167,7 +167,7 @@ dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw
 .wlt .wlh th{color:#000;text-transform:none;background:#a9d08e;font-weight:700;font-size:11px;vertical-align:top;height:34px}.wlt .wlh th.c{text-align:center}.wlt .wlh th.pk{background:#f4cccc}.wlt .wlh th.rt1{text-align:center;background:#fce5cd}
 .wlt td.c{text-align:center}.wlt td.k{background:#f4cccc}.wlt .ft td{font-weight:700;border:1px solid #777}
 .pginv{width:210mm;min-height:297mm;position:relative;padding:0 0 30mm;margin:10px auto}.pginv .lh{display:block;width:100%;margin-top:4mm}.invt{text-align:center;font:700 16px Arial;margin:8mm 0 3mm}
-.itb{border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
+.itb{table-layout:auto;border-collapse:collapse;width:calc(100% - 20mm);margin:0 10mm;font:12.5px Calibri,Arial,sans-serif}.itb td,.itb th{color:#000;text-transform:none;border:1px solid #000;padding:5px 7px;text-align:left;font-weight:400}.itb th.l{font:700 13px Arial;background:#fff}.itb td.b{font-weight:700;white-space:nowrap;overflow:visible}.itb .c{text-align:center}.itb .g{background:#d9ead3}.itb td.spc{background:#d9d9d9;height:9px;padding:0}.itb td.po{background:#c9daf8;width:30mm}
 .itb.nb td,.itb.nb th{border:0}.itb.nb tr.g th{background:#d9ead3;font-weight:400;text-align:left;vertical-align:top;padding:4px 5px}.itb.nb tr.g th.c{text-align:center}.itb.nb td.c{text-align:center}.itb.nb td.g{background:#d9ead3}.itb.nb tr:last-child td{border-top:1px solid #000;border-bottom:1px solid #000}.itb.nb td.spc{background:#d9ead3;border:0;height:7px}
 .paybox{margin:14mm 10mm 0;padding:5px 8px;background:#d9ead3;font:11px Calibri,Arial,sans-serif;line-height:1.6;width:calc(100% - 20mm)}.paybox b{font-weight:700}
 .invf{position:absolute;left:0;right:0;bottom:6mm}.invf .ifbar{height:2.2mm;background:#22784b;margin:0 4mm}.invf .ifad{text-align:right;margin:1.5mm 5mm 0;font:9px Arial}
@@ -355,6 +355,11 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
   <label>Address<input id="coa"></label><label>Bank / payment details<input id="cob"></label>
   <label>Currency code<input id="coy" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="cos" maxlength="4" placeholder="$"></label>
   <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label>
+ </div>
+ <div class="pgrid">
+  <label>Invoice style<select id="colay"><option value="worklog">Category summary (Operations / Sales / Projects columns)</option><option value="items">Item list with PO no. (UCA / DMC style)</option></select></label><label>Worklog title (blue box)<input id="cowt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label>
+  <label>Invoice no. prefix<input id="copx" placeholder="INVOICE-"></label><label>Next number · suffix<span style="display:flex;gap:6px"><input type="number" id="cosq" min="0" style="width:90px"><input id="cosf" placeholder="-UCA"></span></label>
+  <label>PO no.<input id="copo"></label><label>Invoice column names (Group=Heading, one per line)<textarea id="cosl" rows="2" placeholder="Sales Drawing=Sales"></textarea></label>
  </div>
  <b style="font-size:13px">Hourly rate per person <span style="font-weight:400;color:var(--mut)">(blank = default rate)</span></b><div id="cor" class="pgrid"></div>
  <div class="acts"><span class="sp"></span><button id="cox">Cancel</button><button class="p" id="cosv">Save</button></div>
@@ -612,12 +617,12 @@ $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(i
 let coId=0;
 async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
-  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=c.layout==="items"?"items":"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||1;$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
   $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
   $("#codlg").showModal()}catch(e){alert(e.message)}}
 $("#cox").onclick=()=>$("#codlg").close();
 $("#cosv").onclick=async()=>{const rates={};document.querySelectorAll("#cor [data-cr]").forEach(i=>{if(i.value!=="")rates[i.dataset.cr]=+i.value});
-  const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,prefix:"",suffix:"",seq:1,rates};
+  const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,layout:$("#colay").value,wl_title:$("#cowt").value,prefix:$("#copx").value,suffix:$("#cosf").value,seq:+$("#cosq").value||1,po:$("#copo").value,sec_labels:$("#cosl").value,rates};
   try{const w=wss.find(x=>x.id==coId),n=$("#con").value.trim();if(n&&w&&n!==w.name)await apiW("ws_rename",{id:coId,name:n},coId);
     await apiW("inv_set",{slot:0,profile},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
 // ---- Worklog & invoice reports ----
@@ -625,7 +630,7 @@ let rrows=[],rprofs=[],rcsvRows=[],rComp={rates:{},rate:0,ot:1};
 const rShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")};
 const rPreset=(a,b)=>{$("#rf").value=rShift(a);$("#rt").value=rShift(b);runReport()};
 const money=n=>(+n).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
-const rDef=()=>({slot:0,name:"Invoice",match_cust:"",match_order:"",client_name:"",client_addr:"",currency:"",symbol:"",layout:"worklog",rate:0,rates:{},ot:1,bank:"",prefix:"INVOICE-",suffix:"",seq:1});
+const rDef=()=>({slot:0,name:"Invoice",match_cust:"",match_order:"",client_name:"",client_addr:"",currency:"",symbol:"",layout:"worklog",rate:0,rates:{},ot:1,bank:"",prefix:"",suffix:"",seq:1});
 function isoWeek(s){const d=new Date(s+"T00:00:00Z");const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil(((d-y)/864e5+1)/7)}
 const rList=()=>rprofs.length?rprofs:[rDef()];
 const rCur=()=>{const l=rList(),v=$("#rpf").value;return l.find(p=>String(p.slot)===v)||l[0]};
@@ -634,7 +639,8 @@ const rClaims=(p,x)=>{const mc=splitC(p.match_cust),mo=String(p.match_order||"")
 const hasM=p=>splitC(p.match_cust).length||String(p.match_order||"").trim();
 function rProfRows(p){const L=rList();return rrows.filter(x=>hasM(p)?rClaims(p,x):!L.some(q=>q!==p&&hasM(q)&&rClaims(q,x)))}
 const rRate=(p,uid)=>{const k=String(uid),v=p.rates&&p.rates[k];if(v!==undefined&&v!=="")return +v;if(+p.rate>0)return +p.rate;const c=rComp.rates&&rComp.rates[k];return c!==undefined&&c!==""?+c:(+rComp.rate||0)};
-const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
+const rEff=p=>{const e=Object.assign({},p);["client_name","client_addr","currency","symbol","bank","wl_title","po","sec_labels","prefix","suffix"].forEach(k=>{if(!String(e[k]||"").trim())e[k]=rComp[k]||""});
+  if(rComp.layout==="items"||p.layout==="items")e.layout="items";else e.layout="worklog";if(!p.slot&&+rComp.seq>0)e.seq=+rComp.seq;if(!e.prefix&&!p.slot)e.prefix="INVOICE-";if(!e.currency)e.currency="AUD";if(!e.symbol)e.symbol="$";if(!(+e.ot>0)||+e.ot===1)e.ot=+rComp.ot>0?+rComp.ot:1;return e};
 const rCost=(p,x)=>x.hours*rRate(p,x.user_id)*(x.kind==="OT"?(+p.ot||0):1);
 function rInvNo(p){return (p.prefix||"")+$("#rt").value.replace(/-/g,"")+"-"+p.seq+(p.suffix||"")}
 function rSections(p,rows){const m=new Map();for(const x of rows){const k=x.top_name||"(No group)";if(!m.has(k))m.set(k,[]);m.get(k).push(x)}return m}
@@ -686,6 +692,7 @@ function drawReport(){
   for(const n of names){const t=wlPage(p,n,secs.get(n),P,csv);lines.push([n,t.th,t.tc]);pages+=t.html}
   rcsvRows=[["Group","Date","Week","Project group","Project No","Project name"].concat(P.map(x=>x[1]),["Type","Total hrs"],"(rates)","Total cost "+p.currency,"Remarks")].concat(csv);
   if(p.layout==="items"){const it=invItemsPage(p,rows);inv=it.html;if(!it.tc)h0=RWARN}else{inv=invCatPage(p,lines);if(!lines.some(l=>l[2]))h0=RWARN}
+  if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
   $("#rout").innerHTML=h0+(vw==="inv"?"":pages)+(vw==="log"?"":inv)}
 const RWARN='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set, so cost shows 0. Set them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
 async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
@@ -1270,7 +1277,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=48;
+const BUILD=49;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
