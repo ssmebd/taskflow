@@ -200,7 +200,7 @@ body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;mar
 #wlogo{width:auto;min-width:36px;max-width:90px;height:34px;display:flex;align-items:center;justify-content:center;align-self:center;margin-right:6px}#wlogo img{height:100%;width:auto;max-width:90px;object-fit:contain}header h1{display:flex;align-items:center;align-self:center;line-height:1}
 </style></head><body>
 <header>
- <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:700;letter-spacing:0">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
+ <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
  <span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
  <button id="dv" title="Choose which view opens first"></button>
  <input id="q" placeholder="Search tasks" style="min-width:140px">
@@ -1480,7 +1480,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=111;
+const BUILD=112;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
