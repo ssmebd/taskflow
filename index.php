@@ -590,7 +590,7 @@ function render(){
       let secs=groups.map(g=>({id:String(g.id),name:g.name,lv:g.level,parent:g.parent_id?String(g.parent_id):"",color:gcol(g)})).concat([{id:"none",name:"No group",lv:0,parent:"",color:"#64748b"}]);
       if(G!=="")secs=secs.filter(x=>x.id===G||x.parent===G);
       const inSec=(t,sc)=>sc.id==="none"?!t.group_id:String(t.group_id)===sc.id;
-      const doneBlk=s=>{const dl=done_.filter(t=>inSec(t,s));if(!dl.length)return"";const cc=getCC().has(s.id);return `<tr class="dh sub" style="--gc:${s.color}" data-dh="${s.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} 📁 ${esc(s.id==="none"?"No group":gname(s.id)||s.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))};
+      const doneBlk=s=>{const ks=secs.filter(k=>k.parent===s.id),dl=done_.filter(t=>inSec(t,s)||ks.some(k=>inSec(t,k)));if(!dl.length)return"";const cc=getCC().has(s.id);return `<tr class="dh sub" style="--gc:${s.color}" data-dh="${s.id}" title="Click to show or hide completed in this group"><th colspan="${span}">${cc?"▸":"▾"} 📁 ${esc(s.id==="none"?"No group":gname(s.id)||s.name)} Completed (${dl.length})</th></tr>`+(cc?"":dl.map(rowHTML).join(""))};
       for(const sc of secs){
         if(sc.parent&&gc.has(sc.parent))continue;
         const kids=secs.filter(k=>k.parent===sc.id),items=act_.filter(t=>inSec(t,sc)),dn=done_.filter(t=>inSec(t,sc)).length;
@@ -601,7 +601,7 @@ function render(){
         const col=gc.has(sc.id);
         rows+=(sc.lv?"":`<tr class="gsp"><td colspan="${span}"></td></tr>`)+`<tr class="gh${sc.lv?" sub":""}" data-gh="${sc.id}" style="--gc:${sc.color}" title="Click to show or hide"><th colspan="${span}">${LV!=="view"&&sc.id!=="none"?'<span class="ghd" title="Drag to reorder this group">⋮⋮</span>':""}${col?"▸":"▾"} ${sc.lv?"↳ ":""}📁 ${esc(sc.name)} <small style="font-weight:400">${tot} open${totd?` · ${totd} completed`:""}</small>${LV!=="view"&&sc.id!=="none"?` <button class="o" data-gadd="${sc.id}" style="margin-left:8px">+ Task</button>`:""}</th></tr>`;
         if(!col){rows+=items.map(rowHTML).join("")+(hasD?draftHTML():"")+addRow(sc.id,span,sc.id!=="none"&&!sc.lv,sc.color);
-          if(sc.lv||!kids.length)rows+=doneBlk(sc)}
+          if(sc.lv?!secs.some(x=>x.id===sc.parent):!kids.length)rows+=doneBlk(sc)}
         if(sc.lv&&secs.filter(k=>k.parent===sc.parent).pop()===sc){const par=secs.find(x=>x.id===sc.parent);if(par)rows+=doneBlk(par)}
         if(sc.id!=="none"&&(sc.lv?secs.filter(k=>k.parent===sc.parent).pop()===sc:!kids.length))rows+=`<tr class="gend" style="--gc:${sc.color}"><td colspan="${span}"></td></tr>`
       }
@@ -1371,7 +1371,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=83;
+const BUILD=84;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
