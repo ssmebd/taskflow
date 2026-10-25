@@ -296,6 +296,7 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
  <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
  <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select></div>
+ <div class="rctl"><label style="margin:0">Download</label><select id="mhdl"><option value="day">Today</option><option value="week">This week (Mon–Sun)</option><option value="lweek">Last week</option><option value="month">This month</option><option value="lmonth">Last month</option><option value="sel">Dates selected above</option></select><button id="mhdb" title="Save your hours as a file that opens in Excel">⬇ Excel (CSV)</button></div>
  <div id="mhs"></div><div id="mhout"></div></dialog>
 <dialog id="mhad"><b id="mhat">Add hours</b><div class="rctl" style="flex-direction:column;align-items:stretch"><label>Task<select id="mhtk"></select></label><div style="display:flex;gap:8px"><input type="number" id="mhah" step="0.25" min="0" max="24" placeholder="Hours"><select id="mhak" style="width:auto"><option value="R">Regular</option><option value="OT">OT</option></select></div><input id="mhan" placeholder="Note (optional)" maxlength="255"></div><div class="acts"><span class="sp"></span><button id="mhax">Cancel</button><button class="p" id="mhaok">Add</button></div></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
@@ -824,6 +825,18 @@ $("#mhw").onclick=()=>{const s=wkStart(ltoday());mhRange(s,isoAdd(s,6))};
 $("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhRange(s,isoAdd(s,6))};
 $("#mh14").onclick=()=>mhRange(isoAdd(ltoday(),-13),ltoday());
 ["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",()=>{const a=$("#mhf").value,b=$("#mht").value;if(a&&b&&a<=b)mhRange(a,b)}));
+// ---- Hours download (daily / weekly / monthly backup) ----
+$("#mhdb").onclick=async()=>{const t=ltoday(),k=$("#mhdl").value,mo=(y,m)=>[new Date(Date.UTC(y,m,1)).toISOString().slice(0,10),new Date(Date.UTC(y,m+1,0)).toISOString().slice(0,10)];let a,b;const y=+t.slice(0,4),m=+t.slice(5,7)-1;
+  if(k==="day")a=b=t;else if(k==="week"){a=wkStart(t);b=isoAdd(a,6)}else if(k==="lweek"){a=isoAdd(wkStart(t),-7);b=isoAdd(a,6)}else if(k==="month")[a,b]=mo(y,m);else if(k==="lmonth")[a,b]=mo(y,m-1);else{const s=mhSorted();if(!s.length)return alert("Pick at least one date first");a=s[0];b=s[s.length-1]}
+  try{const r=await api("my_hours",{from:a,to:b,user:+$("#mhu").value||0}),rows=r.rows,who=($("#mhu").hidden?(me.name||"me"):($("#mhu").selectedOptions[0]||{}).textContent)||"me",tg=+$("#mhg").value||0;
+    const day=new Map(),wk=new Map();let R=0,O=0;const out=[["Hours report","", "","","","","",""],["Person",who],["From",a,"To",b],[],["Date","Day","Company","Order no.","Task","Type","Hours"]];
+    for(const x of rows){const h=+x.hours||0,ot=x.kind==="OT";out.push([x.work_date,WDN[new Date(x.work_date+"T00:00:00Z").getUTCDay()],x.ws||"",x.order_no||"",x.title,ot?"OT":"Regular",+h.toFixed(2)]);
+      const d=day.get(x.work_date)||{r:0,o:0};ot?d.o+=h:d.r+=h;day.set(x.work_date,d);const w=wkStart(x.work_date),e=wk.get(w)||{r:0,o:0};ot?e.o+=h:e.r+=h;wk.set(w,e);ot?O+=h:R+=h}
+    out.push([],["Totals by day"],["Date","Day","Regular","OT","Total","Target","Difference"]);
+    for(let d=a,n=0;d<=b&&n<400;d=isoAdd(d,1),n++){const e=day.get(d)||{r:0,o:0},dw=new Date(d+"T00:00:00Z").getUTCDay(),wkend=dw===0||dw===6;if(wkend&&!day.has(d))continue;out.push([d,WDN[dw],+e.r.toFixed(2),+e.o.toFixed(2),+(e.r+e.o).toFixed(2),wkend?0:tg,wkend?"":+(e.r-tg).toFixed(2)])}
+    if(k!=="day"&&k!=="sel"||wk.size>1){out.push([],["Totals by week (Mon–Sun)"],["Week starting","Regular","OT","Total"]);for(const [w,e] of [...wk.entries()].sort())out.push([w,+e.r.toFixed(2),+e.o.toFixed(2),+(e.r+e.o).toFixed(2)])}
+    out.push([],["Grand total","","Regular",+R.toFixed(2),"OT",+O.toFixed(2),"All",+(R+O).toFixed(2)]);
+    const csv="﻿"+out.map(l=>l.map(csvCell).join(",")).join("\r\n"),el=document.createElement("a");el.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));el.download="hours_"+String(who).replace(/[^\w-]+/g,"_")+"_"+a+"_to_"+b+".csv";document.body.appendChild(el);el.click();setTimeout(()=>{URL.revokeObjectURL(el.href);el.remove()},500)}catch(e){alert(e.message)}};
 $("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
 $("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]");if(w){mhWk=isoAdd(mhWk,+w.dataset.mhwk);mhChips()}});
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
@@ -1371,7 +1384,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=84;
+const BUILD=85;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
