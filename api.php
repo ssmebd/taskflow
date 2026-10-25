@@ -14,7 +14,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v18']))return;
+  if(!empty($_SESSION['schema_v19']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -47,7 +47,8 @@ function ensure_schema($db){
     $db->exec("INSERT IGNORE INTO ws_users(ws_id,user_id) SELECT 1,id FROM users");
   }
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_pages(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(150) NOT NULL,body MEDIUMTEXT NOT NULL,updated_by INT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v18']=1;
+  if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'logged_by'")->fetch())$db->exec("ALTER TABLE time_logs ADD logged_by INT NULL");
+  $_SESSION['schema_v19']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -240,18 +241,19 @@ case 'task_order':
 case 'tl_list':
   need_ws();$tid=(int)($in['task_id']??0);
   $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
-  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.kind,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
+  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.kind,l.logged_by,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
   out(['logs'=>$q->fetchAll(),'me'=>(int)$uid]);
 case 'tl_add':
   need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
-  $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
-  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,work_date,hours,kind,note,created_at) VALUES(?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$uid,$d,$h,$kd,$n]);out(['ok'=>1]);
+  $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
+  $who=(int)$tr['assigned_to']?:$uid;
+  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,created_at) VALUES(?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n]);out(['ok'=>1]);
 case 'tl_del':
-  need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetchColumn();
+  need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
-  if((int)$o!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
+  if((int)$o['user_id']!==(int)$uid&&(int)$o['logged_by']!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
   $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);out(['ok'=>1]);
 case 'tl_report':
   admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
