@@ -1,5 +1,5 @@
 <?php
-const BUILD=93;
+const BUILD=94;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -157,7 +157,7 @@ case 'list':
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];
   $res=['build'=>BUILD,'inbox'=>inbox_sql($db,true),'v'=>$ver,'me'=>$me,'ws'=>$WS,'w'=>$W,'level'=>$LV,'names'=>(object)$names,'users'=>[],'cols'=>[],'tasks'=>[]];
   if($W){
-    $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR id IN(SELECT user_id FROM ws_users WHERE ws_id=?) ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
+    $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR id IN(SELECT user_id FROM ws_users WHERE ws_id=? AND level<>'view') ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
     $q=$db->prepare("SELECT * FROM tasks WHERE ws_id=? ORDER BY sort_no ASC,id DESC");$q->execute([$W]);$tasks=$q->fetchAll();
     foreach($tasks as &$t){$t['x']=(object)(json_decode((string)($t['extra']??''),true)?:[]);unset($t['extra']);}
     $ov=[];$wn=array_column($WS,'name','id');
