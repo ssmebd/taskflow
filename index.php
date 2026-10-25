@@ -296,13 +296,13 @@ html.glass input,html.glass select,html.glass textarea{background:rgba(255,255,2
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
  <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
  <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select></div>
- <div class="rctl"><label style="margin:0">Download</label><select id="mhdl"><option value="day">Today</option><option value="week">This week (Mon–Sun)</option><option value="lweek">Last week</option><option value="month">This month</option><option value="lmonth">Last month</option><option value="sel">Dates selected above</option></select><button id="mhdb" title="Save your hours as an Excel sheet laid out like the worklog">⬇ Excel</button></div>
+ <div class="rctl"><label style="margin:0">Download</label><select id="mhdl"><option value="day">Today</option><option value="week">This week (Mon–Sun)</option><option value="lweek">Last week</option><option value="month">This month</option><option value="lmonth">Last month</option><option value="sel">Dates selected above</option></select><button id="mhdb" title="Save your hours as an Excel file laid out like the worklog">⬇ Excel</button></div>
  <div id="mhs"></div><div id="mhout"></div></dialog>
 <dialog id="mhad"><b id="mhat">Add hours</b><div class="rctl" style="flex-direction:column;align-items:stretch"><label>Task<select id="mhtk"></select></label><div style="display:flex;gap:8px"><input type="number" id="mhah" step="0.25" min="0" max="24" placeholder="Hours"><select id="mhak" style="width:auto"><option value="R">Regular</option><option value="OT">OT</option></select></div><input id="mhan" placeholder="Note (optional)" maxlength="255"></div><div class="acts"><span class="sp"></span><button id="mhax">Cancel</button><button class="p" id="mhaok">Add</button></div></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
- <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel (CSV)</button><button id="rapp" title="Save this report and invoice as a draft in Invoice tracking">➕ Create invoice</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
+ <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel</button><button id="rapp" title="Save this report and invoice as a draft in Invoice tracking">➕ Create invoice</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
  <div id="redit" class="noprint" hidden style="background:#fff4d6;color:#7a5200;padding:6px 10px;border-radius:6px;margin:6px 0"></div>
  <div id="rout"></div>
 </dialog>
@@ -744,8 +744,64 @@ $("#r14").onclick=()=>rPreset(-13,0);
 $("#rf").addEventListener("change",runReport);$("#rt").addEventListener("change",runReport);$("#rvw").addEventListener("change",drawReport);
 $("#rpf").addEventListener("change",()=>{if($("#rpf").value==="new"){openProf(null);return}drawReport()});
 $("#rpr").onclick=()=>{$("#pbox").innerHTML=$("#rout").innerHTML;window.print()};window.addEventListener("afterprint",()=>{$("#pbox").innerHTML=""});
-$("#rcsv").onclick=()=>{const csv="﻿"+rcsvRows.map(r=>r.map(csvCell).join(",")).join("\r\n");
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download=(rCur().name||"report").replace(/[^\w-]+/g,"_")+"_"+$("#rf").value+"_to_"+$("#rt").value+".csv";document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+// ---- Real .xlsx writer: turns the on-screen report pages (tables) into Excel sheets, keeping colours, borders and merges ----
+const XL={crcT:(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})()};
+XL.crc=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=XL.crcT[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+XL.zip=files=>{const enc=new TextEncoder(),parts=[],cd=[];let off=0;const w16=(a,v)=>a.push(v&255,(v>>8)&255),w32=(a,v)=>a.push(v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255);
+  for(const[name,str]of files){const n=enc.encode(name),d=enc.encode(str),crc=XL.crc(d),h=[];w32(h,0x04034b50);w16(h,20);w16(h,0x0800);w16(h,0);w16(h,0);w16(h,0x21);w32(h,crc);w32(h,d.length);w32(h,d.length);w16(h,n.length);w16(h,0);parts.push(new Uint8Array(h),n,d);
+    const c=[];w32(c,0x02014b50);w16(c,20);w16(c,20);w16(c,0x0800);w16(c,0);w16(c,0);w16(c,0x21);w32(c,crc);w32(c,d.length);w32(c,d.length);w16(c,n.length);w16(c,0);w16(c,0);w16(c,0);w16(c,0);w32(c,0);w32(c,off);cd.push(new Uint8Array(c),n);off+=h.length+n.length+d.length}
+  let cl=0;for(const x of cd)cl+=x.length;const e=[];w32(e,0x06054b50);w16(e,0);w16(e,0);w16(e,files.length);w16(e,files.length);w32(e,cl);w32(e,off);w16(e,0);
+  return new Blob([...parts,...cd,new Uint8Array(e)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})};
+XL.esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,"");
+XL.col=n=>{let s="";n++;while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26)}return s};
+XL.rgb=c=>{if(!c)return null;let m=c.match(/^rgba?\(([\d.]+)[, ]+([\d.]+)[, ]+([\d.]+)(?:[,/ ]+([\d.]+%?))?\)/),r,g,b,a=1;
+  if(m){r=+m[1];g=+m[2];b=+m[3];if(m[4]!==undefined)a=m[4].endsWith("%")?parseFloat(m[4])/100:+m[4]}
+  else{m=c.match(/^color\(srgb ([\d.]+) ([\d.]+) ([\d.]+)(?: \/ ([\d.]+%?))?\)/);if(!m)return null;r=m[1]*255;g=m[2]*255;b=m[3]*255;if(m[4]!==undefined)a=m[4].endsWith("%")?parseFloat(m[4])/100:+m[4]}
+  if(a<0.05)return null;if(a<1){r=r*a+255*(1-a);g=g*a+255*(1-a);b=b*a+255*(1-a)}
+  return[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0")).join("").toUpperCase()};
+XL.bg=el=>{for(let e=el;e&&e.nodeType===1;e=e.parentElement){if(e.classList&&e.classList.contains("pg"))return null;const c=XL.rgb(getComputedStyle(e).backgroundColor);if(c)return c==="FFFFFF"?null:c}return null};
+XL.styler=()=>{const fonts=[],fills=[],borders=[],xfs=[],idx=(arr,o)=>{const k=JSON.stringify(o);let i=arr.findIndex(x=>x.k===k);if(i<0){arr.push({k,o});i=arr.length-1}return i};
+  idx(fonts,{sz:11,b:0,i:0,c:"000000"});idx(fills,{p:"none"});idx(fills,{p:"gray125"});idx(borders,{});idx(xfs,{f:0,fl:0,b:0,h:"",v:""});
+  return{fonts,fills,borders,xfs,get(el,isTd){const cs=getComputedStyle(el),fc=XL.rgb(cs.color)||"000000",bgc=XL.bg(el),sz=Math.max(7,Math.round(parseFloat(cs.fontSize)*0.75*2)/2),bold=(+cs.fontWeight>=600||cs.fontWeight==="bold")?1:0,it=cs.fontStyle==="italic"?1:0;
+    const side=s=>{const w=parseFloat(cs["border"+s+"Width"]);if(!(w>0)||cs["border"+s+"Style"]==="none")return null;return XL.rgb(cs["border"+s+"Color"])||"000000"};
+    const bo={};if(isTd)for(const s of["Top","Right","Bottom","Left"]){const c=side(s);if(c)bo[s.toLowerCase()]=c}
+    let h=cs.textAlign;h=h==="center"?"center":(h==="right"||h==="end")?"right":"left";const vv=cs.verticalAlign,v=vv==="top"?"top":vv==="bottom"?"bottom":"center";
+    return idx(xfs,{f:idx(fonts,{sz,b:bold,i:it,c:fc}),fl:bgc?idx(fills,{p:"solid",c:bgc}):0,b:idx(borders,bo),h,v})},
+  xml(){const fx=fonts.map(f=>`<font>${f.o.b?"<b/>":""}${f.o.i?"<i/>":""}<sz val="${f.o.sz}"/><color rgb="FF${f.o.c}"/><name val="Calibri"/></font>`).join(""),
+    fl=fills.map(f=>f.o.p==="solid"?`<fill><patternFill patternType="solid"><fgColor rgb="FF${f.o.c}"/><bgColor indexed="64"/></patternFill></fill>`:`<fill><patternFill patternType="${f.o.p}"/></fill>`).join(""),
+    bo=borders.map(b=>`<border>${["left","right","top","bottom"].map(s=>b.o[s]?`<${s} style="thin"><color rgb="FF${b.o[s]}"/></${s}>`:`<${s}/>`).join("")}<diagonal/></border>`).join(""),
+    xf=xfs.map(x=>`<xf numFmtId="0" fontId="${x.o.f}" fillId="${x.o.fl}" borderId="${x.o.b}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${x.o.h||"left"}" vertical="${x.o.v||"center"}" wrapText="1"/></xf>`).join("");
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="${fonts.length}">${fx}</fonts><fills count="${fills.length}">${fl}</fills><borders count="${borders.length}">${bo}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xf}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`}}};
+XL.sheet=(pg,st,name)=>{const pr=pg.getBoundingClientRect(),rowsOut=[];const items=[];
+  const cellText=el=>(el.innerText||"").replace(/ /g," ").replace(/[ \t]+\n/g,"\n").trim();
+  const leaf=el=>{if(el.nodeType!==1)return;const tag=el.tagName;if(tag==="IMG"||tag==="STYLE"||tag==="SCRIPT")return;const r=el.getBoundingClientRect();if(r.width<2||r.height<1)return;
+    if(tag==="TABLE"){for(const tr of el.rows){const tr_r=tr.getBoundingClientRect(),cells=[];for(const td of tr.cells){const r=td.getBoundingClientRect();cells.push({x0:r.left-pr.left,x1:r.right-pr.left,rs:td.rowSpan||1,td})}items.push({h:tr_r.height,cells})}items.push({h:6,cells:[]});return}
+    const kids=[...el.children].filter(k=>k.tagName!=="BR"&&k.tagName!=="SUP"&&k.tagName!=="SUB"&&k.tagName!=="B"&&k.tagName!=="SPAN");
+    if(kids.length){for(const k of kids)leaf(k);return}
+    const tx=cellText(el),bgc=XL.bg(el);if(!tx&&!bgc)return;items.push({h:r.height,cells:[{x0:r.left-pr.left,x1:r.right-pr.left,rs:1,td:el,text:tx}],blk:1})};
+  for(const k of pg.children)leaf(k);
+  // unified column edges
+  let edges=[];for(const it of items)for(const c of it.cells){edges.push(c.x0,c.x1)}edges.sort((a,b)=>a-b);const E=[];for(const e of edges)if(!E.length||e-E[E.length-1]>1.5)E.push(e);
+  const ci=x=>{let b=0,bd=1e9;E.forEach((e,i)=>{const d=Math.abs(e-x);if(d<bd){bd=d;b=i}});return b};
+  const grid=[],merges=[];items.forEach((it,ri)=>{grid[ri]=grid[ri]||{};for(const c of it.cells){const c1=ci(c.x0),c2=Math.max(c1,ci(c.x1)-1),r2=ri+c.rs-1,sid=st.get(c.td,true);
+      let tx=c.text!==undefined?c.text:cellText(c.td),val=tx,num=false;if(/^-?(0|[1-9]\d{0,8})(\.\d+)?$/.test(tx)){num=true;val=+tx}
+      for(let r=ri;r<=r2;r++){grid[r]=grid[r]||{};for(let cc=c1;cc<=c2;cc++){grid[r][cc]=(r===ri&&cc===c1)?{s:sid,v:tx===""?null:val,n:num}:{s:sid,v:null}}}
+      if(r2>ri||c2>c1)merges.push(`${XL.col(c1)}${ri+1}:${XL.col(c2)}${r2+1}`)}});
+  const nc=Math.max(1,E.length-1);let xml=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView showGridLines="0" workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/><cols>`;
+  for(let i=0;i<nc;i++)xml+=`<col min="${i+1}" max="${i+1}" width="${Math.max(2,Math.round((E[i+1]-E[i])/6.4*10)/10)}" customWidth="1"/>`;
+  xml+="</cols><sheetData>";items.forEach((it,ri)=>{const g=grid[ri]||{},ks=Object.keys(g).map(Number).sort((a,b)=>a-b);xml+=`<row r="${ri+1}" ht="${Math.max(6,Math.round(it.h*0.75*10)/10)}" customHeight="1">`;
+    for(const k of ks){const c=g[k],ref=XL.col(k)+(ri+1);xml+=c.v===null?`<c r="${ref}" s="${c.s}"/>`:c.n?`<c r="${ref}" s="${c.s}"><v>${c.v}</v></c>`:`<c r="${ref}" s="${c.s}" t="inlineStr"><is><t xml:space="preserve">${XL.esc(c.v)}</t></is></c>`}xml+="</row>"});
+  xml+="</sheetData>"+(merges.length?`<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>`:"")+`<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="${pg.classList.contains("pgwl")?8:9}" orientation="${pg.classList.contains("pgwl")?"landscape":"portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`;return xml};
+XL.book=(pages,names)=>{const st=XL.styler(),used=new Set(),sheets=pages.map((pg,i)=>{let n=String(names[i]||"Sheet "+(i+1)).replace(/[\\\/?*\[\]:]/g," ").trim().slice(0,28)||"Sheet "+(i+1),b=n,k=2;while(used.has(n.toLowerCase()))n=b.slice(0,26)+" "+k++;used.add(n.toLowerCase());return{n,x:XL.sheet(pg,st,n)}});
+  const files=[["[Content_Types].xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`],
+   ["_rels/.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+   ["xl/workbook.xml",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${XL.esc(s.n)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")}</sheets></workbook>`],
+   ["xl/_rels/workbook.xml.rels",`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+   ["xl/styles.xml",st.xml()]].concat(sheets.map((s,i)=>["xl/worksheets/sheet"+(i+1)+".xml",s.x]));return XL.zip(files)};
+XL.save=(blob,name)=>{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+$("#rcsv").onclick=()=>{const pgs=[...$("#rout").querySelectorAll(".pg")];if(!pgs.length)return alert("Nothing to download for this period.");
+  const names=pgs.map(p=>{const g=p.querySelector(".gtt span");return p.classList.contains("pgwl")?(g?g.textContent:"Worklog"):p.classList.contains("pgsm")?"Report":"Invoice"});
+  try{XL.save(XL.book(pgs,names),(rCur().name||"report").replace(/[^\w-]+/g,"_")+"_"+$("#rf").value+"_to_"+$("#rt").value+".xlsx")}catch(e){alert("Could not build the Excel file: "+e.message)}};
 // profile editor
 
 // ---- Create invoice (draft) -> Invoice list: check, edit, amend, approve ----
@@ -843,7 +899,8 @@ $("#mhdb").onclick=async()=>{const t=ltoday(),k=$("#mhdl").value,mo=(y,m)=>[new 
     for(let d=a,n=0;d<=b&&n<400;d=isoAdd(d,1),n++){const e=day.get(d)||{r:0,o:0},dw=new Date(d+"T00:00:00Z").getUTCDay(),we=dw===0||dw===6;if(we&&!day.has(d))continue;const df=we?"":e.r-tg;H+=`<tr>${tdc(d)}${tdc(WDN[dw])}${tdc(F(e.r),"text-align:center")}${tdc(F(e.o),"text-align:center")}${tdc(F(e.r+e.o),"text-align:center;font-weight:bold")}${tdc(we?0:tg,"text-align:center")}<td style="${bd}text-align:center;color:${df<0?"#c5221f":"#188038"}">${df===""?"":F(df)}</td></tr>`}
     if(wk.size>1){H+=`<tr><td colspan="7" style="background:#38761d;color:#fff;font-weight:bold">Totals by week (Mon–Sun)</td></tr><tr style="font-weight:bold;background:#a9d08e"><td style="${bd}" colspan="2">Week starting</td><td style="${bd}text-align:center">Regular</td><td style="${bd}text-align:center">OT</td><td style="${bd}text-align:center">Total</td><td style="${bd}"></td><td style="${bd}"></td></tr>`;for(const [w,e] of [...wk.entries()].sort())H+=`<tr>${tdc(w+" (Wk "+wkn(w)+")").replace("<td","<td colspan=\"2\"")}${tdc(F(e.r),"text-align:center")}${tdc(F(e.o),"text-align:center")}${tdc(F(e.r+e.o),"text-align:center;font-weight:bold")}<td style="${bd}"></td><td style="${bd}"></td></tr>`}
     H+=`</table></body></html>`;
-    const el=document.createElement("a");el.href=URL.createObjectURL(new Blob(["﻿"+H],{type:"application/vnd.ms-excel;charset=utf-8"}));el.download="hours_"+String(who).replace(/[^\w-]+/g,"_")+"_"+a+"_to_"+b+".xls";document.body.appendChild(el);el.click();setTimeout(()=>{URL.revokeObjectURL(el.href);el.remove()},500)}catch(e){alert(e.message)}};
+    const box=document.createElement("div");box.className="pg pgwl";box.style.cssText="position:absolute;left:-12000px;top:0;width:1250px;background:#fff";box.innerHTML=H.replace(/^[\s\S]*<body>/,"").replace(/<\/body>[\s\S]*$/,"");document.body.appendChild(box);
+    try{XL.save(XL.book([box],["Hours"]),"hours_"+String(who).replace(/[^\w-]+/g,"_")+"_"+a+"_to_"+b+".xlsx")}finally{box.remove()}}catch(e){alert(e.message)}};
 $("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",mhDraw);
 $("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]");if(w){mhWk=isoAdd(mhWk,+w.dataset.mhwk);mhChips()}});
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
@@ -1391,7 +1448,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=86;
+const BUILD=87;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.textContent=ok?"● Live":"○ Offline";l.style.color=ok?"var(--lo)":"var(--mut)"}
