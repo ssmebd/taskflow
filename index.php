@@ -80,7 +80,7 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 #smenu[hidden]{display:none}
 #smenu button{text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:6px;width:100%}
 #smenu button:hover{background:var(--col)}
-#smenu button[hidden]{display:none}#tmw[hidden]{display:none}#tmw .tms{display:none;flex-direction:column;gap:2px;padding-left:14px}#tmw:hover .tms,#tmw:focus-within .tms{display:flex}
+#smenu button[hidden]{display:none}#tmw[hidden]{display:none}#tmw .tms{display:none;position:fixed;flex-direction:column;gap:2px;min-width:170px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:6px;z-index:60}#tmw:hover .tms,#tmw:focus-within .tms{display:flex}
 .ro #smenu>button:not(#pm){display:none}
 .tc{display:flex;align-items:center;gap:2px}.tc .ed{flex:1;min-width:0}
 .ovb{color:#fff;background:#dc2626;border-radius:6px;font-size:11px;line-height:1;padding:3px 5px;cursor:help;flex:none}
@@ -222,7 +222,7 @@ header h1{font-size:15px;margin-right:4px}#wlogo{width:32px;height:32px;margin-r
    <button id="rm" hidden>🧾 Worklog &amp; invoice</button>
    <button id="ivm" hidden>📋 Invoice tracking</button>
    <button id="xm">⬇ Export to Excel</button>
-   <div id="tmw" hidden><button id="tm">👥 Users ▾</button><div class="tms"><button id="tm1">Users</button><button id="tm2">🔐 Access Control</button></div></div>
+   <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1">Users</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
   </div></span><button id="wm" hidden title="Manage companies and logos"><span class="ic">🗂</span><span class="lbl"> Manage</span></button></div></aside>
 <div id="bar" hidden></div>
@@ -1443,6 +1443,7 @@ function renderAcc(){
   const mem=allUsers.filter(u=>u.role!=="admin");
   const opt=(u,w)=>{const l=(access[w.id]||{})[u.id]||"";const o=[["","— no access"],["view","View only"]].concat(u.role==="guest"?[]:[["edit","Can edit"],["full","Edit + delete"]]);return`<select data-ac="${w.id}:${u.id}" style="font-size:12px">${o.map(([k,n])=>`<option value="${k}"${l===k||(u.role==="guest"&&l&&k==="view")?" selected":""}>${n}</option>`).join("")}</select>`};
   $("#acbody").innerHTML=mem.length?`<table style="border-collapse:collapse;width:100%"><tr><th style="${th}">User</th>${wss.map(w=>`<th style="${th}">${esc(w.name)}</th>`).join("")}</tr>${mem.map(u=>`<tr><td style="${th}"><b>${esc(u.name)}</b> <small style="color:var(--mut)">${u.role==="guest"?"Guest":"Member"}</small></td>${wss.map(w=>`<td style="${th}">${opt(u,w)}</td>`).join("")}</tr>`).join("")}</table>`:'<div class="empty">No members yet</div>'}
+$("#tmw").addEventListener("mouseenter",()=>{const r=$("#tmw").getBoundingClientRect(),m=$("#tmw .tms");m.style.left=(r.right+2)+"px";m.style.top=Math.max(8,Math.min(r.top-6,innerHeight-90))+"px"});
 $("#tm1").onclick=()=>$("#tm").click();
 $("#tm2").onclick=()=>{renderAcc();$("#acdlg").showModal()};
 $("#acx").onclick=()=>$("#acdlg").close();
@@ -1476,7 +1477,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=101;
+const BUILD=102;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
