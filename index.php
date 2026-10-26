@@ -136,6 +136,16 @@ body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightnes
 body:not(.hs) header h1{font-size:27px;margin-right:12px}body:not(.hs) #wlogo{height:51px;max-width:135px;margin-right:9px}body:not(.hs) #wlogo img{max-width:135px}body:not(.hs) #wlogo .ini{font-size:22px}
 body:not(.hs) header .brand{padding-right:18px;margin-right:6px}body:not(.hs) header .brand b{font-size:34px}body:not(.hs) header .brand small{font-size:13px;margin-top:4px}
 body:not(.hs) header input,body:not(.hs) header select,body:not(.hs) header button{padding:9px 11px;font-size:14px}body:not(.hs) header #bell b{font-size:13px;padding:1px 7px}}
+#redge{display:none}#side .rb.dskonly svg{transition:transform .15s}
+@media(min-width:701px){#side{transition:transform .18s}
+body.rh,body.rh.sc{padding-left:0}
+body.rh #side{transform:translateX(-100%);box-shadow:none}
+body.rh.ro #side{transform:none;box-shadow:10px 0 28px rgba(0,0,0,.3)}
+body.rh #side .rb.dskonly svg{transform:rotate(180deg)}
+body.rh #redge{display:flex}body.rh.ro #redge{display:none}
+#redge{position:fixed;left:0;top:50%;margin-top:-27px;z-index:48;width:22px;height:54px;align-items:center;justify-content:center;border-radius:0 12px 12px 0;border:0;padding:0;background:color-mix(in srgb,var(--nv,#0f2a5c) 90%,#000);color:#fff;cursor:pointer;font-weight:700;font-size:16px;box-shadow:2px 2px 10px rgba(0,0,0,.25)}
+#redge:hover{width:28px}}
+@media(max-width:700px){#side .rb.dskonly{display:none}}
 @media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
 .drng{width:100%;text-align:center;background:transparent;border:1px solid transparent;padding:6px 8px;white-space:nowrap}.drng:hover{border-color:var(--line);background:var(--card)}.drng.empty{color:var(--mut);border:1px dashed var(--line)}.drng.late{color:var(--hi)}.ro .drng{pointer-events:none}
 #rpop{position:fixed;z-index:70;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:14px 16px}
@@ -330,7 +340,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
 <button class="rb mobonly" id="rchat" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.7 7L3 21l2-5.6A8 8 0 1121 12z"/></svg><b id="rchn" class="apn" hidden></b></button>
 <button class="rb mobonly" id="rtools" title="Tools"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3z"/><path d="M13 7l4 4M8 12l2 2"/></svg></button>
-<div class="sf"><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+<div class="sf"><button class="rb dskonly" id="rhide" type="button" title="Hide / pin the side bar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/><path d="M19 5v14"/></svg></button><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
@@ -344,6 +354,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
   </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+<button id="redge" type="button" title="Show the side bar">»</button>
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
@@ -1454,6 +1465,13 @@ window.addEventListener("appinstalled",()=>{instEv=null;$("#ainst").hidden=true}
 $("#ainst").onclick=async e=>{e.preventDefault();$("#umenu").hidden=true;if(instEv){instEv.prompt();try{await instEv.userChoice}catch(x){}instEv=null;$("#ainst").hidden=true}};
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 if(new URLSearchParams(location.search).get("chat")==="1")addEventListener("load",()=>setTimeout(()=>{const b=$("#mgb");if(b&&$("#msgw").hidden)b.click()},1200));
+function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList.remove("ro");try{localStorage.setItem("tf_rh",v?"1":"")}catch(e){}cpClose();$("#umenu").hidden=true;$("#smenu").hidden=true}
+function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden||$("#redge").matches(":hover"))return;b.classList.remove("ro")}
+try{if(localStorage.getItem("tf_rh")==="1")document.body.classList.add("rh")}catch(e){}
+$("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
+$("#redge").onmouseenter=()=>document.body.classList.add("ro");$("#redge").onclick=()=>document.body.classList.add("ro");
+for(const id of ["side","cpanel"])$("#"+id).addEventListener("mouseleave",()=>setTimeout(rhChk,450));
+document.addEventListener("click",()=>setTimeout(rhChk,80));
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
 $("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
 $("#cpx").onclick=cpClose;$("#rchat").onclick=()=>$("#mgb").click();$("#rtools").onclick=()=>$("#tbtn").click();$("#mfb").onclick=()=>document.body.classList.toggle("mf");
@@ -1684,7 +1702,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=137;
+const BUILD=138;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
