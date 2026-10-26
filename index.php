@@ -360,7 +360,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
-  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="#" id="abk" hidden>💾 Backups</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="anf">🔔 Notifications: …</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="#" id="abk" hidden>💾 Backups</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
 
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
@@ -1734,7 +1734,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=148;
+const BUILD=151;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
@@ -1783,6 +1783,34 @@ async function poll(){
   }catch(e){if(e.message!=="auth")setLive(false)}
 }
 setInterval(poll,3000);
+// ---- Desktop / browser notifications ----
+const nfOn=()=>{try{return localStorage.getItem("tf_nf")!=="0"}catch(e){return true}};
+const nfCan=()=>"Notification" in window;
+let nfCur={cm:null,ic:null},nfBusy=false;
+function nfLabel(){const el=$("#anf");if(!el)return;if(!nfCan()){el.textContent="🔔 Notifications: not supported here";return}el.textContent="🔔 Notifications: "+(nfOn()&&Notification.permission!=="denied"?"On":Notification.permission==="denied"?"Blocked":"Off")}
+async function nfTick(){
+  if(nfBusy||!nfCan()||!me||!me.id)return;nfBusy=true;
+  try{const r=await api("notif_poll",nfCur);const first=nfCur.cm===null;nfCur={cm:r.cm,ic:r.ic};
+    if(first||!nfOn()||Notification.permission!=="granted")return;
+    if(document.hasFocus()&&!document.hidden)return;
+    for(const it of r.items){
+      const t=it.k==="chat"?(it.group?it.from+" (everyone)":it.from):(it.kind==="instruction"?"📌 "+it.from+" gave you an instruction":it.from+" sent you a message");
+      const b=it.k==="chat"?it.body:it.title+": "+it.body;
+      const n=new Notification(t,{body:b,tag:it.k+it.id,icon:"icon-192.png"});
+      n.onclick=()=>{try{window.focus()}catch(e){}n.close();if(it.k==="chat"){try{$("#mgb").click()}catch(e){}}else location.href="index.php?w="+it.ws+"&t="+it.task};
+    }
+  }catch(e){}finally{nfBusy=false}
+}
+setInterval(nfTick,5000);setTimeout(nfTick,1500);
+$("#anf").onclick=async e=>{e.preventDefault();if(!nfCan()){alert("This browser does not support notifications.");return}
+  const was=nfOn()&&Notification.permission==="granted";
+  if(was){try{localStorage.setItem("tf_nf","0")}catch(x){}nfLabel();return}
+  try{localStorage.setItem("tf_nf","1")}catch(x){}
+  if(Notification.permission==="default"){try{await Notification.requestPermission()}catch(x){}}
+  if(Notification.permission==="denied")alert("Notifications are blocked for this site. Allow them in your browser's site settings (the lock icon next to the address), then turn them on here again.");
+  else if(Notification.permission==="granted")new Notification("TaskFlow notifications are on",{body:"You will see new messages and task assignments here.",icon:"icon-192.png"});
+  nfLabel()};
+nfLabel();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)poll()});
 window.addEventListener("focus",poll);
 document.addEventListener("close",()=>{if(dirty)poll()},true);

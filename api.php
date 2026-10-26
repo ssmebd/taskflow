@@ -1,5 +1,5 @@
 <?php
-const BUILD=148;
+const BUILD=151;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -337,6 +337,16 @@ if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empt
   if($ids){$ids=array_slice(array_unique($ids),0,5);$q=$db->prepare("SELECT title FROM tasks WHERE ws_id=? AND id IN(".implode(',',array_fill(0,count($ids),'?')).")");$q->execute(array_merge([$W],$ids));$AUD_T=mb_substr(implode(' | ',$q->fetchAll(PDO::FETCH_COLUMN)),0,150);}}
 if($a==='list'&&$W&&empty($_SESSION['aud_ws'][$W])){$_SESSION['aud_ws'][$W]=1;$wn='';foreach($WS as $w)if((int)$w['id']===$W)$wn=$w['name'];aud_log($db,$uid,(string)$me['username'],'activity','open_company',$wn,$W);}
 switch($a){
+case 'notif_poll':
+  $u=(int)$me['id'];$cm=isset($in['cm'])?(int)$in['cm']:null;$ic=isset($in['ic'])?(int)$in['ic']:null;$items=[];
+  $mx=(int)$db->query("SELECT COALESCE(MAX(id),0) FROM messages WHERE from_id<>$u AND (to_id=$u OR to_id=0)")->fetchColumn();
+  if($cm!==null&&$mx>$cm){$q=$db->prepare("SELECT m.id,m.to_id,m.body,COALESCE(u.name,'Someone') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.from_id<>? AND (m.to_id=? OR m.to_id=0) ORDER BY m.id LIMIT 5");$q->execute([$cm,$u,$u]);
+    foreach($q->fetchAll() as $r)$items[]=['k'=>'chat','id'=>(int)$r['id'],'from'=>$r['name'],'group'=>(int)$r['to_id']===0,'body'=>mb_substr((string)$r['body'],0,140)];}
+  $ids=ws_ids();$ix=0;
+  if($ids){$in_=implode(',',$ids);$ix=(int)$db->query("SELECT COALESCE(MAX(c.id),0) FROM task_comments c WHERE c.to_user_id=$u AND c.user_id<>$u AND c.ws_id IN($in_)")->fetchColumn();
+    if($ic!==null&&$ix>$ic){$q=$db->prepare("SELECT c.id,c.task_id,c.ws_id,c.kind,c.body,t.title,COALESCE(us.name,'Someone') AS name FROM task_comments c JOIN tasks t ON t.id=c.task_id LEFT JOIN users us ON us.id=c.user_id WHERE c.id>? AND c.to_user_id=? AND c.user_id<>? AND c.ws_id IN($in_) ORDER BY c.id LIMIT 5");$q->execute([$ic,$u,$u]);
+      foreach($q->fetchAll() as $r)$items[]=['k'=>'comment','id'=>(int)$r['id'],'from'=>$r['name'],'task'=>(int)$r['task_id'],'ws'=>(int)$r['ws_id'],'title'=>$r['title'],'kind'=>$r['kind'],'body'=>mb_substr((string)$r['body'],0,140)];}}
+  out(['cm'=>max($mx,(int)$cm),'ic'=>max($ix,(int)$ic),'items'=>$items]);
 case 'bk_list':
   admin();$d=bk_dir();$last=($d&&is_file($d.'/last.json'))?json_decode((string)file_get_contents($d.'/last.json'),true):null;
   $wl=($d&&is_file($d.'/worklog_last.json'))?json_decode((string)file_get_contents($d.'/worklog_last.json'),true):null;
