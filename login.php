@@ -66,7 +66,16 @@ label.f{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
 .note{margin:18px 0 0;text-align:center;font-size:12px;color:var(--mut)}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.art{padding:22px 20px 20px}.hero h1{font-size:30px;max-width:none}.hero p,.tl,.chips{display:none}.foot{display:none}.art{gap:14px}.side{padding-top:22px}}
 @media(prefers-reduced-motion:reduce){.bar,.today,.chip b{animation:none}}
-@view-transition{navigation:auto}::view-transition-old(root){animation:lo .3s ease both}::view-transition-new(root){animation:li .55s cubic-bezier(.22,.8,.25,1) both}@keyframes lo{to{opacity:0;transform:scale(.99)}}@keyframes li{from{opacity:0;transform:translateY(14px)}}@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style></head><body>
+@view-transition{navigation:auto}::view-transition-old(root){animation:lo .3s ease both}::view-transition-new(root){animation:li .55s cubic-bezier(.22,.8,.25,1) both}@keyframes lo{to{opacity:0;transform:scale(.99)}}@keyframes li{from{opacity:0;transform:translateY(14px)}}@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}}
+.curt{position:fixed;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;color:#fff;background:radial-gradient(1000px 600px at 20% 10%,#1d4694 0%,transparent 60%),radial-gradient(800px 500px at 90% 95%,#0e6b4f 0%,transparent 55%),linear-gradient(160deg,var(--navy2),var(--navy));clip-path:circle(0 at var(--cx,50%) var(--cy,50%));transition:clip-path .85s cubic-bezier(.65,0,.2,1)}
+.curt.on{clip-path:circle(150vmax at var(--cx,50%) var(--cy,50%))}
+.cl{font:800 clamp(42px,7vw,86px)/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.02em;opacity:0;transform:scale(.9);transition:opacity .45s .4s,transform .7s .4s cubic-bezier(.22,.8,.25,1)}
+.cl i{font-style:normal;color:var(--green)}.curt.on .cl{opacity:1;transform:none}
+body.leaving .card{opacity:0;transform:translateY(-16px) scale(.98);filter:blur(5px);transition:opacity .4s ease,transform .5s cubic-bezier(.22,.8,.25,1),filter .4s ease}
+body.leaving .bar{filter:brightness(1.12);transition:filter .4s}
+.go[disabled]{opacity:.85;cursor:progress}
+@media(prefers-reduced-motion:reduce){.curt,.cl{transition:none}}
+</style></head><body>
 <main class="wrap">
 <section class="art" aria-hidden="false">
  <div class="logo">TaskFlow<small>Powered by GURUCADD</small></div>
@@ -101,4 +110,18 @@ label.f{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
 </section>
 </main>
 <script>document.getElementById("pwt").onclick=function(){var p=document.getElementById("pw"),h=p.type==="password";p.type=h?"text":"password";this.textContent=h?"Hide":"Show"}</script>
+<script>
+(function(){var f=document.querySelector("form"),btn=f&&f.querySelector(".go");if(!f||!btn||!window.fetch||!window.URLSearchParams)return;
+function enter(u){try{sessionStorage.setItem("tf_enter","1")}catch(e){}
+ var b=btn.getBoundingClientRect(),o=document.createElement("div");o.className="curt";o.style.setProperty("--cx",(b.left+b.width/2)+"px");o.style.setProperty("--cy",(b.top+b.height/2)+"px");
+ o.innerHTML='<div class="cl">TaskFlow<i>&raquo;</i></div>';document.body.classList.add("leaving");document.body.appendChild(o);
+ requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add("on")})});setTimeout(function(){location.href=u},950)}
+f.addEventListener("submit",function(e){
+ if(matchMedia("(prefers-reduced-motion:reduce)").matches||btn.disabled)return;
+ e.preventDefault();btn.disabled=true;btn.innerHTML="Signing in\u2026";
+ fetch(location.href,{method:"POST",body:new URLSearchParams(new FormData(f)),credentials:"same-origin"}).then(function(r){
+  if(r.redirected&&!/login\.php/.test(r.url)){enter(r.url);return}
+  return r.text().then(function(h){document.open();document.write(h);document.close()})
+ }).catch(function(){btn.disabled=false;f.submit()})})})();
+</script>
 </body></html>

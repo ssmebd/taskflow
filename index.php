@@ -444,7 +444,14 @@ header{view-transition-name:tfhead}#side{view-transition-name:tfside}
 #main,#stats{transition:opacity .5s ease,transform .6s cubic-bezier(.22,.8,.25,1)}
 body:not(.rdy) #main,body:not(.rdy) #stats{opacity:0;transform:translateY(16px)}
 @media(prefers-reduced-motion:reduce){@view-transition{navigation:none}#main,#stats{transition:none}body:not(.rdy) #main,body:not(.rdy) #stats{opacity:1;transform:none}}
-</style></head><body>
+
+/* curtain after sign-in: navy screen with the logo lifts away to reveal the app */
+html.tfc body:before{content:"TaskFlow \00BB";position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;font:800 clamp(42px,7vw,86px)/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.02em;color:#fff;background:radial-gradient(1000px 600px at 20% 10%,#1d4694 0%,transparent 60%),radial-gradient(800px 500px at 90% 95%,#0e6b4f 0%,transparent 55%),linear-gradient(160deg,#0a1d44,#0f2a5c);pointer-events:none}
+html.tfc.tfco body:before{animation:tfLift .85s cubic-bezier(.65,0,.2,1) forwards}
+html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22,.8,.25,1) both}
+@keyframes tfLift{0%{transform:none}30%{transform:translateY(2%)}100%{transform:translateY(-102%)}}
+@keyframes tfSettle{from{opacity:.0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+</style><script>try{if(sessionStorage.getItem("tf_enter")==="1"){sessionStorage.removeItem("tf_enter");document.documentElement.classList.add("tfc")}}catch(e){}</script></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
  <button id="mfb" class="mobonly" type="button" title="Search and filters">⌕ Filter</button><span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
@@ -1636,7 +1643,7 @@ function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h
  g.addEventListener("pointerup",end);g.addEventListener("pointercancel",end);
  g.addEventListener("dblclick",()=>{R.style.removeProperty("--dkx");R.style.removeProperty("--dky");try{localStorage.removeItem("tf_dk")}catch(e){}});
  addEventListener("resize",load);load()})();
-(()=>{const m=$("#main"),go=()=>document.body.classList.add("rdy");setTimeout(go,2500);
+(()=>{const m=$("#main"),R=document.documentElement,lift=()=>{if(!R.classList.contains("tfc"))return;R.classList.add("tfco");setTimeout(()=>R.classList.remove("tfc","tfco"),1000)},go=()=>{if(document.body.classList.contains("rdy"))return;if(R.classList.contains("tfc")){setTimeout(()=>{document.body.classList.add("rdy");lift()},450)}else document.body.classList.add("rdy")};setTimeout(go,2500);
  new MutationObserver(()=>{if(m.firstElementChild&&!/^Loading/.test(m.textContent.trim()))go()}).observe(m,{childList:true,subtree:true})})();
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
@@ -1887,7 +1894,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=168;
+const BUILD=169;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
