@@ -414,6 +414,9 @@ html.lk-d #cpanel{left:84px}
 html.lk-d body.rh #side{box-shadow:none}
 html.lk-d body.rh,html.lk-d body.rh.sc{padding-left:44px}
 html.lk-d header{margin-left:-78px;padding-left:96px!important}
+html.lk-n #side,html.lk-l #side,html.lk-d #side{z-index:48}
+html.lk-d body.rh #side{z-index:48}
+html.lk-d #setw:has(#smenu:not([hidden])) #sbtn:after,html.lk-d #uw:has(#umenu:not([hidden])) #ubtn:after{display:none!important}
 html.lk-d #side .rb[data-l]:hover:after{display:block}
 }
 </style></head><body>
@@ -1846,7 +1849,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=163;
+const BUILD=164;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
