@@ -137,8 +137,8 @@ body:not(.hs) header h1{font-size:27px;margin-right:12px}body:not(.hs) #wlogo{he
 body:not(.hs) header .brand{padding-right:18px;margin-right:6px}body:not(.hs) header .brand b{font-size:34px}body:not(.hs) header .brand small{font-size:13px;margin-top:4px}
 body:not(.hs) header input,body:not(.hs) header select,body:not(.hs) header button{padding:9px 11px;font-size:14px}body:not(.hs) header #bell b{font-size:13px;padding:1px 7px}}
 #side .rpill{display:none}#side .rb.dskonly svg{transition:transform .15s}
-@media(min-width:701px){#side{transition:transform .18s,background .18s,box-shadow .18s,border-color .18s}
-#side .rlogo,#side .sf,#side .mobonly{transition:opacity .15s,transform .2s}
+@media(min-width:701px){#side{transition:transform .45s cubic-bezier(.22,.8,.25,1),background .45s ease,box-shadow .45s ease,border-color .45s ease}
+#side .rlogo,#side .sf,#side .mobonly{transition:opacity .4s ease,transform .45s cubic-bezier(.22,.8,.25,1)}
 body.rh,body.rh.sc{padding-left:44px}body.rh header{margin-left:-44px;padding-left:64px!important}body.rh.hs header{padding-left:54px!important}body.rh #side{z-index:47}
 body.rh:not(.ro) #side{background:transparent!important;border-right-color:transparent;box-shadow:none;pointer-events:none}
 body.rh:not(.ro) #side::before{display:none!important}
@@ -1714,7 +1714,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=144;
+const BUILD=145;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
