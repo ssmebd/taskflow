@@ -447,7 +447,7 @@ html.lk-d #side .rb[data-l]:hover:after{display:block}
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
-<aside id="side"><span class="rpill"></span><span class="dkg" title="Drag to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
+<aside id="side"><span class="rpill"></span><span class="dkg" title="Drag up or down to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
 <a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
@@ -1616,10 +1616,10 @@ function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h
 (()=>{const g=document.querySelector("#side .dkg");if(!g)return;const R=document.documentElement,sd=$("#side");
  const clamp=(x,y)=>{const w=sd.offsetWidth||58,h=sd.offsetHeight||300;return[Math.max(4,Math.min(innerWidth-w-4,x)),Math.max(4,Math.min(innerHeight-h-4,y))]};
  const put=(x,y)=>{R.style.setProperty("--dkx",x+"px");R.style.setProperty("--dky",y+"px")};
- const load=()=>{try{const v=JSON.parse(localStorage.getItem("tf_dk")||"null");if(v&&R.classList.contains("lk-d")){const c=clamp(v.x,v.y);put(c[0],c[1])}}catch(e){}};
+ const load=()=>{try{const v=JSON.parse(localStorage.getItem("tf_dk")||"null");if(v&&R.classList.contains("lk-d")){const c=clamp(12,v.y);put(12,c[1])}}catch(e){}};
  let d=null;
  g.addEventListener("pointerdown",e=>{const r=sd.getBoundingClientRect();d={ox:e.clientX-r.left,oy:e.clientY-r.top};try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
- g.addEventListener("pointermove",e=>{if(!d)return;const c=clamp(e.clientX-d.ox,e.clientY-d.oy);put(c[0],c[1])});
+ g.addEventListener("pointermove",e=>{if(!d)return;const c=clamp(12,e.clientY-d.oy);put(12,c[1])});
  const end=()=>{if(!d)return;d=null;const r=sd.getBoundingClientRect();try{localStorage.setItem("tf_dk",JSON.stringify({x:Math.round(r.left),y:Math.round(r.top)}))}catch(e){}};
  g.addEventListener("pointerup",end);g.addEventListener("pointercancel",end);
  g.addEventListener("dblclick",()=>{R.style.removeProperty("--dkx");R.style.removeProperty("--dky");try{localStorage.removeItem("tf_dk")}catch(e){}});
@@ -1873,7 +1873,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=166;
+const BUILD=167;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
