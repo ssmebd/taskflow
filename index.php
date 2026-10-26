@@ -367,6 +367,55 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 .coN{font-size:12px;font-weight:600;color:var(--mut)}
 #copop{position:fixed;z-index:70;min-width:200px;max-height:50vh;overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:8px}#copop[hidden]{display:none}
 #copop .coh{font-size:12px;font-weight:600;color:var(--mut);margin:0 4px 6px}#copop label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer}#copop label:hover{background:var(--col)}#copop input{width:auto}
+
+/* ---- Layout looks (set in Colours): lk-n Refined Navy, lk-l Light, lk-d Floating dock ---- */
+@media(min-width:701px){
+html.lk-n header,html.lk-d header{background:linear-gradient(100deg,color-mix(in srgb,var(--nv) 78%,#000),var(--nv) 70%,color-mix(in srgb,var(--nv) 82%,#38bdf8))}
+html.lk-n header:after,html.lk-d header:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,#38bdf8 30%,#818cf8 70%,transparent);opacity:.85;pointer-events:none}
+html.lk-n header,html.lk-l header,html.lk-d header{position:sticky}
+html.lk-n header input,html.lk-n header select,html.lk-l header input,html.lk-l header select,html.lk-d header input,html.lk-d header select{border-radius:9px}
+html.lk-n header .tabs,html.lk-l header .tabs,html.lk-d header .tabs{padding:3px;border-radius:10px;background:color-mix(in srgb,var(--hfg) 10%,transparent)}
+html.lk-n header .tabs button,html.lk-l header .tabs button,html.lk-d header .tabs button{border-radius:7px;border-color:transparent;background:transparent}
+html.lk-n header .tabs button.on,html.lk-d header .tabs button.on{background:var(--hfg);color:var(--nv)}
+html.lk-n .brand b,html.lk-l .brand b,html.lk-d .brand b{font-size:21px;letter-spacing:-.2px}
+/* labelled rail (Navy + Light) */
+html.lk-n #side .rb[data-l],html.lk-l #side .rb[data-l]{height:50px;flex-direction:column;gap:2px;border-radius:12px}
+html.lk-n #side .rb[data-l]:after,html.lk-l #side .rb[data-l]:after{content:attr(data-l);font-size:9.5px;font-weight:500;line-height:1;letter-spacing:.2px}
+html.lk-n #side,html.lk-n body.sc #side{width:64px}html.lk-n body,html.lk-n body.sc{padding-left:64px}html.lk-n #cpanel{left:64px}
+html.lk-n #side .rb:hover,html.lk-n #side .rb.on{background:color-mix(in srgb,var(--sf) 20%,transparent)}
+html.lk-n body.rh #side .rb[data-l]:after,html.lk-l body.rh:not(.ro) #side .rb[data-l]:after{display:none}
+html.lk-n body.rh #side .rb#rhome,html.lk-n body.rh #side .rb#rco{flex-direction:row;height:42px}
+/* Light header + side */
+html.lk-l header{--nv:#ffffff!important;--hfg:#14203a!important;background:#fff;border-bottom:1px solid #dde2ee;box-shadow:0 1px 0 rgba(20,32,58,.03)}
+html.lk-l header .brand{border-right-color:#dde2ee}
+html.lk-l header input,html.lk-l header select,html.lk-l header button{background:#f4f6fb;border-color:#e1e6ef;color:#14203a}
+html.lk-l header button:hover:not(:disabled){background:#e9eef8}
+html.lk-l header .tabs{background:#eef1f7}html.lk-l header .tabs button.on{background:#fff;color:#14203a;box-shadow:0 1px 2px rgba(20,32,58,.18)}
+html.lk-l header button.p{background:linear-gradient(135deg,#12306e,#2563eb);color:#fff;border-color:transparent}
+html.lk-l header input::placeholder{color:#7b86a0}
+html.lk-l #side{z-index:46;--sb:#ffffff;--sf:#43506e;background:#fff;border-right:1px solid #dde2ee;width:56px;overflow:hidden;transition:width .18s ease,box-shadow .18s ease}
+html.lk-l #side .rlogo{background:linear-gradient(135deg,#12306e,#2563eb);color:#fff}
+html.lk-l #side .rb:hover,html.lk-l #side a.rb:hover,html.lk-l #side .rb.on{background:#e8efff;color:#1d4ed8}
+html.lk-l #side #smenu,html.lk-l #side #umenu{color:var(--ink)}
+html.lk-l #side:hover{width:196px;overflow:hidden;box-shadow:10px 0 30px rgba(20,32,58,.14);align-items:stretch;padding-left:7px;padding-right:7px}
+ html.lk-l #side:hover .rb[data-l]{width:100%;flex-direction:row;justify-content:flex-start;gap:12px;height:42px;padding:0 10px}
+ html.lk-l #side:hover .rb[data-l]:after{font-size:13px;font-weight:600;letter-spacing:0}
+ html.lk-l #side:hover .rlogo{align-self:flex-start;margin-left:5px}html.lk-l #side:hover .sf{align-items:stretch}
+html.lk-l #wlogo .wh,html.lk-l #wlogo img[src^="data:"]{filter:brightness(0)}
+/* Floating dock */
+html.lk-d body,html.lk-d body.sc{padding-left:78px}
+html.lk-d #side,html.lk-d body.sc #side{top:var(--dk,78px);bottom:auto;left:12px;width:58px;height:auto;max-height:calc(100vh - var(--dk,78px) - 16px);border:1px solid #dbe1ee;border-radius:18px;background:#fff;--sb:#fff;--sf:#43506e;box-shadow:0 10px 30px rgba(20,32,58,.16);padding:10px 0;overflow:visible;gap:4px}
+html.lk-d #side .rlogo{display:none}
+html.lk-d #side .sf{margin-top:6px;border-top:1px solid #e1e6ef;padding-top:8px}
+html.lk-d #side .rb:hover,html.lk-d #side a.rb:hover,html.lk-d #side .rb.on{background:#e6eeff;color:#1d4ed8}
+html.lk-d #side .rb[data-l]:hover:after{content:attr(data-l);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);padding:6px 11px;border-radius:8px;background:#14203a;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 6px 16px rgba(20,32,58,.25);pointer-events:none;z-index:60}
+html.lk-d #side .rb{position:relative}
+html.lk-d #cpanel{left:84px}
+html.lk-d body.rh #side{box-shadow:none}
+html.lk-d body.rh,html.lk-d body.rh.sc{padding-left:44px}
+html.lk-d header{margin-left:-78px;padding-left:96px!important}
+html.lk-d #side .rb[data-l]:hover:after{display:block}
+}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -383,12 +432,12 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
 <aside id="side"><span class="rpill"></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
-<a class="rb" id="rhome" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
-<button class="rb" id="rco" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
+<a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
+<button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
 <button class="rb mobonly" id="rchat" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.7 7L3 21l2-5.6A8 8 0 1121 12z"/></svg><b id="rchn" class="apn" hidden></b></button>
 <button class="rb mobonly" id="rtools" title="Tools"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3z"/><path d="M13 7l4 4M8 12l2 2"/></svg></button>
-<div class="sf"><button class="rb dskonly" id="rhide" type="button" title="Hide / pin the side bar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/><path d="M19 5v14"/></svg></button><span id="setw"><button id="sbtn" class="rb" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+<div class="sf"><button class="rb dskonly" id="rhide" data-l="Hide" type="button" title="Hide / pin the side bar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/><path d="M19 5v14"/></svg></button><span id="setw"><button id="sbtn" class="rb" data-l="Settings" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
@@ -495,6 +544,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  <div id="pprev">TaskFlow – preview text</div>
  <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center;margin:0">Bar <input type="color" id="pbg" style="width:52px;height:34px;padding:2px"></label><label style="display:flex;gap:8px;align-items:center;margin:0">Text <input type="color" id="pfg" style="width:52px;height:34px;padding:2px"></label></div>
  <div id="psw" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+ <label style="display:flex;gap:10px;align-items:center;margin:12px 0 0;color:var(--ink)"><span>🧭 Layout</span><select id="plk" style="flex:1"><option value="">Classic (current)</option><option value="n">Refined Navy: icons with labels</option><option value="l">Light: white bar, menu opens on hover</option><option value="d">Floating dock: slim and modern</option></select></label>
  <label style="display:flex;gap:8px;align-items:center;margin:12px 0 0;color:var(--ink)"><input type="checkbox" id="pgl"> <span>✨ Glass look <small style="color:var(--mut)">(this device only; turn off if the app feels slow)</small></span></label>
  <div class="acts"><button id="prs">Reset to default</button><span class="sp"></span><button id="pcx">Cancel</button><button class="p" id="psv">Save</button></div>
 </dialog>
@@ -628,6 +678,8 @@ function applyTheme(v){const m=/^(#[0-9a-f]{6})\|(#[0-9a-f]{6})$/i.exec(v||""),b
   const h=document.querySelector("header");if(h){h.style.setProperty("--nv",bg);h.style.setProperty("--hfg",fg)}
   const lum=c=>{const n=parseInt(c.slice(1),16);return .3*(n>>16)+.59*((n>>8)&255)+.11*(n&255)};document.body.classList.toggle("hdark",lum(fg)<128)}
 try{applyTheme(localStorage.getItem("tf_theme")||"")}catch(e){}
+function setLook(v){const r=document.documentElement;for(const k of ["n","l","d"])r.classList.toggle("lk-"+k,k===v);try{localStorage.setItem("tf_look",v||"")}catch(e){}requestAnimationFrame(()=>{try{stPos()}catch(e){}})}
+try{setLook(localStorage.getItem("tf_look")||"")}catch(e){}
 function setGlass(on){document.documentElement.classList.toggle("glass",!!on);try{localStorage.setItem("tf_glass",on?"1":"")}catch(e){}}
 try{if(localStorage.getItem("tf_glass"))document.documentElement.classList.add("glass")}catch(e){}
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -1542,7 +1594,7 @@ function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden)return;b.classList.remove("ro")}
 try{if(localStorage.getItem("tf_rh")==="1")document.body.classList.add("rh")}catch(e){}
 $("#rco").addEventListener("click",()=>{if(document.body.classList.contains("rh"))document.body.classList.add("ro")});
-function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px")}
+function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
@@ -1608,8 +1660,9 @@ $("#dlist").addEventListener("click",async e=>{try{
 }catch(err){alert(err.message)}});
 function pPrev(){const bg=$("#pbg").value,fg=$("#pfg").value,p=$("#pprev");p.style.background=bg;p.style.color=fg;applyTheme(bg+"|"+fg)}
 $("#pm").onclick=()=>{const t=(me.theme||"#0f2a5c|#ffffff").split("|");$("#pbg").value=t[0];$("#pfg").value=t[1];
-  $("#psw").innerHTML=THEMES.map((x,i)=>`<button type="button" class="sw" data-sw="${i}" title="${x[2]}" style="background:${x[0]};color:${x[1]}">Aa</button>`).join("");pPrev();$("#pgl").checked=document.documentElement.classList.contains("glass");$("#pdlg").showModal()};
+  $("#psw").innerHTML=THEMES.map((x,i)=>`<button type="button" class="sw" data-sw="${i}" title="${x[2]}" style="background:${x[0]};color:${x[1]}">Aa</button>`).join("");pPrev();$("#pgl").checked=document.documentElement.classList.contains("glass");{let k="";try{k=localStorage.getItem("tf_look")||""}catch(e){}$("#plk").value=k}$("#pdlg").showModal()};
 $("#pgl").addEventListener("change",()=>setGlass($("#pgl").checked));
+$("#plk").addEventListener("change",()=>setLook($("#plk").value));
 $("#psw").addEventListener("click",e=>{const i=e.target.dataset.sw;if(i==null)return;$("#pbg").value=THEMES[i][0];$("#pfg").value=THEMES[i][1];pPrev()});
 $("#pbg").addEventListener("input",pPrev);$("#pfg").addEventListener("input",pPrev);
 $("#pcx").onclick=()=>$("#pdlg").close();
@@ -1791,7 +1844,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=161;
+const BUILD=162;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
