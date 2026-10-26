@@ -143,8 +143,8 @@ body.rh #side{transform:translateX(-100%);box-shadow:none}
 body.rh.ro #side{transform:none;box-shadow:10px 0 28px rgba(0,0,0,.3)}
 body.rh #side .rb.dskonly svg{transform:rotate(180deg)}
 body.rh #redge{display:flex}body.rh.ro #redge{display:none}
-#redge{position:fixed;left:0;top:50%;margin-top:-27px;z-index:48;width:22px;height:54px;align-items:center;justify-content:center;border-radius:0 12px 12px 0;border:0;padding:0;background:color-mix(in srgb,var(--nv,#0f2a5c) 90%,#000);color:#fff;cursor:pointer;font-weight:700;font-size:16px;box-shadow:2px 2px 10px rgba(0,0,0,.25)}
-#redge:hover{width:28px}}
+#redge{position:fixed;left:0;top:50%;margin-top:-60px;z-index:48;width:44px;flex-direction:column;align-items:center;gap:2px;padding:6px 0;border-radius:0 14px 14px 0;background:color-mix(in srgb,var(--nv,#0f2a5c) 90%,#000);color:#fff;box-shadow:2px 2px 12px rgba(0,0,0,.28)}
+#redge .re{width:38px;height:38px;padding:0;border:0;border-radius:10px;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;font-weight:700}#redge .re:hover{background:rgba(255,255,255,.18)}}
 @media(max-width:700px){#side .rb.dskonly{display:none}}
 @media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
 .drng{width:100%;text-align:center;background:transparent;border:1px solid transparent;padding:6px 8px;white-space:nowrap}.drng:hover{border-color:var(--line);background:var(--card)}.drng.empty{color:var(--mut);border:1px dashed var(--line)}.drng.late{color:var(--hi)}.ro .drng{pointer-events:none}
@@ -354,7 +354,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
   </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
-<button id="redge" type="button" title="Show the side bar">»</button>
+<div id="redge"><a class="re" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a><button class="re" id="rec" type="button" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button><button class="re" id="rem" type="button" title="Show the side bar" style="height:22px;font-size:15px">»</button></div>
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
@@ -1469,9 +1469,11 @@ function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden||$("#redge").matches(":hover"))return;b.classList.remove("ro")}
 try{if(localStorage.getItem("tf_rh")==="1")document.body.classList.add("rh")}catch(e){}
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
-$("#redge").onmouseenter=()=>document.body.classList.add("ro");$("#redge").onclick=()=>document.body.classList.add("ro");
+let reT=0;$("#redge").onmouseenter=()=>{clearTimeout(reT);reT=setTimeout(()=>document.body.classList.add("ro"),380)};$("#redge").onmouseleave=()=>clearTimeout(reT);
+$("#rem").onclick=()=>{clearTimeout(reT);document.body.classList.add("ro")};
+$("#rec").onclick=()=>{clearTimeout(reT);document.body.classList.add("ro");setTimeout(()=>{if(!$("#cpanel").classList.contains("open"))$("#rco").click()},120)};
 for(const id of ["side","cpanel"])$("#"+id).addEventListener("mouseleave",()=>setTimeout(rhChk,450));
-document.addEventListener("click",()=>setTimeout(rhChk,80));
+document.addEventListener("click",()=>setTimeout(rhChk,80));let rmT=0;document.addEventListener("mousemove",()=>{if(document.body.classList.contains("ro")){clearTimeout(rmT);rmT=setTimeout(rhChk,700)}});
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
 $("#rco").onclick=e=>{e.stopPropagation();const o=!$("#cpanel").classList.contains("open");$("#smenu").hidden=true;$("#umenu").hidden=true;$("#cpanel").classList.toggle("open",o);$("#rco").classList.toggle("on",o);if(o){$("#cps").value="";fillCp();setTimeout(()=>$("#cps").focus(),60)}};
 $("#cpx").onclick=cpClose;$("#rchat").onclick=()=>$("#mgb").click();$("#rtools").onclick=()=>$("#tbtn").click();$("#mfb").onclick=()=>document.body.classList.toggle("mf");
@@ -1702,7 +1704,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=138;
+const BUILD=139;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
