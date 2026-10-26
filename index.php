@@ -52,6 +52,7 @@ input[type=checkbox]{width:16px;height:16px;padding:0;min-width:0}
 #bar{display:flex;gap:8px;align-items:center;margin:0 16px 10px;padding:8px 12px;background:var(--card);border:1px solid var(--pri);border-radius:10px}#bar[hidden]{display:none}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);width:min(460px,92vw);padding:18px}
 dialog::backdrop{background:rgba(0,0,0,.45)}
+#lgdlg .rctl select,#lgdlg .rctl input{width:auto;min-width:0}
 dialog>.acts:last-child{position:sticky;bottom:0;z-index:5;background:var(--card);margin:10px 0 -18px;padding:10px 0 18px;border-top:1px solid var(--line)}
 label{display:block;margin:8px 0 3px;color:var(--mut);font-size:12px}
 dialog input,dialog select,dialog textarea{width:100%}dialog input[type=checkbox]{width:16px}
@@ -341,7 +342,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
-  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
@@ -400,6 +401,12 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <div id="copop" hidden><div class="coh">Also working on this task</div><div id="col"></div></div>
 <dialog id="apdlg" style="width:min(720px,96vw)"><b>Approvals</b> <small style="color:var(--mut)">Members ask here before deleting a group, status, column or drawing type.</small><div id="apl" style="margin-top:8px"></div><div class="acts"><span class="sp"></span><button id="apx">Close</button></div></dialog>
+<dialog id="lgdlg" style="width:min(1000px,96vw)"><div class="acts" style="margin:0 0 6px"><b style="flex:1">🧾 Usage log</b><button id="lgx">Close</button></div>
+ <div id="lgs"></div>
+ <div class="rctl" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><select id="lgk"><option value="">Logins and activity</option><option value="login">Logins only</option><option value="activity">Activity only</option></select><select id="lgu"><option value="">Everyone</option></select><select id="lgw"><option value="">All companies</option></select><label style="margin:0">From</label><input type="date" id="lgf"><label style="margin:0">To</label><input type="date" id="lgt"><button id="lgr">Refresh</button></div>
+ <div id="lgl" style="max-height:52vh;overflow:auto;margin-top:8px"></div>
+ <small style="color:var(--mut)">Shows the latest 300 entries that match. Entries older than 90 days are removed automatically. Admin only.</small>
+</dialog>
 <dialog id="uedlg"><b>Edit user</b>
  <label>Full name</label><input id="een" maxlength="100">
  <label>Username</label><input id="eeu" maxlength="40" autocomplete="off">
@@ -726,7 +733,7 @@ function render(){
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#wm").hidden=me.role!=="admin";
   $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
-  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
+  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#alg").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
   fillCp();
@@ -1641,6 +1648,15 @@ function renderUsers(){
    <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
    <span style="display:flex;gap:4px"><button data-ed="${u.id}" title="Edit name, username and email">✎</button><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
+const LGA={login:"Signed in",auto_login:"Signed in (kept)",logout:"Signed out",login_failed:"Failed sign-in",open_company:"Opened company",save:"Task",field:"Task edit",delete:"Deleted task(s)",dup:"Duplicated task(s)",co_set:"Changed people on task",task_move:"Moved task(s)",task_order:"Reordered tasks",tl_add:"Logged hours",tl_del:"Deleted hours entry",tl_rev:"Changed Rev on hours",cm_add:"Wrote a message",cm_del:"Deleted a message",user_add:"Added user",user_edit:"Edited user",user_pass:"Reset a password",user_role:"Changed user type",user_del:"Removed user",ws_access:"Changed access",ws_add:"Added company",ws_del:"Removed company",ws_rename:"Renamed company",dr_act:"Approval decision"};
+const lgUA=u=>{u=u||"";const b=/Edg\//.test(u)?"Edge":/Chrome\//.test(u)?"Chrome":/Firefox\//.test(u)?"Firefox":/Safari\//.test(u)?"Safari":"Browser",o=/Android/.test(u)?"Android":/iPhone|iPad/.test(u)?"iOS":/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"";return b+(o?" · "+o:"")};
+let lgInit=false;
+async function lgLoad(){try{const r=await api("log_list",{kind:$("#lgk").value,user:$("#lgu").value,ws:$("#lgw").value,from:$("#lgf").value,to:$("#lgt").value,limit:300});
+  if(!lgInit){lgInit=true;$("#lgw").innerHTML='<option value="">All companies</option>'+r.ws.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#lgu").innerHTML='<option value="">Everyone</option>'+r.seen.map(u=>`<option value="${u.id}">${esc(u.name)}${u.role==="guest"?" (guest)":""}</option>`).join("")}
+  $("#lgs").innerHTML=`<div class="acts" style="flex-wrap:wrap;margin:0 0 8px;gap:6px"><span class="stat" style="--pc:#4f46e5"><b>${r.today}</b><span>active today</span></span><span class="stat" style="--pc:#dc2626"><b>${r.fails}</b><span>failed sign-ins (24h)</span></span></div><div style="font-size:12px;color:var(--mut);margin-bottom:6px">Last seen: ${r.seen.map(u=>`<span style="white-space:nowrap;margin-right:10px"><b style="color:var(--ink)">${esc(u.name)}</b>${u.role==="guest"?" (guest)":""} ${u.last_seen?esc(fmtT(u.last_seen)):"never"}</span>`).join("")}</div>`;
+  $("#lgl").innerHTML=r.rows.length?`<table class="tlt"><tr><th>When</th><th>Who</th><th>What</th><th>Details</th><th>Company</th><th>Where from</th></tr>${r.rows.map(l=>`<tr${l.kind==="fail"?' style="color:#dc2626"':""}><td style="white-space:nowrap">${esc(fmtT(l.created_at))}</td><td>${esc(l.name||l.username||"?")}</td><td>${esc(LGA[l.action]||l.action)}</td><td>${esc(l.detail||"")}</td><td>${esc(l.ws||"")}</td><td style="white-space:nowrap" title="${ea(l.ua)}">${esc(l.ip)} <small style="color:var(--mut)">${esc(lgUA(l.ua))}</small></td></tr>`).join("")}</table>`:'<div class="empty">Nothing recorded for this filter yet</div>'}catch(e){$("#lgl").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+$("#alg").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#lgdlg").showModal();lgLoad()};
+$("#lgx").onclick=()=>$("#lgdlg").close();$("#lgr").onclick=lgLoad;for(const i of ["lgk","lgu","lgw","lgf","lgt"])$("#"+i).addEventListener("change",lgLoad);
 let edId=0;
 $("#eec").onclick=()=>$("#uedlg").close();
 $("#ees").onclick=async()=>{try{await api("user_edit",{id:edId,name:$("#een").value,username:$("#eeu").value,email:$("#eee").value});$("#uedlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}};
@@ -1664,7 +1680,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=134;
+const BUILD=135;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

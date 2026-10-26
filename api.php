@@ -1,18 +1,28 @@
 <?php
-const BUILD=134;
+const BUILD=135;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
+$TASKA=['save','field','delete','dup','co_set','task_move','task_order','tl_add','tl_rev','cm_add'];
+$AUD_T='';
+function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
+  if($a==='save')return(empty($in['id'])?'Created: ':'Edited: ').($t!==''?$t:(string)($in['title']??''));
+  if($a==='field')return $t.' - '.$f.' = '.mb_substr((string)($in['v']??''),0,60);
+  if($a==='tl_add')return $t.' - '.(float)($in['hours']??0).'h on '.(string)($in['date']??'');
+  if($a==='cm_add')return $t.((($in['kind']??'')==='instruction')?' (instruction)':'');
+  foreach(['name','username','level','role'] as $k)if(isset($in[$k])&&is_scalar($in[$k])&&$t==='')return $k.': '.mb_substr((string)$in[$k],0,60);
+  return $t;}
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 function out($d){
-  global $a,$db,$WRITEA;
+  global $a,$db,$WRITEA,$uid,$me,$W,$in,$AUD_T;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
+  if(isset($a,$db,$me)&&in_array($a,$WRITEA,true)&&empty($d['error'])){aud_log($db,$uid,(string)($me['username']??$me['name']),'activity',$a,aud_detail(),$W?:null,(int)($in['id']??$in['task_id']??0)?:null);}
   echo json_encode($d);exit;
 }
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_SERVER['HTTP_X_REQUESTED_WITH']??'')!=='fetch'){http_response_code(400);out(['error'=>'bad request']);}
 $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
-$q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
+$q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
   if(!empty($_SESSION['schema_v29']))return;
@@ -177,7 +187,25 @@ function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
       $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$ad,mb_substr($b,0,1900)]);}
   }
   out(['ok'=>1,'pending'=>1]);}
+if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empty($in[$k]))$ids[]=(int)$in[$k];if(!empty($in['ids'])&&is_array($in['ids']))foreach(array_slice($in['ids'],0,5) as $x)$ids[]=(int)$x;
+  if($ids){$ids=array_slice(array_unique($ids),0,5);$q=$db->prepare("SELECT title FROM tasks WHERE ws_id=? AND id IN(".implode(',',array_fill(0,count($ids),'?')).")");$q->execute(array_merge([$W],$ids));$AUD_T=mb_substr(implode(' | ',$q->fetchAll(PDO::FETCH_COLUMN)),0,150);}}
+if($a==='list'&&$W&&empty($_SESSION['aud_ws'][$W])){$_SESSION['aud_ws'][$W]=1;$wn='';foreach($WS as $w)if((int)$w['id']===$W)$wn=$w['name'];aud_log($db,$uid,(string)$me['username'],'activity','open_company',$wn,$W);}
 switch($a){
+case 'log_list':
+  admin();aud_table($db);$w=[];$p=[];
+  $k=(string)($in['kind']??'');if($k==='login'){$w[]="l.kind IN('login','fail')";}elseif($k==='activity'){$w[]="l.kind='activity'";}
+  if(!empty($in['user']))$w[]="l.user_id=".(int)$in['user'];
+  if(!empty($in['ws']))$w[]="l.ws_id=".(int)$in['ws'];
+  if(preg_match('/^\d{4}-\d{2}-\d{2}$/',(string)($in['from']??''))){$w[]="l.created_at>=?";$p[]=$in['from'].' 00:00:00';}
+  if(preg_match('/^\d{4}-\d{2}-\d{2}$/',(string)($in['to']??''))){$w[]="l.created_at<=?";$p[]=$in['to'].' 23:59:59';}
+  $lim=min(500,max(20,(int)($in['limit']??200)));
+  $q=$db->prepare("SELECT l.id,l.created_at,l.user_id,COALESCE(u.name,l.username) AS name,l.username,l.kind,l.action,l.detail,l.ws_id,w.name AS ws,l.ip,l.ua FROM audit_log l LEFT JOIN users u ON u.id=l.user_id LEFT JOIN workspaces w ON w.id=l.ws_id".($w?" WHERE ".implode(' AND ',$w):"")." ORDER BY l.id DESC LIMIT $lim");$q->execute($p);
+  $rows=$q->fetchAll();
+  $seen=$db->query("SELECT u.id,u.name,u.role,(SELECT MAX(created_at) FROM audit_log a WHERE a.user_id=u.id AND a.kind='login') AS last_login,(SELECT MAX(created_at) FROM audit_log a WHERE a.user_id=u.id) AS last_seen FROM users u ORDER BY u.name")->fetchAll();
+  $st=$db->query("SELECT COUNT(DISTINCT user_id) FROM audit_log WHERE created_at>=CURDATE() AND user_id IS NOT NULL")->fetchColumn();
+  $fl=$db->query("SELECT COUNT(*) FROM audit_log WHERE kind='fail' AND created_at>=DATE_SUB(NOW(),INTERVAL 1 DAY)")->fetchColumn();
+  $wl=$db->query("SELECT id,name FROM workspaces ORDER BY name")->fetchAll();
+  out(['rows'=>$rows,'seen'=>$seen,'today'=>(int)$st,'fails'=>(int)$fl,'ws'=>$wl]);
 case 'co_set':
   need_level('edit');$tid=(int)($in['id']??0);$us=array_values(array_unique(array_map('intval',is_array($in['users']??null)?$in['users']:[])));
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
