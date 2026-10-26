@@ -1,5 +1,5 @@
 <?php
-const BUILD=157;
+const BUILD=158;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -847,8 +847,9 @@ case 'user_edit':
   if(!preg_match('/^[A-Za-z0-9_.-]{3,40}$/',$u))out(['error'=>'Username must be 3-40 letters, numbers, dots, dashes or underscores']);
   if($em!==''&&!filter_var($em,FILTER_VALIDATE_EMAIL))out(['error'=>'That email address does not look right']);
   $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$id]);if(!(int)$q->fetchColumn())out(['error'=>'User not found']);
+  $q=$db->prepare("SELECT COUNT(*) FROM users WHERE username=? AND id<>?");$q->execute([$u,$id]);if((int)$q->fetchColumn())out(['error'=>'That username is already used by another person']);
   try{$db->prepare("UPDATE users SET name=?,username=?,email=? WHERE id=?")->execute([$n,$u,mb_substr($em,0,190),$id]);}
-  catch(PDOException $e){out(['error'=>'That username is already taken']);}
+  catch(PDOException $e){$m=$e->getMessage();out(['error'=>stripos($m,'duplicate')!==false?('Could not save, a value is already in use ('.preg_replace('/^.*Duplicate entry (.*?) for key.*$/s','$1',$m).')'):('Could not save: '.preg_replace('/^SQLSTATE\[[^\]]*\]:?\s*/','',$m))]);}
   out(['ok'=>1]);
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
