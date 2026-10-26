@@ -52,6 +52,7 @@ input[type=checkbox]{width:16px;height:16px;padding:0;min-width:0}
 #bar{display:flex;gap:8px;align-items:center;margin:0 16px 10px;padding:8px 12px;background:var(--card);border:1px solid var(--pri);border-radius:10px}#bar[hidden]{display:none}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);width:min(460px,92vw);padding:18px}
 dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog>.acts:last-child{position:sticky;bottom:0;z-index:5;background:var(--card);margin:10px 0 -18px;padding:10px 0 18px;border-top:1px solid var(--line)}
 label{display:block;margin:8px 0 3px;color:var(--mut);font-size:12px}
 dialog input,dialog select,dialog textarea{width:100%}dialog input[type=checkbox]{width:16px}
 body{padding-left:112px;transition:padding-left .15s}
@@ -1647,7 +1648,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=131;
+const BUILD=132;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
