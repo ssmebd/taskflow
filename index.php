@@ -1574,8 +1574,10 @@ function renderWs(){
     <div class="acts"><span class="sp"></span><button class="p" data-wsave="${w.id}">Save access</button></div></div></div>`).join("");
 }
 $("#wm").onclick=()=>{renderWs();$("#wdlg").showModal()};
-$("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px"}};
-$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.right-m.offsetWidth,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px"}};
+function menuFit(m,r){m.style.top="auto";m.style.maxHeight=(innerHeight-16)+"px";const h=m.offsetHeight,bot=Math.max(8,innerHeight-r.bottom-4);
+  if(innerHeight-bot-h<8){m.style.bottom="auto";m.style.top=Math.max(8,Math.min(r.bottom-h,innerHeight-h-8))+"px"}}
+$("#sbtn").onclick=e=>{e.stopPropagation();const m=$("#smenu");$("#umenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;const r=$("#sbtn").getBoundingClientRect();if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+8)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom)+"px";menuFit(m,r)}};
+$("#ubtn").onclick=e=>{e.stopPropagation();const m=$("#umenu");$("#smenu").hidden=true;if(!m.hidden){m.hidden=true;return}m.hidden=false;$("#cpanel").classList.remove("open");const r=$("#ubtn").getBoundingClientRect();m.style.top="auto";m.style.right="auto";if(innerWidth<=700){m.style.left=Math.max(8,Math.min(r.right-m.offsetWidth,innerWidth-m.offsetWidth-8))+"px";m.style.bottom=(innerHeight-r.top+8)+"px"}else{m.style.left=(r.right+10)+"px";m.style.bottom=Math.max(8,window.innerHeight-r.bottom-4)+"px";menuFit(m,r)}};
 $("#smenu").addEventListener("click",()=>{$("#smenu").hidden=true});
 document.addEventListener("click",e=>{if(!e.target.closest("#setw"))$("#smenu").hidden=true;if(!e.target.closest("#uw"))$("#umenu").hidden=true;if(!e.target.closest("#cpanel,#rco"))cpClose()});
 async function apOpen(){const l=$("#apl");l.innerHTML='<div class="empty">Loading…</div>';$("#apdlg").showModal();
@@ -1844,7 +1846,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=162;
+const BUILD=163;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
