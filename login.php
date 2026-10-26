@@ -27,21 +27,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",syst
 .hero h1{margin:0 0 14px;font:800 clamp(34px,4.6vw,64px)/1.02 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.03em;text-wrap:balance;max-width:14ch}
 .hero h1 em{font-style:normal;color:var(--green)}
 .hero p{margin:0;max-width:44ch;font-size:clamp(15px,1.3vw,18px);color:rgba(255,255,255,.78)}
-.tl{margin:clamp(22px,4vh,44px) 0 0;position:relative;max-width:560px}
+.tl{margin:clamp(22px,4vh,44px) 0 0;position:relative;max-width:560px;container-type:inline-size}
 .lane{position:relative;height:34px;margin:0 0 10px;border-radius:8px;background:rgba(255,255,255,.06)}
-.bar{position:absolute;top:4px;height:26px;border-radius:7px;display:flex;align-items:center;padding:0 10px;font-size:12px;font-weight:600;color:#06121f;white-space:nowrap;overflow:hidden;transform-origin:left center;animation:grow .9s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.lane:nth-child(1) .bar{left:4%;width:46%;background:#60a5fa;animation-delay:.15s}
-.lane:nth-child(2) .bar{left:22%;width:40%;background:#4ade80;animation-delay:.35s}
-.lane:nth-child(3) .bar{left:10%;width:34%;background:#fbbf24;animation-delay:.55s}
-.lane:nth-child(4) .bar{left:42%;width:50%;background:#c4b5fd;animation-delay:.75s}
-.lane:nth-child(5) .bar{left:30%;width:36%;background:#67e8f9;animation-delay:.95s}
-.today{position:absolute;top:-8px;bottom:-4px;left:52%;width:2px;background:var(--green);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 2.4s ease-out infinite}
+.bar{position:absolute;top:4px;height:26px;border-radius:7px;display:flex;align-items:center;padding:0 10px;font-size:clamp(9px,2.2cqi,12px);font-weight:600;color:#06121f;white-space:nowrap;overflow:hidden;transform-origin:left center;animation:grow .9s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.l1 .bar{left:3%;width:30%;background-color:#60a5fa;--p:70%;animation-delay:.15s}
+.l2 .bar{left:20%;width:40%;background-color:#4ade80;--p:100%;animation-delay:.4s}
+.l3 .bar{left:8%;width:28%;background-color:#fbbf24;--p:55%;animation-delay:.65s}
+.l4 .bar{left:3%;width:62%;background-color:#c4b5fd;--p:25%;animation-delay:.9s}
+.bar{background-image:linear-gradient(90deg,rgba(0,0,0,.16) var(--p,0%),transparent var(--p,0%))}
+.today{z-index:2;position:absolute;top:-8px;bottom:-4px;left:51%;width:2px;background:var(--green);box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 2.4s ease-out infinite}
 .today::before{content:"Today";position:absolute;top:-4px;left:50%;transform:translate(-50%,-100%);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .chip{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);font-size:13px;font-weight:500;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .chip b{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:pulse 2s infinite}
 .chip.r b{background:#f87171;animation:none}.chip.v b{background:#a78bfa;animation:none}
-.foot{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}.foot i{font-style:normal;color:var(--green);font-weight:800;opacity:1;font-size:15px;vertical-align:-1px}
+.foot{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6}.quip{display:inline-block;margin-bottom:8px;text-transform:none;letter-spacing:.01em;font:italic 500 14px "DM Sans",sans-serif;opacity:.9}.foot i{font-style:normal;color:var(--green);font-weight:800;opacity:1;font-size:15px;vertical-align:-1px}
 @keyframes grow{from{transform:scaleX(0);opacity:0}to{transform:none;opacity:1}}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}70%,100%{box-shadow:0 0 0 9px rgba(34,197,94,0)}}
 /* form side */
@@ -74,16 +74,15 @@ label.f{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
   <h1>Drawings in. <em>Deadlines</em> met.</h1>
   <p>Plan, assign and track every job across all your companies, from the first sketch to the final revision.</p>
   <div class="tl" aria-hidden="true">
+   <div class="lane l1"><div class="bar">ACA1212A</div></div>
+   <div class="lane l2"><div class="bar">SCAL3024AOM-PE</div></div>
+   <div class="lane l3"><div class="bar">UCA4040F</div></div>
+   <div class="lane l4"><div class="bar">SCAL3024A-PRESENTATION DRAWING</div></div>
    <div class="today"></div>
-   <div class="lane"><div class="bar">SHOP-1042 · Ongoing</div></div>
-   <div class="lane"><div class="bar">FDS-2208 · Completed</div></div>
-   <div class="lane"><div class="bar">LP-0917 · In review</div></div>
-   <div class="lane"><div class="bar">SHOP-1051 · Ready to start</div></div>
-   <div class="lane"><div class="bar">FDS-2214 · Ongoing</div></div>
   </div>
   <div class="chips" aria-hidden="true"><span class="chip"><b></b>Live for the whole team</span><span class="chip r"><b></b>Overdue at a glance</span><span class="chip v"><b></b>Chat on every task</span></div>
  </div>
- <div class="foot">Powered by GURUCADD<i>&raquo;</i></div>
+ <div class="foot"><span class="quip">A little glamour goes a long way.</span><br>Powered by GURUCADD<i>&raquo;</i></div>
 </section>
 <section class="side">
  <div class="card">
