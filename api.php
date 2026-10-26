@@ -1,5 +1,5 @@
 <?php
-const BUILD=124;
+const BUILD=125;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -129,7 +129,9 @@ function clean($f,$v){
   if($f==='start_date'||$f==='end_date')return preg_match('/^\d{4}-\d{2}-\d{2}$/',(string)$v)?$v:null;
   if($f==='group_id'){global $db,$W;$g=(int)$v;if(!$g)return null;$q=$db->prepare("SELECT COUNT(*) FROM task_groups WHERE id=? AND ws_id=?");$q->execute([$g,$W]);return $q->fetchColumn()?$g:null;}
   if($f==='assigned_to')return($v===''||$v===null)?null:(int)$v;
-  if($f==='status'){global $db;$k=status_keys($db);return in_array($v,$k,true)?$v:$k[0];}
+  if($f==='status'){global $db;$k=status_keys($db);$v=in_array($v,$k,true)?$v:$k[0];
+    foreach(get_statuses($db) as $s)if($s['k']===$v&&preg_match('/^not[\s_-]*needed$/i',trim($s['name'])))return 'done';
+    return $v;}
   $lim=['title'=>255,'customer'=>255,'order_no'=>100,'drawing_type'=>100,'notes'=>5000][$f];
   return mb_substr((string)$v,0,$lim);
 }
