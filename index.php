@@ -144,10 +144,11 @@ body.rh:not(.ro) #side{background:transparent!important;border-right-color:trans
 body.rh:not(.ro) #side::before{display:none!important}
 body.rh:not(.ro) #side .rlogo,body.rh:not(.ro) #side .sf{opacity:0;pointer-events:none;transform:translateX(-70px)}
 body.rh:not(.ro) #side .rb#rhome,body.rh:not(.ro) #side .rb#rco{pointer-events:auto}
-body.rh:not(.ro) #side .rb#rhome,body.rh:not(.ro) #side .rb#rco{--pc:var(--nv,#0f2a5c);position:fixed;left:0;top:var(--tt,104px);width:46px;height:42px;border-radius:0 12px 12px 0;border:1px solid color-mix(in srgb,var(--pc) 55%,transparent);border-left:0;background:color-mix(in srgb,var(--pc) 26%,var(--card));color:color-mix(in srgb,var(--pc) 70%,var(--ink));box-shadow:2px 2px 8px rgba(0,0,0,.18);z-index:48}
-body.rh:not(.ro) #side .rb#rco{top:calc(var(--tt,104px) + 46px)}
+body.rh #side .rb#rhome,body.rh #side .rb#rco{--pc:var(--nv,#0f2a5c);position:fixed;left:0;top:var(--tt,104px);width:46px;height:42px;border-radius:0 12px 12px 0;border:1px solid color-mix(in srgb,var(--pc) 55%,transparent);border-left:0;background:color-mix(in srgb,var(--pc) 26%,var(--card));color:color-mix(in srgb,var(--pc) 70%,var(--ink));box-shadow:2px 2px 8px rgba(0,0,0,.18);z-index:48}
+body.rh #side .rb#rco{top:calc(var(--tt,104px) + 46px)}
+body.rh.ro #side .rb#rhome,body.rh.ro #side .rb#rco{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff;box-shadow:none}
 body.rh:not(.ro) #side .rb#rhome:hover,body.rh:not(.ro) #side .rb#rco:hover{background:color-mix(in srgb,var(--pc) 38%,var(--card))}
-body.rh #side .rb#rhome,body.rh #side .rb#rco{position:relative;z-index:1}
+
 body.rh.ro #side{box-shadow:10px 0 28px rgba(0,0,0,.3)}
 body.rh #side .rb.dskonly svg{transform:rotate(180deg)}}
 @media(max-width:700px){#side .rb.dskonly{display:none}}
@@ -1711,7 +1712,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=142;
+const BUILD=143;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
