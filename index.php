@@ -360,7 +360,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
    <div id="tmw" hidden><button id="tm">👥 Users ▸</button><div class="tms"><button id="tm1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Users Management</button><button id="tm2">🔐 Access Control</button></div></div>
    <button id="om" hidden>⚠ Overlap rules</button>
    <button id="apm" hidden>✅ Approvals <b id="apn" class="apn" hidden></b></button>
-  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
+  </div></span><button id="wm" hidden style="display:none" title="Manage companies and logos">Manage</button><span id="uw"><button id="ubtn" aria-haspopup="true" title="Account"><span id="uini"></span></button><div id="umenu" hidden><div class="umh"><b id="uname"></b><small id="who"></small></div><a href="#" id="mhm">⏱ My hours check</a><a href="#" id="ainst" hidden>📲 Install app</a><a href="#" id="amm" hidden>🗂 Manage companies</a><a href="#" id="alg" hidden>🧾 Usage log</a><a href="#" id="abk" hidden>💾 Backups</a><a href="https://claude.ai/artifact/KwN83RddD74EoffvwoXrgC" target="_blank" rel="noopener" id="tfwl">💡 TFW Ideas</a><a href="login.php?logout=1">⎋ Log out</a></div></span></div></aside>
 
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
@@ -420,6 +420,12 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <div id="copop" hidden><div class="coh">Also working on this task</div><div id="col"></div></div>
 <dialog id="apdlg" style="width:min(720px,96vw)"><b>Approvals</b> <small style="color:var(--mut)">Members ask here before deleting a group, status, column or drawing type.</small><div id="apl" style="margin-top:8px"></div><div class="acts"><span class="sp"></span><button id="apx">Close</button></div></dialog>
+<dialog id="bkdlg" style="width:min(640px,96vw)"><div class="acts" style="margin:0 0 6px"><b style="flex:1">💾 Backups</b><button id="bkx">Close</button></div>
+ <div id="bks" style="font-size:13px;margin-bottom:8px"></div>
+ <div class="acts" style="flex-wrap:wrap"><button class="p" id="bkn">Back up now</button><button id="bkm">Back up and email me a copy</button></div>
+ <div id="bkl" style="max-height:40vh;overflow:auto;margin-top:8px"></div>
+ <small style="color:var(--mut)">A backup is saved every 3 hours. The first one each day is also emailed. Copies from the last 24 hours are kept, then one per day for 14 days. Admin only.</small>
+</dialog>
 <dialog id="lgdlg" style="width:min(1000px,96vw)"><div class="acts" style="margin:0 0 6px"><b style="flex:1">🧾 Usage log</b><button id="lgx">Close</button></div>
  <div id="lgs"></div>
  <div class="rctl" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><select id="lgk"><option value="">Logins and activity</option><option value="login">Logins only</option><option value="activity">Activity only</option></select><select id="lgu"><option value="">Everyone</option></select><select id="lgw"><option value="">All companies</option></select><label style="margin:0">From</label><input type="date" id="lgf"><label style="margin:0">To</label><input type="date" id="lgt"><button id="lgr">Refresh</button></div>
@@ -755,7 +761,7 @@ function render(){
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#wm").hidden=me.role!=="admin";
   $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
-  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#alg").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
+  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#alg").hidden=me.role!=="admin";$("#abk").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
   fillCp();
@@ -1684,6 +1690,15 @@ function renderUsers(){
 }
 const LGA={login:"Signed in",auto_login:"Signed in (kept)",logout:"Signed out",login_failed:"Failed sign-in",open_company:"Opened company",save:"Task",field:"Task edit",delete:"Deleted task(s)",dup:"Duplicated task(s)",co_set:"Changed people on task",task_move:"Moved task(s)",task_order:"Reordered tasks",tl_add:"Logged hours",tl_del:"Deleted hours entry",tl_rev:"Changed Rev on hours",cm_add:"Wrote a message",cm_del:"Deleted a message",user_add:"Added user",user_edit:"Edited user",user_pass:"Reset a password",user_role:"Changed user type",user_del:"Removed user",ws_access:"Changed access",ws_add:"Added company",ws_del:"Removed company",ws_rename:"Renamed company",dr_act:"Approval decision"};
 const lgUA=u=>{u=u||"";const b=/Edg\//.test(u)?"Edge":/Chrome\//.test(u)?"Chrome":/Firefox\//.test(u)?"Firefox":/Safari\//.test(u)?"Safari":"Browser",o=/Android/.test(u)?"Android":/iPhone|iPad/.test(u)?"iOS":/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"";return b+(o?" · "+o:"")};
+const fmtKB=n=>n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
+async function bkLoad(){try{const r=await api("bk_list",{});
+  const l=r.last,when=t=>new Date(t*1000).toLocaleString();
+  $("#bks").innerHTML=!r.dir_ok?'<span style="color:#dc2626">The server has no writable folder for backups. Ask your host, or tell me and I will change the location.</span>':l?`Last backup: <b style="color:${l.ok?"#16a34a":"#dc2626"}">${l.ok?"OK":"FAILED"}</b> ${esc(when(l.time))}${l.ok?" · "+fmtKB(l.size)+(l.emailed?" · emailed to "+esc(r.email):""):""}${l.err?`<br><span style="color:#dc2626">${esc(l.err)}</span>`:""}`:`No backup has run yet. Daily emails go to <b>${esc(r.email)}</b>.`;
+  $("#bkl").innerHTML=r.files.length?`<table class="tlt"><tr><th>When</th><th class="n">Size</th><th></th></tr>${r.files.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:'<div class="empty">No copies yet</div>'}catch(e){$("#bks").textContent=e.message}}
+async function bkRun(mail){const b=$(mail?"#bkm":"#bkn");b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api("bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
+$("#abk").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#bkdlg").showModal();bkLoad()};
+$("#bkx").onclick=()=>$("#bkdlg").close();$("#bkn").onclick=()=>bkRun(false);$("#bkm").onclick=()=>bkRun(true);
+$("#bkl").addEventListener("click",async e=>{const f=e.target.dataset.bkd;if(!f)return;try{const r=await fetch("api.php?a=bk_get&f="+encodeURIComponent(f),{headers:{"X-Requested-With":"fetch"}});if(!r.ok||(r.headers.get("content-type")||"").includes("json")){const j=await r.json().catch(()=>({}));throw new Error(j.error||"Download failed")}const u=URL.createObjectURL(await r.blob()),a=document.createElement("a");a.href=u;a.download=f;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(err){alert(err.message)}});
 let lgInit=false;
 async function lgLoad(){try{const r=await api("log_list",{kind:$("#lgk").value,user:$("#lgu").value,ws:$("#lgw").value,from:$("#lgf").value,to:$("#lgt").value,limit:300});
   if(!lgInit){lgInit=true;$("#lgw").innerHTML='<option value="">All companies</option>'+r.ws.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#lgu").innerHTML='<option value="">Everyone</option>'+r.seen.map(u=>`<option value="${u.id}">${esc(u.name)}${u.role==="guest"?" (guest)":""}</option>`).join("")}
@@ -1714,7 +1729,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=146;
+const BUILD=147;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

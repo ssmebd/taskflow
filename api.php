@@ -1,7 +1,8 @@
 <?php
-const BUILD=146;
+const BUILD=147;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
+if(PHP_SAPI==='cli'){$r=(($argv[1]??'')==='backup')?bk_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup'];echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
 $TASKA=['save','field','delete','dup','co_set','task_move','task_order','tl_add','tl_rev','cm_add'];
 $AUD_T='';
 function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
@@ -12,6 +13,78 @@ function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
   foreach(['name','username','level','role'] as $k)if(isset($in[$k])&&is_scalar($in[$k])&&$t==='')return $k.': '.mb_substr((string)$in[$k],0,60);
   return $t;}
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+
+// ---- Backups: database dump to a private folder, daily copy by email ----
+if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
+function bk_dir(){
+  $c=[];$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-backups';$c[]=dirname(__DIR__,2).'/taskflow-backups';$c[]=__DIR__.'/backups';
+  foreach($c as $d){
+    if(!is_dir($d))@mkdir($d,0700,true);
+    if(is_dir($d)&&is_writable($d)){
+      if(strpos(realpath($d)?:$d,realpath(__DIR__)?:__DIR__)===0){@file_put_contents($d.'/.htaccess',"Require all denied\nDeny from all\n");@file_put_contents($d.'/index.html','');}
+      return $d;}
+  }
+  return '';
+}
+function bk_dump($db,$path){
+  $gz=gzopen($path,'wb6');if(!$gz)throw new Exception('Cannot write the backup file');
+  gzwrite($gz,"-- TaskFlow backup ".date('Y-m-d H:i:s')."\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+  $tabs=$db->query("SHOW FULL TABLES WHERE Table_type='BASE TABLE'")->fetchAll(PDO::FETCH_NUM);
+  foreach($tabs as $tr){
+    $t=$tr[0];$q='`'.str_replace('`','``',$t).'`';
+    $cr=$db->query("SHOW CREATE TABLE $q")->fetch(PDO::FETCH_NUM);
+    gzwrite($gz,"DROP TABLE IF EXISTS $q;\n".$cr[1].";\n\n");
+    $st=$db->query("SELECT * FROM $q");$buf=[];$cols=null;
+    while($r=$st->fetch(PDO::FETCH_ASSOC)){
+      if($cols===null)$cols='(`'.implode('`,`',array_keys($r)).'`)';
+      $buf[]='('.implode(',',array_map(fn($v)=>$v===null?'NULL':$db->quote((string)$v),array_values($r))).')';
+      if(count($buf)>=100){gzwrite($gz,"INSERT INTO $q $cols VALUES\n".implode(",\n",$buf).";\n");$buf=[];}
+    }
+    if($buf)gzwrite($gz,"INSERT INTO $q $cols VALUES\n".implode(",\n",$buf).";\n");
+    gzwrite($gz,"\n");
+  }
+  gzwrite($gz,"SET FOREIGN_KEY_CHECKS=1;\n");gzclose($gz);
+}
+function bk_files($dir){$o=[];foreach(glob($dir.'/taskflow-????-??-??_??-??.sql.gz')?:[] as $f)$o[]=['name'=>basename($f),'size'=>filesize($f),'time'=>filemtime($f)];usort($o,fn($x,$y)=>$y['time']<=>$x['time']);return $o;}
+function bk_prune($dir){
+  $keepDay=[];$now=time();
+  foreach(bk_files($dir) as $f){
+    if($now-$f['time']<=86400)continue;
+    $d=substr($f['name'],9,10);
+    if($now-$f['time']>14*86400||isset($keepDay[$d]))@unlink($dir.'/'.$f['name']);else $keepDay[$d]=1;
+  }
+}
+function bk_host(){return preg_replace('/^www\./','',$_SERVER['SERVER_NAME']??'gurucadd.com');}
+function bk_mail($file,$name,$why){
+  $to=BACKUP_EMAIL;if(!$to)return 'No email address set';
+  $size=is_file($file)?filesize($file):0;
+  $b='tf'.bin2hex(random_bytes(8));$att=$size>0&&$size<=18*1024*1024;
+  $txt="TaskFlow database backup: $name (".round($size/1024)." KB)\n$why\n".($att?"The backup is attached. To restore, unzip the .gz and import the .sql file in phpMyAdmin.":"The backup is too large to attach. It is saved on the server in the taskflow-backups folder; download it from TaskFlow > user menu > Backups.")."\n";
+  $h="From: TaskFlow <backup@".bk_host().">\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
+  $m="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n$txt\r\n";
+  if($att)$m.="--$b\r\nContent-Type: application/gzip; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"$name\"\r\n\r\n".chunk_split(base64_encode(file_get_contents($file)))."\r\n";
+  $m.="--$b--";
+  return @mail($to,'TaskFlow backup '.substr($name,9,16),$m,$h)?'':'The server could not send the email';
+}
+function bk_run($db,$force=false){
+  $dir=bk_dir();$res=['ok'=>false,'time'=>time(),'file'=>'','size'=>0,'emailed'=>false,'err'=>''];
+  try{
+    if($dir==='')throw new Exception('No writable folder for backups');
+    $name='taskflow-'.date('Y-m-d_H-i').'.sql.gz';$path=$dir.'/'.$name;
+    bk_dump($db,$path);@chmod($path,0600);
+    if(is_file(__DIR__.'/config.php')&&!is_file($dir.'/config.php.bak')){@copy(__DIR__.'/config.php',$dir.'/config.php.bak');@chmod($dir.'/config.php.bak',0600);}
+    $res['ok']=true;$res['file']=$name;$res['size']=filesize($path);
+    $day=substr($name,9,10);$n=0;foreach(bk_files($dir) as $f)if(substr($f['name'],9,10)===$day)$n++;
+    if($force||$n<=1){$e=bk_mail($path,$name,$force?'Sent on request.':'Daily copy.');$res['emailed']=($e==='');if($e!=='')$res['err']='Saved, but email failed: '.$e;}
+    bk_prune($dir);
+  }catch(Throwable $e){
+    $res['err']=$e->getMessage();
+    @mail(BACKUP_EMAIL,'TaskFlow backup FAILED','The TaskFlow backup failed: '.$res['err']."\n",'From: TaskFlow <backup@'.bk_host().">\r\n");
+  }
+  if($dir!=='')@file_put_contents($dir.'/last.json',json_encode($res));
+  aud_log($db,0,'system','activity','backup',$res['ok']?('Backup '.$res['file'].' ('.round($res['size']/1024).' KB)'.($res['emailed']?', emailed':'').($res['err']?' - '.$res['err']:'')):'Backup FAILED: '.$res['err']);
+  return $res;
+}
 function out($d){
   global $a,$db,$WRITEA,$uid,$me,$W,$in,$AUD_T;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -191,6 +264,15 @@ if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empt
   if($ids){$ids=array_slice(array_unique($ids),0,5);$q=$db->prepare("SELECT title FROM tasks WHERE ws_id=? AND id IN(".implode(',',array_fill(0,count($ids),'?')).")");$q->execute(array_merge([$W],$ids));$AUD_T=mb_substr(implode(' | ',$q->fetchAll(PDO::FETCH_COLUMN)),0,150);}}
 if($a==='list'&&$W&&empty($_SESSION['aud_ws'][$W])){$_SESSION['aud_ws'][$W]=1;$wn='';foreach($WS as $w)if((int)$w['id']===$W)$wn=$w['name'];aud_log($db,$uid,(string)$me['username'],'activity','open_company',$wn,$W);}
 switch($a){
+case 'bk_list':
+  admin();$d=bk_dir();$last=($d&&is_file($d.'/last.json'))?json_decode((string)file_get_contents($d.'/last.json'),true):null;
+  out(['files'=>$d?bk_files($d):[],'last'=>$last,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='']);
+case 'bk_run':
+  admin();$r=bk_run($db,!empty($in['mail']));out(['res'=>$r]);
+case 'bk_get':
+  admin();$f=(string)($_GET['f']??'');$d=bk_dir();
+  if(!preg_match('/^taskflow-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.sql\.gz$/',$f)||!$d||!is_file($d.'/'.$f))out(['error'=>'Backup not found']);
+  header('Content-Type: application/gzip');header('Content-Disposition: attachment; filename="'.$f.'"');header('Content-Length: '.filesize($d.'/'.$f));readfile($d.'/'.$f);exit;
 case 'log_list':
   admin();aud_table($db);$w=[];$p=[];
   $k=(string)($in['kind']??'');if($k==='login'){$w[]="l.kind IN('login','fail')";}elseif($k==='activity'){$w[]="l.kind='activity'";}
