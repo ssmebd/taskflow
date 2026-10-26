@@ -66,7 +66,7 @@ label.f{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
 .note{margin:18px 0 0;text-align:center;font-size:12px;color:var(--mut)}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.art{padding:22px 20px 20px}.hero h1{font-size:30px;max-width:none}.hero p,.tl,.chips{display:none}.foot{display:none}.art{gap:14px}.side{padding-top:22px}}
 @media(prefers-reduced-motion:reduce){.bar,.today,.chip b{animation:none}}
-</style></head><body>
+@view-transition{navigation:auto}::view-transition-old(root){animation:lo .3s ease both}::view-transition-new(root){animation:li .55s cubic-bezier(.22,.8,.25,1) both}@keyframes lo{to{opacity:0;transform:scale(.99)}}@keyframes li{from{opacity:0;transform:translateY(14px)}}@media(prefers-reduced-motion:reduce){@view-transition{navigation:none}}</style></head><body>
 <main class="wrap">
 <section class="art" aria-hidden="false">
  <div class="logo">TaskFlow<small>Powered by GURUCADD</small></div>
