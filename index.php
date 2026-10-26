@@ -163,7 +163,48 @@ body.rh #side .rb.dskonly svg{transform:rotate(180deg)}}
 #rpop .rf{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12px;color:var(--mut)}#rpop .rf .sp{flex:1}
 .hd{display:inline-block;cursor:grab;color:var(--mut);padding:2px 5px 2px 0;touch-action:none;user-select:none;font-size:13px;letter-spacing:-2px}.hd:hover{color:var(--ink)}
 tr.rdrag{opacity:.4}.ghd{display:inline-block;cursor:grab;touch-action:none;user-select:none;letter-spacing:-2px;margin-right:6px;opacity:.55;font-size:13px}.gh.gdr{opacity:.45}.gh.gd-b th{box-shadow:inset 0 3px 0 var(--pri)}.gh.gd-a th{box-shadow:inset 0 -3px 0 var(--pri)}tr.rd-b td{box-shadow:inset 0 3px 0 var(--pri)}tr.rd-a td{box-shadow:inset 0 -3px 0 var(--pri)}.gh.rd-g td,.gh.rd-g{outline:2px solid var(--pri);outline-offset:-2px}body.rdg{cursor:grabbing;user-select:none}
-#mdlg{width:min(580px,94vw)}#mdlg #thr{margin-top:0;border-top:1px solid var(--line)}#mdlg #thl{max-height:46vh;min-height:120px}
+/* ---- Chat look (task messages + team Messages) ---- */
+:root{--gr1:#10b981;--gr2:#0b8f6a;--grbg:#e7f7f0}
+@media (prefers-color-scheme:dark){:root{--grbg:#12332a}}
+.av{flex:none;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;background:hsl(var(--h,160) 55% 42%);letter-spacing:.3px;box-shadow:0 1px 3px rgba(0,0,0,.18)}.av.sm{width:26px;height:26px;font-size:10px}.av.tm{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+#mdlg{width:min(600px,94vw);padding:0;overflow:hidden;border:0;border-radius:18px;box-shadow:0 24px 70px rgba(10,20,40,.38);resize:none}
+#mdlg>.mhd{display:flex;align-items:center;gap:12px;margin:0;padding:14px 16px;background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;position:relative;overflow:hidden}
+#mdlg>.mhd:after{content:"";position:absolute;right:-30px;top:-40px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.1)}
+#mdlg .mic{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+#mdlg .mti{flex:1;min-width:0;position:relative;z-index:1}#mdlg #mord{color:rgba(255,255,255,.85);font-size:11px;letter-spacing:.6px;text-transform:uppercase}#mdlg #mtit{font-weight:700;font-size:16px;line-height:1.25;white-space:nowrap}
+#mdlg .mhd button{position:relative;z-index:1;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:6px 12px;font-size:12.5px;font-weight:600;cursor:pointer}#mdlg .mhd button:hover{background:rgba(255,255,255,.3)}#mdlg #mcl{width:34px;height:34px;padding:0;font-size:15px;line-height:1}
+#mdlg #mbody{padding:0}#mdlg #thr{margin:0;border:0;padding:0;display:flex;flex-direction:column}#mdlg #thr .thh{display:none}
+#thr .thh{margin-bottom:8px}
+#thl{max-height:46vh;min-height:160px;padding:14px 14px 8px;gap:3px;background:linear-gradient(180deg,color-mix(in srgb,var(--col) 70%,transparent),transparent);scroll-behavior:smooth}
+#dlg #thl{max-height:260px;min-height:90px;border-radius:12px;border:1px solid var(--line)}
+.dsep{align-self:center;margin:10px 0 6px;font-size:11px;font-weight:600;color:var(--mut);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:2px 12px}
+.mrow{display:flex;gap:8px;align-items:flex-end;margin-top:8px;max-width:100%}.mrow.gp{margin-top:2px}.mrow.me{flex-direction:row-reverse}.mrow .av{margin-bottom:2px}.mrow.gp .av{visibility:hidden}
+.mrow .bub{position:relative;max-width:min(78%,420px);padding:8px 12px 6px;border-radius:16px 16px 16px 4px;background:var(--card);border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.06);font-size:13.5px;line-height:1.4;white-space:pre-wrap;word-break:break-word}
+.mrow.me .bub{background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:0;border-radius:16px 16px 4px 16px;box-shadow:0 2px 8px rgba(11,143,106,.28)}
+.mrow.gp .bub{border-top-left-radius:6px}.mrow.me.gp .bub{border-top-left-radius:16px;border-top-right-radius:6px}
+.bub .who{display:block;font-size:11.5px;font-weight:700;color:var(--gr2);margin-bottom:2px}.mrow.me .who{display:none}.bub .who i{font-style:normal;font-weight:500;color:var(--mut)}
+.bub .tm{display:block;text-align:right;font-size:10px;opacity:.65;margin-top:2px}
+.bub .x{position:absolute;top:-8px;right:-6px;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--mut);font-size:10px;line-height:1;padding:0;display:none;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2)}.mrow:hover .bub .x{display:block}.bub .x:hover{color:#dc2626}
+.mrow.me .bub .x{right:auto;left:-8px}
+.mrow.ins .bub{background:linear-gradient(135deg,#fff7e0,#ffecb8);color:#5b3b00;border:1px solid #f59e0b;box-shadow:0 2px 8px rgba(245,158,11,.25)}.mrow.ins .who{color:#b45309;display:block}.mrow.ins .bub:before{content:"📌 Instruction";display:block;font-size:10.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#b45309;margin-bottom:3px}
+.mrow.new .bub{box-shadow:0 0 0 2px #3b82f6,0 2px 8px rgba(59,130,246,.3)}.mrow.new .bub:after{content:"NEW";position:absolute;top:-8px;left:10px;background:#3b82f6;color:#fff;font-size:9px;font-weight:800;border-radius:6px;padding:1px 6px;letter-spacing:.5px}
+.mempty{align-self:center;text-align:center;color:var(--mut);padding:26px 10px}.mempty svg{display:block;margin:0 auto 8px;opacity:.5}
+#thr .cmp{padding:10px 12px 12px;border-top:1px solid var(--line);background:var(--card)}#dlg #thr .cmp{padding:10px 0 0;border:0}
+#thr .cmo{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}#thr .cmo select{width:auto;flex:1 1 140px;border-radius:999px;padding:5px 12px;font-size:12.5px;background:var(--col);border-color:transparent}
+#thr .cmr{display:flex;gap:8px;align-items:flex-end}#thr .cmr textarea{flex:1;resize:none;border-radius:20px;padding:10px 14px;min-height:42px;max-height:130px;line-height:1.35;background:var(--col);border:1px solid transparent;box-sizing:border-box}#thr .cmr textarea:focus{outline:0;border-color:var(--gr1);background:var(--card);box-shadow:0 0 0 3px color-mix(in srgb,var(--gr1) 25%,transparent)}
+.snd{flex:none;width:42px;height:42px;border-radius:50%;padding:0!important;border:0!important;background:linear-gradient(135deg,var(--gr1),var(--gr2))!important;color:#fff!important;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 10px rgba(11,143,106,.4);transition:transform .12s}.snd:hover{transform:scale(1.08)}.snd:active{transform:scale(.94)}.snd svg{width:20px;height:20px;margin-left:2px}
+#thr .hint{font-size:10.5px;color:var(--mut);margin:5px 4px 0}
+/* team Messages panel */
+aside#msgw{z-index:50;border:0;border-radius:18px;box-shadow:0 24px 70px rgba(10,20,40,.4)}
+#msgw .mgh{background:linear-gradient(135deg,var(--gr1),var(--gr2));color:#fff;border:0;padding:12px 14px}#msgw .mgh b{font-size:15px}#msgw .mgh button{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:50%;width:30px;height:30px;padding:0;min-height:0}
+#msgw #mgu{background:var(--col);width:190px}#msgw .mgu{border:0;margin:4px 6px;border-radius:12px;padding:8px 10px}#msgw .mgu.on{background:var(--card);box-shadow:0 1px 6px rgba(0,0,0,.12);font-weight:600}#msgw .mgu:hover{background:color-mix(in srgb,var(--card) 70%,var(--col))}#msgw .mgu .av{width:28px;height:28px;font-size:10px}#msgw .mgu b{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 1px 4px rgba(220,38,38,.5)}
+#msgw .mgtt{font-size:14px;background:var(--card)}
+#msgw #mgm{padding:14px 14px 8px;gap:2px;background:linear-gradient(180deg,color-mix(in srgb,var(--col) 70%,transparent),transparent)}
+#msgw .mgmsg{max-width:78%;padding:8px 12px 6px;border-radius:16px 16px 16px 4px;background:var(--card);border:1px solid var(--line);box-shadow:0 1px 2px rgba(0,0,0,.06);margin-top:6px}#msgw .mgmsg.gp{margin-top:1px}
+#msgw .mgmsg.me{border:0;color:#fff;background:linear-gradient(135deg,var(--gr1),var(--gr2));border-radius:16px 16px 4px 16px;box-shadow:0 2px 8px rgba(11,143,106,.28)}#msgw .mgmsg b{color:var(--gr2);font-size:11.5px}#msgw .mgmsg small{text-align:right;opacity:.7;font-size:10px}#msgw .mgmsg.me small{color:#fff}
+#msgw .mgin{align-items:flex-end;padding:10px 12px;gap:8px;background:var(--card)}#msgw .mgin textarea{border-radius:20px;padding:10px 14px;background:var(--col);border:1px solid transparent;min-height:42px;max-height:120px;line-height:1.35}#msgw .mgin textarea:focus{outline:0;border-color:var(--gr1);background:var(--card);box-shadow:0 0 0 3px color-mix(in srgb,var(--gr1) 25%,transparent)}
+#msgw #mgem{border:0;background:var(--col);border-radius:50%;width:42px;height:42px;padding:0;font-size:19px;flex:none}#msgw #mgs.snd{font-size:0}
+@media(max-width:700px){#mdlg{border-radius:0}#mdlg>.mhd{padding-top:max(14px,env(safe-area-inset-top))}#mdlg #thl{max-height:none;flex:1}#mdlg #thr{height:calc(100dvh - 70px)}#mdlg #mbody{display:flex;flex-direction:column}#msgw #mgu{width:74px}#msgw .mgu span,#msgw .mgu b{font-size:11px}#msgw .mgu .av{display:none}#msgw .mgu{padding:8px 6px}.mrow .bub{max-width:84%}}
 .brand{display:flex;flex-direction:column;line-height:1.05;margin-right:6px;padding-right:14px;border-right:1px solid color-mix(in srgb,var(--hfg) 28%,transparent)}.brand b{font-size:23px;letter-spacing:.2px}.brand small{font-size:9px;opacity:.75;letter-spacing:.6px;margin-top:3px;text-transform:uppercase}
 header .brand{color:var(--hfg)}
 #hrow th{border-right:1px solid color-mix(in srgb,var(--line) 70%,var(--mut))}#hrow th:last-child{border-right:0}
@@ -184,7 +225,7 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 #mhdg{width:min(760px,96vw)}#mhdg td,#mhdg th{vertical-align:top}#mhdg td:first-child,#mhdg td:last-child button{white-space:nowrap}#mhdg .rctl input[type=date]{width:auto}#mhad{width:min(420px,94vw)}
 dialog{resize:both;overflow:auto;min-width:260px;min-height:110px;max-width:98vw;max-height:98vh}dialog.dmv{margin:0;position:fixed}dialog>.acts:first-child,dialog>b:first-child,dialog>.dh{cursor:move}
 #sidetabs{position:fixed;right:0;top:58px;z-index:30;display:flex;flex-direction:column;gap:4px}.stab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:46px;height:42px;padding:2px 2px;border-radius:12px 0 0 12px;border:1px solid color-mix(in srgb,var(--pc) 55%,transparent);border-right:0;background:color-mix(in srgb,var(--pc) 26%,var(--card));color:color-mix(in srgb,var(--pc) 60%,#000);cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,.18);transition:transform .2s,opacity .2s;position:relative}#sidetabs.hid .stab{transform:translateX(70%);opacity:.85}.stab::after{content:"";position:absolute;left:-16px;top:0;bottom:0;width:16px}#sidetabs.hid .stab:hover{transform:none;opacity:1}.stab i{font-style:normal;font-size:16px;line-height:1.1}.stab span{font-size:10px;font-weight:700;line-height:1.1}.stab b{position:absolute;top:-3px;left:-3px;background:#dc2626;color:#fff;border-radius:9px;font-size:10px;padding:0 5px}@media(prefers-color-scheme:dark){.stab{color:color-mix(in srgb,var(--pc) 55%,#fff)}}@media print{#sidetabs{display:none}}
-#msgw{position:fixed;top:90px;left:calc(50vw - 20px);width:min(640px,96vw);height:min(520px,80vh);min-width:320px;min-height:260px;max-width:98vw;max-height:96vh;resize:both;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:41;display:flex;flex-direction:column;overflow:hidden}#msgw[hidden]{display:none!important}.mgh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);cursor:move;user-select:none;touch-action:none}.mgbody{display:flex;flex:1;min-height:0}#mgu{width:170px;border-right:1px solid var(--line);overflow:auto;flex:none}.mgu{display:flex;align-items:center;gap:6px;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--line)}.mgu:hover{background:var(--col)}.mgu.on{background:var(--col);font-weight:600;box-shadow:inset 3px 0 0 var(--pri)}.mgu span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mgu b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px}.mgr{flex:1;display:flex;flex-direction:column;min-width:0}.mgtt{padding:8px 12px;font-weight:600;border-bottom:1px solid var(--line)}#mgm{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}.mgmsg{max-width:80%;padding:6px 10px;border-radius:12px;background:var(--col);align-self:flex-start;white-space:pre-wrap;word-break:break-word}.mgmsg.me{align-self:flex-end;background:color-mix(in srgb,var(--pri) 20%,var(--card))}.mgmsg small{display:block;color:var(--mut);font-size:11px;margin-top:2px}.mgin{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}.mgin textarea{flex:1;resize:none;box-sizing:border-box}#mge{position:absolute;bottom:100%;left:8px;width:min(300px,90%);max-height:170px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);padding:6px;display:flex;flex-wrap:wrap;gap:2px;z-index:2}#mge[hidden]{display:none}#mge span{font-size:20px;padding:3px 5px;cursor:pointer;border-radius:6px}#mge span:hover{background:var(--col)}@media(max-width:700px){#msgw{left:2vw!important;width:96vw!important}#mgu{width:110px}}
+#msgw{position:fixed;top:90px;left:calc(50vw - 20px);width:min(640px,96vw);height:min(520px,80vh);min-width:320px;min-height:260px;max-width:98vw;max-height:96vh;resize:both;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:41;display:flex;flex-direction:column;overflow:hidden}#msgw[hidden]{display:none!important}.mgh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line);cursor:move;user-select:none;touch-action:none}.mgbody{display:flex;flex:1;min-height:0}#mgu{width:170px;border-right:1px solid var(--line);overflow:auto;flex:none}.mgu{display:flex;align-items:center;gap:6px;padding:8px 10px;cursor:pointer;border-bottom:1px solid var(--line)}.mgu:hover{background:var(--col)}.mgu.on{background:var(--col);font-weight:600;box-shadow:inset 3px 0 0 var(--pri)}.mgu>span:not(.av){flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mgu b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px}.mgr{flex:1;display:flex;flex-direction:column;min-width:0}.mgtt{padding:8px 12px;font-weight:600;border-bottom:1px solid var(--line)}#mgm{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:6px}.mgmsg{max-width:80%;padding:6px 10px;border-radius:12px;background:var(--col);align-self:flex-start;white-space:pre-wrap;word-break:break-word}.mgmsg.me{align-self:flex-end;background:color-mix(in srgb,var(--pri) 20%,var(--card))}.mgmsg small{display:block;color:var(--mut);font-size:11px;margin-top:2px}.mgin{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}.mgin textarea{flex:1;resize:none;box-sizing:border-box}#mge{position:absolute;bottom:100%;left:8px;width:min(300px,90%);max-height:170px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);padding:6px;display:flex;flex-wrap:wrap;gap:2px;z-index:2}#mge[hidden]{display:none}#mge span{font-size:20px;padding:3px 5px;cursor:pointer;border-radius:6px}#mge span:hover{background:var(--col)}@media(max-width:700px){#msgw{left:2vw!important;width:96vw!important}#mgu{width:110px}}
 #rside{position:fixed;top:90px;left:calc(50vw - 20px);width:50vw;height:50vh;min-width:300px;min-height:260px;max-width:98vw;max-height:96vh;resize:both;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.3);z-index:40;display:flex;flex-direction:column;overflow:hidden}#rside .rh{cursor:move;user-select:none;touch-action:none}#rside [hidden],#rside[hidden]{display:none!important}#rside .rh{display:flex;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line)}#rside .rtabs{display:flex;border-bottom:1px solid var(--line)}#rside .rtabs button{flex:1;border:0;border-radius:0;background:none;padding:8px 4px}#rside .rtabs button.on{border-bottom:2px solid var(--pri);font-weight:600}#rside .rbody{padding:10px;overflow:auto;flex:1}#rside label{display:block;font-size:12px;color:var(--mut);margin-bottom:8px}#rside input,#rside select,#rside textarea{width:100%;box-sizing:border-box}#rside .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.rres{background:var(--col);border-radius:8px;padding:10px;margin:8px 0;font-size:14px;line-height:1.7}.rres b{font-size:18px}.wki{padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.wki:hover{background:var(--col)}.wki small{color:var(--mut);display:block}@media(max-width:700px){#rside{width:96vw!important;left:2vw!important}}.rt.wl th,.rt.wl td{padding:3px 5px}.rinv{border:1px solid var(--line);border-radius:8px;padding:14px;margin:8px 0}
 #pbox{display:none}
 .pg{background:#fff;color:#000;font-family:Arial,Helvetica,sans-serif;margin:10px 0;box-shadow:0 1px 6px rgba(0,0,0,.25);overflow:auto}
@@ -365,7 +406,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <div id="cpanel" aria-label="Companies"><div class="cph"><b>Companies</b><button id="cpx" title="Close">✕</button></div><input id="cps" placeholder="Search companies" autocomplete="off"><div id="cpl"></div></div>
 <div id="bar" hidden></div>
 <aside id="msgw" hidden><div class="mgh"><b style="flex:1">💬 Messages</b><button id="mgx" title="Close">✕</button></div>
- <div class="mgbody"><div id="mgu"></div><div class="mgr"><div id="mgt" class="mgtt"></div><div id="mgm"></div><div class="mgin" style="position:relative"><div id="mge" hidden></div><button id="mgem" type="button" title="Emoji">😊</button><textarea id="mgi" rows="2" placeholder="Write a message… (Enter to send, Shift+Enter for a new line)" maxlength="2000"></textarea><button class="p" id="mgs">Send</button></div></div></div></aside>
+ <div class="mgbody"><div id="mgu"></div><div class="mgr"><div id="mgt" class="mgtt"></div><div id="mgm"></div><div class="mgin" style="position:relative"><div id="mge" hidden></div><button id="mgem" type="button" title="Emoji">😊</button><textarea id="mgi" rows="1" placeholder="Write a message…" title="Enter to send, Shift+Enter for a new line" maxlength="2000"></textarea><button class="snd" id="mgs" title="Send (Enter)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l12 2-12 2z"/></svg></button></div></div></div></aside>
 <aside id="rside" hidden><div class="rh"><b style="flex:1">📐 Tools</b><button id="rsx" title="Close">✕</button></div>
  <div class="rtabs"><button data-rt="ct" class="on">Containers</button><button data-rt="cv">Convert</button><button data-rt="wk">Wiki</button></div>
  <div id="rt_ct" class="rbody">
@@ -403,10 +444,9 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  <label>Group</label><select id="gp"></select>
  <label>Notes</label><textarea id="nt" rows="3"></textarea>
  <div id="xf"></div>
- <div id="thr" hidden><b>💬 Discussion</b><div id="thl"></div>
-  <div style="display:flex;gap:6px;margin-bottom:6px"><select id="cto"></select><select id="ckind"><option value="comment">Comment</option><option value="instruction">📌 Instruction</option></select></div>
-  <textarea id="cbody" rows="2" placeholder="Write a message… (Ctrl+Enter to send)"></textarea>
-  <div class="acts"><span class="sp"></span><button type="button" id="csend" class="p">Send</button></div></div>
+ <div id="thr" hidden><b class="thh">💬 Discussion</b><div id="thl"></div>
+  <div class="cmp"><div class="cmo"><select id="cto"></select><select id="ckind"><option value="comment">💬 Comment</option><option value="instruction">📌 Instruction</option></select></div>
+  <div class="cmr"><textarea id="cbody" rows="1" placeholder="Write a message…"></textarea><button type="button" id="csend" class="snd" title="Send (Ctrl+Enter)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4 21 12 3.4 3.6 3 10l12 2-12 2z"/></svg></button></div><div class="hint">Ctrl+Enter to send</div></div></div>
  <div class="acts"><button id="del" style="display:none">Delete</button><button id="tlb" type="button" title="Log hours for this task">⏱ Hours</button><span class="sp"></span><button id="cx">Cancel</button><button class="p" id="sv">Save</button></div>
 </dialog>
 
@@ -494,7 +534,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  <b style="font-size:13px">Rate per person for THIS invoice only <span style="font-weight:400;color:var(--mut)">(blank = rate set in the company window)</span></b><div id="prl" class="pgrid"></div>
  <div class="acts"><button id="pdel" class="danger">Delete</button><span class="sp"></span><button id="pcc2">Cancel</button><button class="p" id="ivsv">Save</button></div>
 </dialog>
-<dialog id="mdlg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="mord" style="color:var(--pri)"></b><div id="mtit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl">Close</button></div><div id="mbody"></div></dialog>
+<dialog id="mdlg"><div class="acts mhd"><span class="mic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></span><div class="mti"><b id="mord"></b><div id="mtit" style="overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl" title="Close">✕</button></div><div id="mbody"></div></dialog>
 <dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
 <dialog id="odlg"><b>Overlap rules</b>
  <p style="color:var(--mut);font-size:13px;margin:8px 0">A task is flagged ⚠ when the same person has another open task on overlapping dates, in any company. These rules apply to everyone.</p>
@@ -1198,6 +1238,17 @@ function openDlg(t,grp){
   thrHome();thrInit(t);document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
   $("#dlg").showModal();$("#t").focus();if(t)thrLoad(true);
 }
+const avH=n=>{let h=0;for(const c of String(n||"?"))h=(h*31+c.charCodeAt(0))%360;return h};
+const avI=n=>{const w=String(n||"?").trim().split(/\s+/);return((w[0][0]||"?")+(w.length>1?w[w.length-1][0]:"")).toUpperCase()};
+const avHtml=(n,c="")=>`<span class="av ${c}" style="--h:${avH(n)}" title="${ea(n)}">${esc(avI(n))}</span>`;
+function dayLbl(d){const t=new Date(),k=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"),y=new Date(t.getTime()-864e5);
+  return d===k(t)?"Today":d===k(y)?"Yesterday":new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
+function thrHtml(r){let last="",lu=0,out="";
+  for(const c of r.comments){const day=String(c.created_at).slice(0,10),mine=c.user_id==r.me,ins=c.kind==="instruction",nw=c.id>r.prev&&!mine;
+    if(day!==last){out+=`<div class="dsep">${esc(dayLbl(day))}</div>`;last=day;lu=0}
+    const gp=lu===c.user_id&&!ins;lu=c.user_id;
+    out+=`<div class="mrow${mine?" me":""}${gp?" gp":""}${ins?" ins":""}${nw?" new":""}">${avHtml(c.name,"sm")}<div class="bub">${mine||me.role==="admin"?`<button class="x" data-cd="${c.id}" title="Delete">✕</button>`:""}${!mine&&!gp||ins?`<span class="who">${esc(c.name)}${c.to_name?` <i>→ ${esc(c.to_name)}</i>`:""}</span>`:(c.to_name&&!mine?`<span class="who"><i>→ ${esc(c.to_name)}</i></span>`:"")}${esc(c.body)}<span class="tm">${mine&&c.to_name?"→ "+esc(c.to_name)+" · ":""}${esc(String(c.created_at).slice(11,16))}</span></div></div>`}
+  return out}
 const fmtT=s=>(s||"").slice(0,16).replace("T"," ");
 function thrHome(){const d=$("#dlg"),ref=$("#del").parentNode;if($("#thr").parentNode!==d)d.insertBefore($("#thr"),ref)}
 function openMsg(id){const t=tasks.find(x=>x.id==id);if(!t)return;
@@ -1205,7 +1256,7 @@ function openMsg(id){const t=tasks.find(x=>x.id==id);if(!t)return;
   thrInit(t);$("#mbody").appendChild($("#thr"));document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
   $("#mdlg").showModal();thrLoad(true);$("#cbody").focus()}
 $("#mcl").onclick=()=>$("#mdlg").close();
-$("#mdlg").addEventListener("close",()=>{thrHome();$("#thr").hidden=true;thrId=null;if(dirty)poll()});
+$("#mdlg").addEventListener("close",()=>{if($("#thr").parentNode===$("#mbody")){thrHome();$("#thr").hidden=true;thrId=null}if(dirty)poll()});
 $("#mopen").onclick=()=>{const id=thrId,t=tasks.find(x=>x.id==id);$("#mdlg").close();if(t)openDlg(t)};
 function thrInit(t){
   thrId=t?t.id:null;$("#thr").hidden=!t;$("#thl").innerHTML="";$("#cbody").value="";if(!t)return;
@@ -1215,7 +1266,7 @@ function thrInit(t){
 async function thrLoad(first){
   if(!thrId||!($("#dlg").open||$("#mdlg").open))return;
   try{const r=await api("cm_list",{task_id:thrId}),k=r.comments.map(c=>c.id).join(",");if(!first&&k===thrKey)return;thrKey=k;
-    $("#thl").innerHTML=r.comments.length?r.comments.map(c=>`<div class="msg${c.kind==="instruction"?" ins":""}${c.id>r.prev&&c.user_id!=r.me?" new":""}"><small>${c.user_id==r.me||me.role==="admin"?`<button class="x" data-cd="${c.id}" title="Delete">✕</button>`:""}<b>${esc(c.name)}</b>${c.kind==="instruction"?" 📌 instruction":""}${c.to_name?" → "+esc(c.to_name):""} · ${esc(fmtT(c.created_at))}</small>${esc(c.body)}</div>`).join(""):`<small style="color:var(--mut)">No messages yet.</small>`;
+    $("#thl").innerHTML=r.comments.length?thrHtml(r):`<div class="mempty"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>No messages yet.<br><small>Write the first one below.</small></div>`;
     $("#thl").scrollTop=1e9;
     if(first){const t=tasks.find(x=>x.id==thrId);if(cmeta[thrId]){cmeta[thrId]=[cmeta[thrId][0],0,0];render()}api("ping").catch(()=>{});inboxRefresh()}
   }catch(e){}
@@ -1223,12 +1274,14 @@ async function thrLoad(first){
 async function inboxRefresh(){try{const r=await api("inbox");inboxN=r.items.length;bellUpd()}catch(e){}}
 async function thrSend(){
   const b=$("#cbody").value.trim();if(!b||!thrId)return;
-  try{await api("cm_add",{task_id:thrId,body:b,kind:$("#ckind").value,to_user_id:$("#cto").value||0});$("#cbody").value="";thrKey="";await thrLoad(true);dirty=true}catch(e){alert(e.message)}
+  try{await api("cm_add",{task_id:thrId,body:b,kind:$("#ckind").value,to_user_id:$("#cto").value||0});$("#cbody").value="";grow($("#cbody"));thrKey="";await thrLoad(true);dirty=true}catch(e){alert(e.message)}
 }
 $("#csend").onclick=thrSend;
+const grow=t=>{t.style.height="auto";t.style.height=Math.min(t.scrollHeight,130)+"px"};
+$("#cbody").addEventListener("input",e=>grow(e.target));
 $("#cbody").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();thrSend()}});
 $("#ckind").onchange=()=>{if($("#ckind").value==="instruction"&&!$("#cto").value&&$("#cto").options.length>1)$("#cto").selectedIndex=1};
-$("#thl").addEventListener("click",async e=>{const id=e.target.dataset.cd;if(!id)return;try{await api("cm_del",{id});thrKey="";thrLoad(true);dirty=true}catch(x){alert(x.message)}});
+$("#thl").addEventListener("click",async e=>{const id=e.target.closest("[data-cd]")?.dataset.cd;if(!id)return;try{await api("cm_del",{id});thrKey="";thrLoad(true);dirty=true}catch(x){alert(x.message)}});
 $("#bell").onclick=async()=>{try{const r=await api("inbox");$("#ilist").innerHTML=r.items.length?r.items.map(i=>`<div class="ib" data-w="${i.ws_id}" data-t="${i.task_id}"><small style="color:var(--mut)">${esc(i.from_name)}${i.kind==="instruction"?" 📌 instruction":""} · ${esc(i.ws_name)} · ${esc(fmtT(i.created_at))}</small><br><b>${esc(i.title)}</b><br>${esc(i.body.length>140?i.body.slice(0,140)+"…":i.body)}</div>`).join(""):`<p style="color:var(--mut)">Nothing new.</p>`;$("#idlg").showModal()}catch(e){alert(e.message)}};
 $("#icl").onclick=()=>$("#idlg").close();
 $("#iall").onclick=async()=>{try{await api("inbox_read");$("#idlg").close();await load(true)}catch(e){alert(e.message)}};
@@ -1737,7 +1790,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=154;
+const BUILD=155;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
@@ -1750,10 +1803,15 @@ function mgBadge(n){const b=$("#mgn");b.hidden=!n;b.textContent=n;{const c=$("#r
   mgPrev=n}
 async function mgUsersLoad(){try{const r=await api("msg_users",{});mgUsers=r.users;mgTeam=r.team;mgUsersDraw()}catch(e){}}
 function mgUsersDraw(){const l=[...mgUsers].sort((a,b)=>b.last-a.last||a.name.localeCompare(b.name));
-  $("#mgu").innerHTML=[`<div class="mgu${mgPeer===0?" on":""}" data-mg="0"><span>👥 Team (everyone)</span>${mgTeam.n?`<b>${mgTeam.n}</b>`:""}</div>`].concat(l.map(u=>`<div class="mgu${mgPeer===u.id?" on":""}" data-mg="${u.id}"><span>${esc(u.name)}</span>${u.n?`<b>${u.n}</b>`:""}</div>`)).join("");
+  $("#mgu").innerHTML=[`<div class="mgu${mgPeer===0?" on":""}" data-mg="0"><span class="av tm">👥</span><span>Team</span>${mgTeam.n?`<b>${mgTeam.n}</b>`:""}</div>`].concat(l.map(u=>`<div class="mgu${mgPeer===u.id?" on":""}" data-mg="${u.id}">${avHtml(u.name)}<span>${esc(u.name)}</span>${u.n?`<b>${u.n}</b>`:""}</div>`)).join("");
   const u=mgUsers.find(x=>x.id===mgPeer);$("#mgt").textContent=mgPeer===0?"👥 Team — everyone can read this":(u?u.name:"")}
+let mgLU=0,mgLD="";
 function mgAdd(ms){const box=$("#mgm"),near=box.scrollHeight-box.scrollTop-box.clientHeight<80;
-  for(const m of ms){if(m.id<=mgLast)continue;mgLast=m.id;const d=document.createElement("div");d.className="mgmsg"+(m.mine?" me":"");d.innerHTML=(mgPeer===0&&!m.mine?`<b>${esc(m.name)}</b><br>`:"")+esc(m.body)+`<small>${esc(String(m.created_at).slice(5,16))}</small>`;box.appendChild(d)}
+  if(mgLast===0){mgLU=0;mgLD=""}
+  for(const m of ms){if(m.id<=mgLast)continue;mgLast=m.id;
+    const day=String(m.created_at).slice(0,10);if(day!==mgLD){const sp=document.createElement("div");sp.className="dsep";sp.textContent=dayLbl(day);box.appendChild(sp);mgLD=day;mgLU=0}
+    const key=m.mine?-1:(m.name||"?"),gp=mgLU===key;mgLU=key;
+    const d=document.createElement("div");d.className="mgmsg"+(m.mine?" me":"")+(gp?" gp":"");d.innerHTML=(mgPeer===0&&!m.mine&&!gp?`<b>${esc(m.name)}</b><br>`:"")+esc(m.body)+`<small>${esc(String(m.created_at).slice(11,16))}</small>`;box.appendChild(d)}
   if(ms.length&&near||box.dataset.first==="1"){box.scrollTop=box.scrollHeight;box.dataset.first=""}}
 async function mgLoad(){try{const r=await api("msg_list",{peer:mgPeer,after:mgLast});mgAdd(r.messages)}catch(e){}}
 async function mgSel(p){mgPeer=p;mgLast=0;$("#mgm").innerHTML="";$("#mgm").dataset.first="1";mgUsersDraw();await mgLoad();mgUsersLoad()}
@@ -1762,16 +1820,17 @@ function mgStart(){mgSel(mgPeer);clearInterval(mgTimer);mgTimer=setInterval(()=>
   document.addEventListener("scroll",chk,true);window.addEventListener("resize",place);place();setTimeout(place,600)})();
 $("#mgb").onclick=()=>{const w=$("#msgw");w.hidden=!w.hidden;if(w.hidden){clearInterval(mgTimer);return}
   let g=null;try{g=JSON.parse(localStorage.getItem("tf_mgg")||"null")}catch(e){}if(g&&g.w>=320){w.style.left=Math.min(Math.max(0,g.l),innerWidth-120)+"px";w.style.top=Math.min(Math.max(0,g.t),innerHeight-60)+"px";w.style.width=g.w+"px";w.style.height=g.h+"px"}
+  if(!g){const hd=document.querySelector("header");if(hd)w.style.top=Math.max(12,Math.round(hd.getBoundingClientRect().bottom+10))+"px"}
   mgUsersLoad().then(()=>{const first=mgUsers.find(u=>u.n);if(first&&mgPeer===0&&!mgTeam.n)mgPeer=first.id;mgStart()});$("#mgi").focus()};
 $("#mgx").onclick=()=>{$("#msgw").hidden=true;clearInterval(mgTimer)};
 $("#mgu").addEventListener("click",e=>{const d=e.target.closest("[data-mg]");if(d)mgSel(+d.dataset.mg)});
-async function mgSend(){const t=$("#mgi").value.trim();if(!t)return;try{await api("msg_send",{peer:mgPeer,body:t});$("#mgi").value="";$("#mgm").dataset.first="1";await mgLoad();mgUsersLoad()}catch(e){alert(e.message)}}
+async function mgSend(){const t=$("#mgi").value.trim();if(!t)return;try{await api("msg_send",{peer:mgPeer,body:t});$("#mgi").value="";$("#mgi").style.height="";$("#mgm").dataset.first="1";await mgLoad();mgUsersLoad()}catch(e){alert(e.message)}}
 const MGE="😀 😃 😄 😁 😆 😅 😂 🤣 😊 🙂 😉 😍 😘 😎 🤔 😐 😴 😢 😭 😡 🙏 👍 👎 👌 ✌️ 👏 🙌 💪 👀 🔥 ⭐ ✅ ❌ ⚠️ ❓ ❗ 💡 📌 📎 📅 ⏰ 📐 📏 🏗️ 🏠 📄 📁 💬 🎉 ☕ 🍽️ ❤️ 💯 🤝 👋".split(" ");
 $("#mge").innerHTML=MGE.map(e=>`<span>${e}</span>`).join("");
 $("#mgem").onclick=e=>{e.stopPropagation();$("#mge").hidden=!$("#mge").hidden};
 $("#mge").addEventListener("click",e=>{const s=e.target.closest("span");if(!s)return;const t=$("#mgi"),a=t.selectionStart??t.value.length,b=t.selectionEnd??a;t.value=t.value.slice(0,a)+s.textContent+t.value.slice(b);const p=a+s.textContent.length;t.focus();t.setSelectionRange(p,p)});
 document.addEventListener("click",e=>{if(!e.target.closest("#mge,#mgem"))$("#mge").hidden=true});
-$("#mgs").onclick=mgSend;$("#mgi").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();mgSend()}});
+$("#mgs").onclick=mgSend;$("#mgi").addEventListener("input",e=>{const t=e.target;t.style.height="auto";t.style.height=Math.min(t.scrollHeight,120)+"px"});$("#mgi").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();mgSend()}});
 (()=>{const s=$("#msgw");let d=null;const save=()=>{if(s.hidden)return;const r=s.getBoundingClientRect();try{localStorage.setItem("tf_mgg",JSON.stringify({l:Math.round(r.left),t:Math.round(r.top),w:Math.round(r.width),h:Math.round(r.height)}))}catch(e){}};
   s.querySelector(".mgh").addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;const r=s.getBoundingClientRect();d={x:e.clientX-r.left,y:e.clientY-r.top};e.target.setPointerCapture&&e.target.setPointerCapture(e.pointerId)});
   document.addEventListener("pointermove",e=>{if(!d)return;s.style.left=Math.min(Math.max(-s.offsetWidth+120,e.clientX-d.x),innerWidth-120)+"px";s.style.top=Math.min(Math.max(0,e.clientY-d.y),innerHeight-50)+"px"});
