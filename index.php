@@ -368,7 +368,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 #copop{position:fixed;z-index:70;min-width:200px;max-height:50vh;overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:8px}#copop[hidden]{display:none}
 #copop .coh{font-size:12px;font-weight:600;color:var(--mut);margin:0 4px 6px}#copop label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer}#copop label:hover{background:var(--col)}#copop input{width:auto}
 
-/* ---- Layout looks (set in Colours): lk-n Refined Navy, lk-l Light, lk-d Floating dock ---- */
+/* ---- Layout looks (set in Appearance): lk-n Refined Navy, lk-l Light, lk-d Floating dock ---- */
 @media(min-width:701px){
 html.lk-n header,html.lk-d header{background:linear-gradient(100deg,color-mix(in srgb,var(--nv) 78%,#000),var(--nv) 70%,color-mix(in srgb,var(--nv) 82%,#38bdf8))}
 html.lk-n header:after,html.lk-d header:after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,#38bdf8 30%,#818cf8 70%,transparent);opacity:.85;pointer-events:none}
@@ -382,6 +382,7 @@ html.lk-n .brand b,html.lk-l .brand b,html.lk-d .brand b{font-size:21px;letter-s
 html.lk-n #side .rb[data-l],html.lk-l #side .rb[data-l]{height:50px;flex-direction:column;gap:2px;border-radius:12px}
 html.lk-n #side .rb[data-l]:after,html.lk-l #side .rb[data-l]:after{content:attr(data-l);font-size:9.5px;font-weight:500;line-height:1;letter-spacing:.2px}
 html.lk-n #side,html.lk-n body.sc #side{width:64px}html.lk-n body,html.lk-n body.sc{padding-left:64px}html.lk-n #cpanel{left:64px}
+html.lk-n body.rh,html.lk-n body.rh.sc{padding-left:44px}
 html.lk-n #side .rb:hover,html.lk-n #side .rb.on{background:color-mix(in srgb,var(--sf) 20%,transparent)}
 html.lk-n body.rh #side .rb[data-l]:after,html.lk-l body.rh:not(.ro) #side .rb[data-l]:after{display:none}
 html.lk-n body.rh #side .rb#rhome,html.lk-n body.rh #side .rb#rco{flex-direction:row;height:42px}
@@ -416,6 +417,12 @@ html.lk-d body.rh,html.lk-d body.rh.sc{padding-left:44px}
 html.lk-d header{margin-left:-78px;padding-left:96px!important}
 html.lk-n #side,html.lk-l #side,html.lk-d #side{z-index:48}
 html.lk-d body.rh #side{z-index:48}
+/* dock look + hidden side bar: behave like the classic hidden bar (edge strip + Home/Companies tabs); hovering the strip slides the dock out */
+html.lk-d body.rh:not(.ro) #side{top:0!important;bottom:0!important;left:0!important;width:56px!important;height:auto!important;max-height:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:transparent!important;padding:10px 0 12px!important}
+html.lk-d body.rh.ro #side{top:var(--dk,78px);bottom:auto;left:12px;width:58px;height:auto;border:1px solid #dbe1ee;border-radius:18px;background:#fff;box-shadow:0 10px 30px rgba(20,32,58,.22);padding:10px 0}
+html.lk-d body.rh.ro #side .rb#rhome,html.lk-d body.rh.ro #side .rb#rco{position:relative;left:auto;top:auto;width:42px;height:42px;border:0;border-radius:11px;background:transparent;color:var(--sf);box-shadow:none}
+html.lk-d body.rh.ro #side .rb#rhome:hover,html.lk-d body.rh.ro #side .rb#rco:hover{background:#e6eeff;color:#1d4ed8}
+html.lk-d body.rh.ro #side .sf{opacity:1;pointer-events:auto;transform:none}
 html.lk-d #setw:has(#smenu:not([hidden])) #sbtn:after,html.lk-d #uw:has(#umenu:not([hidden])) #ubtn:after{display:none!important}
 html.lk-d #side .rb[data-l]:hover:after{display:block}
 }
@@ -444,7 +451,7 @@ html.lk-d #side .rb[data-l]:hover:after{display:block}
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
    <button id="sm">🏷 Statuses</button>
-   <button id="pm">🎨 Colours</button>
+   <button id="pm">🎨 Appearance</button>
    <button id="cm">➕ Column</button>
    <button id="dm">✏ Drawing types</button>
    <button id="rm" hidden>🧾 Worklog &amp; invoice</button>
@@ -543,7 +550,7 @@ html.lk-d #side .rb[data-l]:hover:after{display:block}
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
-<dialog id="pdlg"><b>Top bar colours</b>
+<dialog id="pdlg"><b>Appearance</b>
  <div id="pprev">TaskFlow – preview text</div>
  <div style="display:flex;gap:16px;align-items:center;margin-bottom:10px"><label style="display:flex;gap:8px;align-items:center;margin:0">Bar <input type="color" id="pbg" style="width:52px;height:34px;padding:2px"></label><label style="display:flex;gap:8px;align-items:center;margin:0">Text <input type="color" id="pfg" style="width:52px;height:34px;padding:2px"></label></div>
  <div id="psw" style="display:flex;gap:8px;flex-wrap:wrap"></div>
@@ -1849,7 +1856,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=164;
+const BUILD=165;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
