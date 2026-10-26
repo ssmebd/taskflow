@@ -1472,6 +1472,9 @@ function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden)return;b.classList.remove("ro")}
 try{if(localStorage.getItem("tf_rh")==="1")document.body.classList.add("rh")}catch(e){}
 $("#rco").addEventListener("click",()=>{if(document.body.classList.contains("rh"))document.body.classList.add("ro")});
+function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;t.style.top=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14))+"px"}
+let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
+addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
 let reT=0;$("#side").addEventListener("mouseenter",()=>{const b=document.body;if(!b.classList.contains("rh")||b.classList.contains("ro"))return;clearTimeout(reT);reT=setTimeout(()=>b.classList.add("ro"),380)});$("#side").addEventListener("mouseleave",()=>clearTimeout(reT));
 for(const id of ["side","cpanel"])$("#"+id).addEventListener("mouseleave",()=>setTimeout(rhChk,450));
@@ -1706,7 +1709,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=140;
+const BUILD=141;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
