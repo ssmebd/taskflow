@@ -1,8 +1,8 @@
 <?php
-const BUILD=147;
+const BUILD=148;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-if(PHP_SAPI==='cli'){$r=(($argv[1]??'')==='backup')?bk_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup'];echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
+if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
 $TASKA=['save','field','delete','dup','co_set','task_move','task_order','tl_add','tl_rev','cm_add'];
 $AUD_T='';
 function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
@@ -83,6 +83,79 @@ function bk_run($db,$force=false){
   }
   if($dir!=='')@file_put_contents($dir.'/last.json',json_encode($res));
   aud_log($db,0,'system','activity','backup',$res['ok']?('Backup '.$res['file'].' ('.round($res['size']/1024).' KB)'.($res['emailed']?', emailed':'').($res['err']?' - '.$res['err']:'')):'Backup FAILED: '.$res['err']);
+  return $res;
+}
+
+// ---- Worklog report: last 15 days, all companies, Excel file ----
+function wl_x($s){return htmlspecialchars((string)$s,ENT_XML1|ENT_QUOTES,'UTF-8');}
+function wl_col($i){$s='';$i++;while($i>0){$m=($i-1)%26;$s=chr(65+$m).$s;$i=intdiv($i-$m-1,26);}return $s;}
+function wl_sheet($rows,$widths,$numCols=[]){
+  $x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>';
+  foreach($widths as $i=>$w)$x.='<col min="'.($i+1).'" max="'.($i+1).'" width="'.$w.'" customWidth="1"/>';
+  $x.='</cols><sheetData>';
+  foreach($rows as $ri=>$r){
+    $x.='<row r="'.($ri+1).'">';
+    foreach($r as $ci=>$v){
+      $ref=wl_col($ci).($ri+1);$st=$ri===0?' s="1"':'';
+      if($ri>0&&in_array($ci,$numCols,true)&&is_numeric($v))$x.='<c r="'.$ref.'" s="2"><v>'.$v.'</v></c>';
+      else $x.='<c r="'.$ref.'" t="inlineStr"'.$st.'><is><t xml:space="preserve">'.wl_x($v).'</t></is></c>';
+    }
+    $x.='</row>';
+  }
+  return $x.'</sheetData></worksheet>';
+}
+function wl_data($db,$days=15){
+  $q=$db->prepare("SELECT l.work_date,COALESCE(u.name,'Former member') AS person,COALESCE(w.name,'') AS company,t.order_no,t.title,t.customer,t.drawing_type,l.rev,l.kind,l.hours,l.note FROM time_logs l LEFT JOIN users u ON u.id=l.user_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN tasks t ON t.id=l.task_id WHERE l.work_date>=DATE_SUB(CURDATE(),INTERVAL ? DAY) ORDER BY l.work_date DESC,w.name,u.name,l.id");
+  $q->execute([$days]);return $q->fetchAll();
+}
+function wl_build($db,$path,$days=15){
+  $d=wl_data($db,$days);
+  $rows=[['Date','Person','Company','Order No.','Task','Customer','Drawing type','Rev','Type','Hours','Note']];
+  $tot=[];$grand=0;
+  foreach($d as $r){
+    $h=(float)$r['hours'];$ot=$r['kind']==='OT';
+    $rows[]=[$r['work_date'],$r['person'],$r['company'],$r['order_no'],$r['title'],$r['customer'],$r['drawing_type'],$r['rev'],$ot?'OT':'Regular',$h,$r['note']];
+    $k=$r['person']."\0".$r['company'];if(!isset($tot[$k]))$tot[$k]=[$r['person'],$r['company'],0,0];
+    $tot[$k][$ot?3:2]+=$h;$grand+=$h;
+  }
+  ksort($tot);
+  $t2=[['Person','Company','Regular hours','OT hours','Total hours']];
+  foreach($tot as $v)$t2[]=[$v[0],$v[1],$v[2],$v[3],$v[2]+$v[3]];
+  $t2[]=['Total','','','',$grand];
+  $s1=wl_sheet($rows,[12,22,20,12,36,22,16,8,9,8,40],[9]);
+  $s2=wl_sheet($t2,[24,22,15,12,13],[2,3,4]);
+  $z=new ZipArchive();if($z->open($path,ZipArchive::CREATE|ZipArchive::OVERWRITE)!==true)throw new Exception('Cannot write the worklog file');
+  $z->addFromString('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  $z->addFromString('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  $z->addFromString('xl/workbook.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Worklog" sheetId="1" r:id="rId1"/><sheet name="Totals" sheetId="2" r:id="rId2"/></sheets></workbook>');
+  $z->addFromString('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  $z->addFromString('xl/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.00"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCF3EA"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+  $z->addFromString('xl/worksheets/sheet1.xml',$s1);$z->addFromString('xl/worksheets/sheet2.xml',$s2);
+  $z->close();
+  return ['rows'=>count($d),'hours'=>$grand];
+}
+function wl_files($dir){$o=[];foreach(glob($dir.'/worklog-????-??-??_??-??.xlsx')?:[] as $f)$o[]=['name'=>basename($f),'size'=>filesize($f),'time'=>filemtime($f)];usort($o,fn($x,$y)=>$y['time']<=>$x['time']);return $o;}
+function wl_mail($file,$name,$why){
+  $to=BACKUP_EMAIL;if(!$to)return 'No email address set';
+  $b='tf'.bin2hex(random_bytes(8));
+  $h="From: TaskFlow <backup@".bk_host().">\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
+  $m="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nTaskFlow worklog for the last 15 days, all companies.\n$why\nThe Excel file is attached: sheet 'Worklog' has every entry, sheet 'Totals' has hours per person per company.\r\n";
+  $m.="--$b\r\nContent-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"$name\"\r\n\r\n".chunk_split(base64_encode(file_get_contents($file)))."\r\n--$b--";
+  return @mail($to,'TaskFlow worklog '.substr($name,8,16),$m,$h)?'':'The server could not send the email';
+}
+function wl_run($db,$mail=true){
+  $dir=bk_dir();$res=['ok'=>false,'time'=>time(),'file'=>'','size'=>0,'rows'=>0,'hours'=>0,'emailed'=>false,'err'=>''];
+  try{
+    if($dir==='')throw new Exception('No writable folder for backups');
+    if(!class_exists('ZipArchive'))throw new Exception('This server has no zip support (ZipArchive)');
+    $name='worklog-'.date('Y-m-d_H-i').'.xlsx';$path=$dir.'/'.$name;
+    $i=wl_build($db,$path);@chmod($path,0600);
+    $res['ok']=true;$res['file']=$name;$res['size']=filesize($path);$res['rows']=$i['rows'];$res['hours']=$i['hours'];
+    if($mail){$e=wl_mail($path,$name,$i['rows'].' entries, '.round($i['hours'],2).' hours.');$res['emailed']=($e==='');if($e!=='')$res['err']='Saved, but email failed: '.$e;}
+    foreach(array_slice(wl_files($dir),30) as $f)@unlink($dir.'/'.$f['name']);
+  }catch(Throwable $e){$res['err']=$e->getMessage();}
+  if($dir!=='')@file_put_contents($dir.'/worklog_last.json',json_encode($res));
+  aud_log($db,0,'system','activity','worklog',$res['ok']?('Worklog '.$res['file'].': '.$res['rows'].' entries'.($res['emailed']?', emailed':'').($res['err']?' - '.$res['err']:'')):'Worklog FAILED: '.$res['err']);
   return $res;
 }
 function out($d){
@@ -266,13 +339,16 @@ if($a==='list'&&$W&&empty($_SESSION['aud_ws'][$W])){$_SESSION['aud_ws'][$W]=1;$w
 switch($a){
 case 'bk_list':
   admin();$d=bk_dir();$last=($d&&is_file($d.'/last.json'))?json_decode((string)file_get_contents($d.'/last.json'),true):null;
-  out(['files'=>$d?bk_files($d):[],'last'=>$last,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='']);
+  $wl=($d&&is_file($d.'/worklog_last.json'))?json_decode((string)file_get_contents($d.'/worklog_last.json'),true):null;
+  out(['files'=>$d?bk_files($d):[],'last'=>$last,'wfiles'=>$d?wl_files($d):[],'wlast'=>$wl,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='']);
+case 'wl_run':
+  admin();$r=wl_run($db,!empty($in['mail']));out(['res'=>$r]);
 case 'bk_run':
   admin();$r=bk_run($db,!empty($in['mail']));out(['res'=>$r]);
 case 'bk_get':
   admin();$f=(string)($_GET['f']??'');$d=bk_dir();
-  if(!preg_match('/^taskflow-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.sql\.gz$/',$f)||!$d||!is_file($d.'/'.$f))out(['error'=>'Backup not found']);
-  header('Content-Type: application/gzip');header('Content-Disposition: attachment; filename="'.$f.'"');header('Content-Length: '.filesize($d.'/'.$f));readfile($d.'/'.$f);exit;
+  if(!preg_match('/^(taskflow-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.sql\.gz|worklog-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.xlsx)$/',$f)||!$d||!is_file($d.'/'.$f))out(['error'=>'Backup not found']);
+  header('Content-Type: '.(substr($f,-5)==='.xlsx'?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'application/gzip'));header('Content-Disposition: attachment; filename="'.$f.'"');header('Content-Length: '.filesize($d.'/'.$f));readfile($d.'/'.$f);exit;
 case 'log_list':
   admin();aud_table($db);$w=[];$p=[];
   $k=(string)($in['kind']??'');if($k==='login'){$w[]="l.kind IN('login','fail')";}elseif($k==='activity'){$w[]="l.kind='activity'";}

@@ -423,8 +423,11 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <dialog id="bkdlg" style="width:min(640px,96vw)"><div class="acts" style="margin:0 0 6px"><b style="flex:1">💾 Backups</b><button id="bkx">Close</button></div>
  <div id="bks" style="font-size:13px;margin-bottom:8px"></div>
  <div class="acts" style="flex-wrap:wrap"><button class="p" id="bkn">Back up now</button><button id="bkm">Back up and email me a copy</button></div>
- <div id="bkl" style="max-height:40vh;overflow:auto;margin-top:8px"></div>
- <small style="color:var(--mut)">A backup is saved every 3 hours. The first one each day is also emailed. Copies from the last 24 hours are kept, then one per day for 14 days. Admin only.</small>
+ <div id="bkl" style="max-height:30vh;overflow:auto;margin-top:8px"></div>
+ <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px"><b>📊 Worklog (last 15 days, all companies)</b><div id="wls" style="font-size:13px;margin:4px 0"></div>
+ <div class="acts" style="flex-wrap:wrap"><button class="p" id="wln">Create worklog now</button><button id="wlm">Create and email me</button></div>
+ <div id="wll" style="max-height:24vh;overflow:auto;margin-top:6px"></div></div>
+ <small style="color:var(--mut)">The worklog is created twice a day and emailed each time; the last 30 are kept. A backup is saved every 3 hours. The first one each day is also emailed. Copies from the last 24 hours are kept, then one per day for 14 days. Admin only.</small>
 </dialog>
 <dialog id="lgdlg" style="width:min(1000px,96vw)"><div class="acts" style="margin:0 0 6px"><b style="flex:1">🧾 Usage log</b><button id="lgx">Close</button></div>
  <div id="lgs"></div>
@@ -1694,11 +1697,13 @@ const fmtKB=n=>n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/10
 async function bkLoad(){try{const r=await api("bk_list",{});
   const l=r.last,when=t=>new Date(t*1000).toLocaleString();
   $("#bks").innerHTML=!r.dir_ok?'<span style="color:#dc2626">The server has no writable folder for backups. Ask your host, or tell me and I will change the location.</span>':l?`Last backup: <b style="color:${l.ok?"#16a34a":"#dc2626"}">${l.ok?"OK":"FAILED"}</b> ${esc(when(l.time))}${l.ok?" · "+fmtKB(l.size)+(l.emailed?" · emailed to "+esc(r.email):""):""}${l.err?`<br><span style="color:#dc2626">${esc(l.err)}</span>`:""}`:`No backup has run yet. Daily emails go to <b>${esc(r.email)}</b>.`;
+  const w=r.wlast;$("#wls").innerHTML=w?`Last worklog: <b style="color:${w.ok?"#16a34a":"#dc2626"}">${w.ok?"OK":"FAILED"}</b> ${esc(when(w.time))}${w.ok?" · "+w.rows+" entries, "+(+w.hours).toFixed(2)+" h"+(w.emailed?" · emailed":""):""}${w.err?`<br><span style="color:#dc2626">${esc(w.err)}</span>`:""}`:"No worklog has been created yet.";
+  $("#wll").innerHTML=(r.wfiles||[]).length?`<table class="tlt">${r.wfiles.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:"";
   $("#bkl").innerHTML=r.files.length?`<table class="tlt"><tr><th>When</th><th class="n">Size</th><th></th></tr>${r.files.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:'<div class="empty">No copies yet</div>'}catch(e){$("#bks").textContent=e.message}}
-async function bkRun(mail){const b=$(mail?"#bkm":"#bkn");b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api("bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
+async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#bkn"));b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api(wl?"wl_run":"bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
 $("#abk").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#bkdlg").showModal();bkLoad()};
-$("#bkx").onclick=()=>$("#bkdlg").close();$("#bkn").onclick=()=>bkRun(false);$("#bkm").onclick=()=>bkRun(true);
-$("#bkl").addEventListener("click",async e=>{const f=e.target.dataset.bkd;if(!f)return;try{const r=await fetch("api.php?a=bk_get&f="+encodeURIComponent(f),{headers:{"X-Requested-With":"fetch"}});if(!r.ok||(r.headers.get("content-type")||"").includes("json")){const j=await r.json().catch(()=>({}));throw new Error(j.error||"Download failed")}const u=URL.createObjectURL(await r.blob()),a=document.createElement("a");a.href=u;a.download=f;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(err){alert(err.message)}});
+$("#bkx").onclick=()=>$("#bkdlg").close();$("#wln").onclick=()=>bkRun(false,true);$("#wlm").onclick=()=>bkRun(true,true);$("#bkn").onclick=()=>bkRun(false);$("#bkm").onclick=()=>bkRun(true);
+$("#bkdlg").addEventListener("click",async e=>{const f=e.target.dataset.bkd;if(!f)return;try{const r=await fetch("api.php?a=bk_get&f="+encodeURIComponent(f),{headers:{"X-Requested-With":"fetch"}});if(!r.ok||(r.headers.get("content-type")||"").includes("json")){const j=await r.json().catch(()=>({}));throw new Error(j.error||"Download failed")}const u=URL.createObjectURL(await r.blob()),a=document.createElement("a");a.href=u;a.download=f;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(err){alert(err.message)}});
 let lgInit=false;
 async function lgLoad(){try{const r=await api("log_list",{kind:$("#lgk").value,user:$("#lgu").value,ws:$("#lgw").value,from:$("#lgf").value,to:$("#lgt").value,limit:300});
   if(!lgInit){lgInit=true;$("#lgw").innerHTML='<option value="">All companies</option>'+r.ws.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#lgu").innerHTML='<option value="">Everyone</option>'+r.seen.map(u=>`<option value="${u.id}">${esc(u.name)}${u.role==="guest"?" (guest)":""}</option>`).join("")}
@@ -1729,7 +1734,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=147;
+const BUILD=148;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
