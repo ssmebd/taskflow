@@ -103,7 +103,7 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 .cc{float:right;margin:0 0 4px 8px}.ro .cc{display:none}
 .ro #add,.ro #cm,.ro .rc,.ro #all{display:none}.ro .card{cursor:default}
 .acts{display:flex;gap:8px;margin-top:10px;align-items:center}.empty{color:var(--mut);text-align:center;padding:24px}
-.cmb{background:#e5e7eb;color:#374151;border-radius:6px;font-size:11px;line-height:1;padding:3px 5px;cursor:pointer;flex:none}.cmb.un{background:#f59e0b;color:#fff}.cmb.me{background:#dc2626;color:#fff}
+.cmb{background:#e5e7eb;color:#374151;border-radius:6px;font-size:11px;line-height:1;padding:3px 5px;cursor:pointer;flex:none}.cmb.nomsg{background:transparent;color:var(--mut);opacity:.55;padding:3px 2px}.cmb.nomsg:hover{opacity:1}.cmb.un{background:#f59e0b;color:#fff}.cmb.me{background:#dc2626;color:#fff}
 #thr{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}#thl{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .msg{border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:13px;white-space:pre-wrap;word-break:break-word}.msg.ins{border-color:#f59e0b;background:rgba(245,158,11,.1)}.msg.new{box-shadow:0 0 0 2px #3b82f6}.msg small{display:block;color:var(--mut);font-size:11px}.msg .x{float:right;cursor:pointer;color:var(--mut);border:0;background:none;width:auto;padding:0}
 #bell{position:relative}#bell b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:3px}
@@ -525,7 +525,7 @@ async function load(force){
     try{localStorage.setItem("tf_w",W)}catch(e){}
     render();bellUpd();if(deepT){const t=tasks.find(x=>x.id==deepT);deepT=0;if(t){if(deepM){deepM=null;openMsg(t.id)}else openDlg(t)}}}catch(e){}
 }
-const cmBadge=t=>{const m=cmeta[t.id];if(!m)return"";return `<span class="cmb o${m[2]?" me":m[1]?" un":""}" title="${m[2]?"Message for you":m[1]?"New messages":"Messages"}">💬${m[0]}</span>`};
+const cmBadge=t=>{const m=cmeta[t.id];if(!m)return t.id?`<span class="cmb o nomsg" title="Write a message">💬</span>`:"";return `<span class="cmb o${m[2]?" me":m[1]?" un":""}" title="${m[2]?"Message for you":m[1]?"New messages":"Messages"}">💬${m[0]}</span>`};
 function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const cur=(wss.find(w=>w.id==W)||{}).name;document.title=(inboxN?"("+inboxN+") ":"")+(cur?cur+" – ":"")+"TaskFlow"}
 const dtCol=n=>{const i=dtypes.findIndex(d=>d.name===n);if(i<0)return"#94a3b8";return dtypes[i].color||GPAL[i%GPAL.length]};
 const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
@@ -1647,7 +1647,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=129;
+const BUILD=130;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
