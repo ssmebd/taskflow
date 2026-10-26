@@ -297,6 +297,11 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  .hm{padding:12px 10px 30px}
  select,input,button{min-height:36px}
 }
+.asw2{display:flex;gap:4px;align-items:center}.asw2 select{flex:1;min-width:0}
+.coadd{padding:2px 8px;border-radius:999px;border:1px dashed var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:600;white-space:nowrap}.coadd.has{border-style:solid;background:var(--accbg,#dcf3ea);color:#0b8f6a}
+.coN{font-size:12px;font-weight:600;color:var(--mut)}
+#copop{position:fixed;z-index:70;min-width:200px;max-height:50vh;overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:8px}#copop[hidden]{display:none}
+#copop .coh{font-size:12px;font-weight:600;color:var(--mut);margin:0 4px 6px}#copop label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer}#copop label:hover{background:var(--col)}#copop input{width:auto}
 </style></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -368,6 +373,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  <label>End date</label><input id="du" type="date">
  <label>Status</label><select id="st"></select>
  <label>Assigned to</label><select id="as"></select>
+ <div id="dcoRow" style="margin-top:6px;display:none;gap:8px;align-items:center"><button type="button" id="dcob" class="coadd">＋ More people</button><small id="dcot" style="color:var(--mut)"></small></div>
  <div id="ovn" style="display:none;margin-top:8px;padding:8px 10px;border:1px solid #dc2626;border-radius:8px;color:#dc2626;font-size:12px;white-space:pre-line"></div>
  <label>Group</label><select id="gp"></select>
  <label>Notes</label><textarea id="nt" rows="3"></textarea>
@@ -387,6 +393,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <dialog id="acdlg" style="width:min(900px,96vw)"><b>Access Control</b> <small style="color:var(--mut)">choose what each person can do in each company. Admins always have full access everywhere; guests can only be view-only.</small><div id="acbody" style="overflow:auto;max-height:60vh;margin-top:8px"></div><div class="acts"><button class="p" id="acsave">Save access</button><span class="sp"></span><button id="acx">Close</button></div>
 </dialog>
+<div id="copop" hidden><div class="coh">Also working on this task</div><div id="col"></div></div>
 <dialog id="apdlg" style="width:min(720px,96vw)"><b>Approvals</b> <small style="color:var(--mut)">Members ask here before deleting a group, status, column or drawing type.</small><div id="apl" style="margin-top:8px"></div><div class="acts"><span class="sp"></span><button id="apx">Close</button></div></dialog>
 <dialog id="udlg"><b>New user</b>
  <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
@@ -512,7 +519,7 @@ const act=async(a,d)=>{try{await api(a,d);await load(true)}catch(e){alert(e.mess
 async function load(force){
   try{const j=await api("list"),{v:jv,...rest}=j,s=JSON.stringify(rest);lastVer=jv;setLive(true);chkBuild(rest.build);if(s===last&&!force)return;
     last=s;if(!viewInit){viewInit=true;view=["board","gantt"].includes(j.me&&j.me.pref_view)?j.me.pref_view:"list";syncViewBtns()}
-    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;window.__drq=+j.drq||0;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
+    tasks=j.tasks;tasks.forEach(t=>{t.id=+t.id;t.co=(t.co||[]).map(Number)});ovl=j.overlaps||{};cmeta=j.cmeta||{};hoursMap=j.hours||{};try{const th=(j.me&&j.me.theme)||"";localStorage.setItem("tf_theme",th);applyTheme(th)}catch(e){}dtypes=j.dtypes||[];inboxN=+j.inbox||0;ovset=j.ovset||ovset;window.__drq=+j.drq||0;users=j.users;cols=j.cols||[];me=j.me;wss=j.ws||[];LV=j.level||"";SL=j.statuses||[];groups=orderGroups(j.groups||[]);try{G=localStorage.getItem("tf_g_"+W)||""}catch(e){G=""}if(G&&G!=="none"&&!groups.some(g=>g.id==G))G="";if(SL.length)ST=SL.map(x=>[x.k,x.name]);document.body.classList.toggle("ro",LV==="view");names=j.names||{};allUsers=j.allUsers||[];access=j.access||{};
     if(j.w!==W){W=j.w;if(history.replaceState&&!HOME)history.replaceState(null,"","index.php"+(W?"?w="+W:""))}
     
     try{localStorage.setItem("tf_w",W)}catch(e){}
@@ -573,7 +580,7 @@ function syncFilters(){
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
-  return tasks.filter(t=>inGroup(t)&&(!ovOnly||ov(t).length)&&(!st||t.status===st)&&(!p||t.customer===p)&&(!a||String(t.assigned_to)===a)&&(!q||[t.title,t.order_no,t.customer,t.drawing_type,t.notes,...Object.values(t.x||{})].join(" ").toLowerCase().includes(q)));
+  return tasks.filter(t=>inGroup(t)&&(!ovOnly||ov(t).length)&&(!st||t.status===st)&&(!p||t.customer===p)&&(!a||String(t.assigned_to)===a||(t.co||[]).some(x=>String(x)===a))&&(!q||[t.title,t.order_no,t.customer,t.drawing_type,t.notes,...Object.values(t.x||{})].join(" ").toLowerCase().includes(q)));
 }
 function cardHTML(t){
   return `<div class="card" draggable="true" data-id="${t.id}"${scol(t.status)?` style="border-left:5px solid ${scol(t.status)}"`:""}><input type="checkbox" class="cc" title="Select"${sel.has(t.id)?" checked":""}><b>${esc(t.title)}</b>${cmBadge(t)}${ov(t).length?`<div class="meta"><span class="ovb" title="${ea(ovText(t))}">⚠ Overlap</span></div>`:""}<div class="meta">
@@ -581,7 +588,7 @@ function cardHTML(t){
   ${G===""&&t.group_id&&gname(t.group_id)?`<span class="tag">📁 ${esc(gname(t.group_id))}</span>`:""}
   ${t.customer?`<span class="tag">${esc(t.customer)}</span>`:""}
   ${t.drawing_type?`<span class="tag">${esc(t.drawing_type)}</span>`:""}
-  ${t.assigned_to?`<span>${esc(uname(t.assigned_to))}</span>`:""}
+  ${t.assigned_to?`<span>${esc(uname(t.assigned_to))}${(t.co||[]).length?" +"+t.co.length:""}</span>`:""}
   ${cols.map(c=>{const v=xv(t,c);return v?`<span class="tag">${esc(c.name)}: ${esc(v)}</span>`:""}).join("")}
   ${(t.start_date||t.end_date)?`<span class="${late(t)?"late":""}">${esc(fmtRange(t))}</span>`:""}</div></div>`;
 }
@@ -609,6 +616,20 @@ function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(
   if(dc)for(const t of tasks)if(t.status==="done")sel.delete(t.id);render()}
 function updBar(){const b=$("#bar"),n=sel.size;b.hidden=!n||view==="gantt";if(n)b.innerHTML=`<b>${n} selected</b>${LV!=="view"?'<button id="bdup">Duplicate</button>':""}${LV!=="view"&&groups.length?`<select id="bmv"><option value="">Move to group…</option><option value="0">No group</option>${gOpts("")}</select>`:""}${LV==="full"&&wss.some(w=>w.id!=W&&["edit","full"].includes(w.level))?`<select id="bws"><option value="">Move to company…</option>${wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level)).map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("")}</select>`:""}${LV==="full"?'<button id="bdel">Delete</button>':""}<button id="bclr">Clear</button>`}
 const fmtH=n=>{n=+n||0;return n.toFixed(2).replace(/\.00$/,"").replace(/(\.\d)0$/,"$1")};
+function coPop(btn){const t=tasks.find(x=>x.id==btn.dataset.co);if(!t)return;const pop=$("#copop");pop.dataset.t=t.id;
+  const cand=users.filter(u=>String(u.id)!==String(t.assigned_to));
+  $("#col").innerHTML=cand.map(u=>`<label><input type="checkbox" value="${u.id}"${(t.co||[]).includes(+u.id)?" checked":""}> ${esc(u.name)}</label>`).join("")||'<div class="empty" style="padding:8px">No one else to add</div>';
+  pop.hidden=false;const r=btn.getBoundingClientRect(),w=pop.offsetWidth,h=pop.offsetHeight;
+  pop.style.left=Math.max(8,Math.min(r.left,innerWidth-w-8))+"px";pop.style.top=(r.bottom+6+h>innerHeight?Math.max(8,r.top-h-6):r.bottom+6)+"px"}
+document.addEventListener("click",e=>{const b=e.target.closest(".coadd");if(b){e.preventDefault();e.stopPropagation();if(!$("#copop").hidden&&$("#copop").dataset.t===b.dataset.co){$("#copop").hidden=true}else coPop(b);return}
+  if(!e.target.closest("#copop"))$("#copop").hidden=true},true);
+$("#col").addEventListener("change",async e=>{const pop=$("#copop"),id=+pop.dataset.t,t=tasks.find(x=>x.id===id);if(!t)return;
+  const ids=[...document.querySelectorAll("#col input:checked")].map(x=>+x.value);
+  try{const r=await api("co_set",{id,users:ids});t.co=(r.co||ids).map(Number);const c=$("#dcob");if(c&&c.dataset.co==String(id))$("#dcot").textContent=coNames(t);render()}catch(err){alert(err.message);e.target.checked=!e.target.checked}});
+function coNames(t){return(t.co||[]).map(id=>uname(id)).join(", ")}
+function coBtn(t){const n=(t.co||[]).length;
+  if(LV==="view")return n?`<span class="coN" title="${ea(coNames(t))}">+${n}</span>`:"";
+  return `<button type="button" class="coadd${n?" has":""}" data-co="${t.id}" title="${n?ea("Also: "+coNames(t)):"Add more people to this task"}">${n?"+"+n:"＋"}</button>`}
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed${t.id?" tt":""}" data-f="title" value="${ea(t.title)}"${t.id?' readonly title="Open task"':""}></div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
@@ -616,7 +637,7 @@ const BASE_COLS=[
  {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed pill" data-f="drawing_type" style="--pc:${t.drawing_type?dtCol(t.drawing_type):"#94a3b8"}">${dtOpts(t.drawing_type)}</select>`},
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
  {id:"status",label:"Status",cell:t=>`<select class="ed pill" data-f="status" style="--pc:${scol(t.status||ST[0][0])||"#94a3b8"}">${stOpts(t.status)}</select>`},
- {id:"assigned_to",label:"Assigned to",cell:t=>`<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>`},
+ {id:"assigned_to",label:"Assigned to",cell:t=>`<div class="asw2"><select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>${t.id?coBtn(t):""}</div>`},
  {id:"hours",label:"Hours",cell:t=>t.id?`<button type="button" class="hbtn" data-hrs="${t.id}" title="Log or see hours">⏱ ${hoursMap[t.id]?fmtH(hoursMap[t.id]):"Log"}</button>`:""},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
 const coKey=()=>"tf_co_"+W;
@@ -1043,7 +1064,7 @@ $("#mhu").addEventListener("change",mhLoad);$("#mhg").addEventListener("input",m
 $("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]");if(w){mhWk=isoAdd(mhWk,+w.dataset.mhwk);mhChips()}});
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
 $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const uid=mhUser||me.id;
-  const mine=tasks.filter(t=>String(t.assigned_to)===String(uid)&&t.status!=="done");
+  const mine=tasks.filter(t=>(String(t.assigned_to)===String(uid)||(t.co||[]).some(x=>String(x)===String(uid)))&&t.status!=="done");
   if(!mine.length){alert("No open tasks assigned to this person in the current company. Switch company or assign a task first.");return}
   $("#mhat").textContent="Add hours · "+mhAddDate;$("#mhtk").innerHTML=mine.map(t=>`<option value="${t.id}">${esc((t.order_no?t.order_no+" · ":"")+t.title)}</option>`).join("");
   const have=mhRows.filter(x=>x.work_date===mhAddDate&&x.kind!=="OT").reduce((s,x)=>s+ +x.hours,0);$("#mhah").value=Math.max(0,(+$("#mhg").value||8)-have)||"";$("#mhan").value="";$("#mhad").showModal()});
@@ -1108,7 +1129,7 @@ function openDlg(t,grp){
   editing=t?t.id:null;
   $("#t").value=t?t.title:"";$("#on").value=t?t.order_no||"":"";$("#pj").value=t?t.customer||"":"";$("#dt").innerHTML=dtOpts(t?t.drawing_type||"":"");$("#dt").value=t?t.drawing_type||"":"";
   $("#sd").value=t?t.start_date||"":"";$("#du").value=t?t.end_date||"":"";$("#st").innerHTML=stOpts(t?t.status:ST[0][0]);
-  $("#as").innerHTML=asOpts(t?t.assigned_to:"");$("#nt").value=t?t.notes||"":"";
+  $("#as").innerHTML=asOpts(t?t.assigned_to:"");{const r=$("#dcoRow");r.style.display=t&&LV!=="view"?"flex":"none";$("#dcob").dataset.co=t?t.id:"";$("#dcot").textContent=t&&(t.co||[]).length?coNames(t):""}$("#nt").value=t?t.notes||"":"";
   $("#gp").innerHTML=`<option value="">No group</option>`+gOpts("");$("#gp").value=t?(t.group_id||""):(/^\d+$/.test(grp!==undefined?grp:G)?(grp!==undefined?grp:G):"");
   $("#xf").innerHTML=cols.map(c=>`<label>${esc(c.name)}</label>`+xCtl(c,t?xv(t,c):"","dlg")).join("");
   const on=$("#ovn");if(t&&ov(t).length){on.style.display="block";on.textContent="⚠ "+ovText(t)}else on.style.display="none";
@@ -1621,7 +1642,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=123;
+const BUILD=124;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

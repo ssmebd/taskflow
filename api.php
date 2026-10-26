@@ -1,8 +1,8 @@
 <?php
-const BUILD=123;
+const BUILD=124;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v26']))return;
+  if(!empty($_SESSION['schema_v27']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -58,7 +58,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v26']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS task_assignees(task_id INT NOT NULL,user_id INT NOT NULL,PRIMARY KEY(task_id,user_id),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v27']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -132,10 +133,10 @@ function clean($f,$v){
   $lim=['title'=>255,'customer'=>255,'order_no'=>100,'drawing_type'=>100,'notes'=>5000][$f];
   return mb_substr((string)$v,0,$lim);
 }
-function notify_assign($db,$tid,$new,$old){global $uid,$W,$WS;$new=(int)$new;if(!$new||$new===(int)$old||$new===$uid)return;
+function notify_assign($db,$tid,$new,$old,$pre="📌 New task assigned to you: "){global $uid,$W,$WS;$new=(int)$new;if(!$new||$new===(int)$old||$new===$uid)return;
   try{$q=$db->prepare("SELECT title,order_no FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$t=$q->fetch();if(!$t)return;
   $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
-  $b="📌 New task assigned to you: ".$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
+  $b=$pre.$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);}catch(Throwable $e){}}
 function del_name($db,$kind,$id){global $W;
   $t=['group'=>['task_groups','name'],'status'=>['statuses','name'],'column'=>['custom_cols','name'],'dtype'=>['drawing_types','name']][$kind]??null;if(!$t)return null;
@@ -173,6 +174,17 @@ function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
   }
   out(['ok'=>1,'pending'=>1]);}
 switch($a){
+case 'co_set':
+  need_level('edit');$tid=(int)($in['id']??0);$us=array_values(array_unique(array_map('intval',is_array($in['users']??null)?$in['users']:[])));
+  $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
+  $ok=[];$acc=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND u.role<>'guest' AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");
+  foreach($us as $x){if($x<=0||$x===(int)$tr['assigned_to'])continue;$acc->execute([$x,$W]);if((int)$acc->fetchColumn())$ok[]=$x;}
+  $q=$db->prepare("SELECT user_id FROM task_assignees WHERE task_id=?");$q->execute([$tid]);$old=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));
+  $db->prepare("DELETE FROM task_assignees WHERE task_id=?")->execute([$tid]);
+  foreach($ok as $x)$db->prepare("INSERT INTO task_assignees(task_id,user_id) VALUES(?,?)")->execute([$tid,$x]);
+  $db->prepare("UPDATE tasks SET updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$tid,$W]);
+  foreach($ok as $x)if(!in_array($x,$old,true))notify_assign($db,$tid,$x,0,"📌 You were added to a task: ");
+  out(['ok'=>1,'co'=>$ok]);
 case 'dr_list':
   admin();
   $o=[];foreach($db->query("SELECT r.id,r.ws_id,r.kind,r.target_name,r.created_at,COALESCE(w.name,'') AS ws_name,COALESCE(u.name,'Former member') AS by_name FROM delete_requests r LEFT JOIN workspaces w ON w.id=r.ws_id LEFT JOIN users u ON u.id=r.requested_by WHERE r.status='pending' ORDER BY r.id")->fetchAll() as $r)$o[]=$r;
@@ -211,7 +223,7 @@ case 'my_tasks':
   $ids=array_map(fn($w)=>(int)$w['id'],$WS);
   if(!$ids)out(['tasks'=>[],'st'=>(object)[],'ws'=>(object)[]]);
   $in=implode(',',$ids);
-  $q=$db->prepare("SELECT id,ws_id,title,order_no,customer,drawing_type,start_date,end_date,status FROM tasks WHERE assigned_to=? AND status<>'done' AND ws_id IN($in) ORDER BY (end_date IS NULL),end_date,id LIMIT 500");$q->execute([$uid]);
+  $q=$db->prepare("SELECT id,ws_id,title,order_no,customer,drawing_type,start_date,end_date,status FROM tasks WHERE (assigned_to=? OR id IN(SELECT task_id FROM task_assignees WHERE user_id=?)) AND status<>'done' AND ws_id IN($in) ORDER BY (end_date IS NULL),end_date,id LIMIT 500");$q->execute([$uid,$uid]);
   $tk=$q->fetchAll();$st=[];
   foreach($db->query("SELECT ws_id,skey,name,color FROM statuses WHERE ws_id IN($in)")->fetchAll() as $r)$st[$r['ws_id']][$r['skey']]=['n'=>$r['name'],'c'=>$r['color']];
   $wn=[];foreach($WS as $w)$wn[$w['id']]=$w['name'];
@@ -238,6 +250,8 @@ case 'list':
     $res['cmeta']=(object)$cm;
     $hq=$db->prepare("SELECT task_id,SUM(hours) h FROM time_logs WHERE ws_id=? GROUP BY task_id");$hq->execute([$W]);$hm=[];if($LV!=='view'||$me['role']==='admin')foreach($hq->fetchAll() as $r)$hm[$r['task_id']]=(float)$r['h'];$res['hours']=(object)$hm;
     $res['overlaps']=(object)$ov;$res['ovset']=$ovs;
+    $cm=[];$cq=$db->prepare("SELECT a.task_id,a.user_id FROM task_assignees a JOIN tasks t ON t.id=a.task_id WHERE t.ws_id=?");$cq->execute([$W]);foreach($cq->fetchAll() as $r)$cm[(int)$r['task_id']][]=(int)$r['user_id'];
+    foreach($tasks as &$tk){$tk['co']=$cm[(int)$tk['id']]??[];}unset($tk);
     $res['tasks']=$tasks;$res['statuses']=get_statuses($db);
     $q=$db->prepare("SELECT id,name,parent_id,color FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$W]);$res['groups']=$q->fetchAll();
     $sk="dt_seed_$W";$q=$db->prepare("SELECT v FROM meta WHERE k=?");$q->execute([$sk]);
@@ -283,7 +297,7 @@ case 'field':
   $db->prepare("UPDATE tasks SET $f=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$v,(int)($in['id']??0),$W]);
   if($f==='assigned_to')notify_assign($db,(int)($in['id']??0),$v,$oldA);out(['ok'=>1]);
 case 'delete':
-  need_level('full');foreach($in['ids']??[] as $i){$db->prepare("DELETE FROM tasks WHERE id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM task_comments WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM time_logs WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);}out(['ok'=>1]);
+  need_level('full');foreach($in['ids']??[] as $i){$db->prepare("DELETE FROM task_assignees WHERE task_id=?")->execute([(int)$i]);$db->prepare("DELETE FROM tasks WHERE id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM task_comments WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);$db->prepare("DELETE FROM time_logs WHERE task_id=? AND ws_id=?")->execute([(int)$i,$W]);}out(['ok'=>1]);
 case 'dup':
   need_level('edit');foreach($in['ids']??[] as $i)$db->prepare("INSERT INTO tasks(title,order_no,customer,drawing_type,start_date,end_date,status,assigned_to,notes,group_id,extra,ws_id,updated_at) SELECT CONCAT(title,' (copy)'),order_no,customer,drawing_type,start_date,end_date,IF(status='done',?,status),assigned_to,notes,group_id,extra,ws_id,NOW() FROM tasks WHERE id=? AND ws_id=?")->execute([status_keys($db)[0],(int)$i,$W]);
   out(['ok'=>1]);
@@ -319,6 +333,7 @@ case 'task_move':
     $as=$t['assigned_to'];if($as){$acc->execute([$as,$to]);if(!$acc->fetchColumn())$as=null;}
     $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($map[$k]))$nx[$map[$k]]=$v;
     $db->prepare("UPDATE tasks SET ws_id=?,group_id=NULL,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$st,$as,$nx?json_encode($nx):null,$i,$W]);
+    $db->prepare("DELETE FROM task_assignees WHERE task_id=?")->execute([$i]);
     $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
     $db->prepare("UPDATE time_logs SET ws_id=? WHERE task_id=?")->execute([$to,$i]);
     if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;
@@ -349,7 +364,7 @@ case 'gr_move':
       $st=in_array($t['status'],$dk,true)?$t['status']:$dk[0];
       $as=$t['assigned_to'];if($as){$acc->execute([$as,$to]);if(!$acc->fetchColumn())$as=null;}
       $ex=json_decode((string)$t['extra'],true);$nx=[];if(is_array($ex))foreach($ex as $k=>$v)if(isset($cm[$k]))$nx[$cm[$k]]=$v;
-      $db->prepare("UPDATE tasks SET ws_id=?,group_id=?,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$gid,$st,$as,$nx?json_encode($nx):null,$t['id'],$W]);
+      $db->prepare("UPDATE tasks SET ws_id=?,group_id=?,status=?,assigned_to=?,extra=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$to,$gid,$st,$as,$nx?json_encode($nx):null,$t['id'],$W]);$db->prepare("DELETE FROM task_assignees WHERE task_id=?")->execute([$t['id']]);
       $db->prepare("UPDATE task_comments SET ws_id=? WHERE task_id=?")->execute([$to,$t['id']]);
       $db->prepare("UPDATE time_logs SET ws_id=? WHERE task_id=?")->execute([$to,$t['id']]);
       if(trim((string)$t['drawing_type'])!=='')$db->prepare("INSERT IGNORE INTO drawing_types(ws_id,name) VALUES(?,?)")->execute([$to,trim($t['drawing_type'])]);$n++;}}
@@ -379,6 +394,7 @@ case 'tl_add':
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
   $who=(int)$tr['assigned_to'];
+  if($who!==$uid){$q=$db->prepare("SELECT COUNT(*) FROM task_assignees WHERE task_id=? AND user_id=?");$q->execute([$tid,$uid]);if((int)$q->fetchColumn())$who=$uid;}
   if(!$who){$as=(int)($in['assign_to']??0);if(!$as)out(['error'=>'This task is unassigned. Choose who it is assigned to.','need_assign'=>1]);
     $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$as]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);
     $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
@@ -629,7 +645,7 @@ case 'user_role':
   out(['ok'=>1]);
 case 'user_del':
   admin();$id=(int)($in['id']??0);if($id===$uid)out(['error'=>'You cannot remove yourself']);
-  $db->prepare("UPDATE tasks SET assigned_to=NULL WHERE assigned_to=?")->execute([$id]);
+  $db->prepare("UPDATE tasks SET assigned_to=NULL WHERE assigned_to=?")->execute([$id]);$db->prepare("DELETE FROM task_assignees WHERE user_id=?")->execute([$id]);
   $db->prepare("DELETE FROM ws_users WHERE user_id=?")->execute([$id]);
   try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([$id]);}catch(Throwable $e){}
   $db->prepare("DELETE FROM users WHERE id=?")->execute([$id]);out(['ok'=>1]);
