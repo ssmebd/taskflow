@@ -1238,9 +1238,10 @@ function openDlg(t,grp){
   thrHome();thrInit(t);document.querySelectorAll("#thr select,#thr textarea").forEach(el=>el.disabled=false);
   $("#dlg").showModal();$("#t").focus();if(t)thrLoad(true);
 }
-const avH=n=>{let h=0;for(const c of String(n||"?"))h=(h*31+c.charCodeAt(0))%360;return h};
+const avPal=["#e11d48","#2563eb","#16a34a","#d97706","#7c3aed","#0891b2","#db2777","#65a30d","#ea580c","#4f46e5","#0d9488","#b91c1c","#9333ea","#0369a1","#ca8a04","#be185d","#15803d","#c2410c","#6d28d9","#047857"];
+const avC=n=>{const l=Object.entries(names||{}).map(([id,nm])=>({id:+id,name:nm})).sort((a,b)=>a.id-b.id),i=l.findIndex(u=>u.name===n);if(i>=0)return avPal[i%avPal.length];let h=0;for(const c of String(n||"?"))h=(h*31+c.charCodeAt(0))%avPal.length;return avPal[h]};
 const avI=n=>{const w=String(n||"?").trim().split(/\s+/);return(w.length>1?w[0][0]+w[w.length-1][0]:String(w[0]).slice(0,2)).toUpperCase()};
-const avHtml=(n,c="")=>`<span class="av ${c}" style="--h:${avH(n)}" title="${ea(n)}">${esc(avI(n))}</span>`;
+const avHtml=(n,c="")=>`<span class="av ${c}" style="background:${avC(n)}" title="${ea(n)}">${esc(avI(n))}</span>`;
 function dayLbl(d){const t=new Date(),k=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"),y=new Date(t.getTime()-864e5);
   return d===k(t)?"Today":d===k(y)?"Yesterday":new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
 function thrHtml(r){let last="",lu=0,out="";
@@ -1790,7 +1791,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=156;
+const BUILD=157;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
