@@ -1,5 +1,5 @@
 <?php
-const BUILD=128;
+const BUILD=129;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -279,7 +279,8 @@ case 'save':
     $set=implode(',',array_map(fn($f)=>"$f=?",$F));
     $db->prepare("UPDATE tasks SET $set,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([...array_values($v),(int)$in['id'],$W]);
   }else{
-    $db->prepare("INSERT INTO tasks(".implode(',',$F).",ws_id,updated_at) VALUES(".implode(',',array_fill(0,count($F),'?')).",?,NOW())")->execute([...array_values($v),$W]);
+    $q=$db->prepare("SELECT COALESCE(MAX(sort_no),0)+1 FROM tasks WHERE ws_id=?");$q->execute([$W]);$sn=(int)$q->fetchColumn();
+    $db->prepare("INSERT INTO tasks(".implode(',',$F).",ws_id,sort_no,updated_at) VALUES(".implode(',',array_fill(0,count($F),'?')).",?,?,NOW())")->execute([...array_values($v),$W,$sn]);
     $in['id']=$db->lastInsertId();
   }
   notify_assign($db,(int)$in['id'],$v['assigned_to'],$oldA);
