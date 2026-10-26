@@ -22,7 +22,6 @@ jobs:
           npx cap add android
           mkdir -p assets && cp icon-only.png assets/icon-only.png && cp icon-only.png assets/icon-foreground.png && cp icon-background.png assets/icon-background.png
           npx capacitor-assets generate --android --iconBackgroundColor '#0f2a5c' --iconBackgroundColorDark '#0f2a5c'
-          test -e android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml && grep -rl ic_launcher_background android/app/src/main/res | head -3
           npx cap sync android
       - name: Build debug APK
         working-directory: apps/android/android
