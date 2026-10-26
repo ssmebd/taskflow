@@ -144,6 +144,7 @@ body.rh:not(.ro) #side{background:transparent!important;border-right-color:trans
 body.rh:not(.ro) #side::before{display:none!important}
 body.rh:not(.ro) #side .rlogo,body.rh:not(.ro) #side .sf{opacity:0;pointer-events:none;transform:translateX(-70px)}
 body.rh:not(.ro) #side .rb#rhome,body.rh:not(.ro) #side .rb#rco{pointer-events:auto}
+body.rh:not(.ro) #side .rpill{display:block;position:fixed;left:0;top:0;bottom:0;width:6px;background:var(--sb,#0f2a5c);box-shadow:2px 0 8px rgba(0,0,0,.2);pointer-events:auto;z-index:47}
 body.rh #side .rb#rhome,body.rh #side .rb#rco{--pc:var(--nv,#0f2a5c);position:fixed;left:0;top:var(--tt,104px);width:46px;height:42px;border-radius:0 12px 12px 0;border:1px solid color-mix(in srgb,var(--pc) 55%,transparent);border-left:0;background:color-mix(in srgb,var(--pc) 26%,var(--card));color:color-mix(in srgb,var(--pc) 70%,var(--ink));box-shadow:2px 2px 8px rgba(0,0,0,.18);z-index:48}
 body.rh #side .rb#rco{top:calc(var(--tt,104px) + 46px)}
 body.rh.ro #side .rb#rhome,body.rh.ro #side .rb#rco{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff;box-shadow:none}
@@ -1480,6 +1481,7 @@ let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stP
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
 let reT=0;$("#side").addEventListener("mouseenter",()=>{const b=document.body;if(!b.classList.contains("rh")||b.classList.contains("ro"))return;clearTimeout(reT);reT=setTimeout(()=>b.classList.add("ro"),380)});$("#side").addEventListener("mouseleave",()=>clearTimeout(reT));
+document.querySelector("#side .rpill").addEventListener("mouseenter",()=>{const b=document.body;if(!b.classList.contains("rh")||b.classList.contains("ro"))return;clearTimeout(reT);reT=setTimeout(()=>b.classList.add("ro"),90)});
 for(const id of ["side","cpanel"])$("#"+id).addEventListener("mouseleave",()=>setTimeout(rhChk,450));
 document.addEventListener("click",()=>setTimeout(rhChk,80));let rmT=0;document.addEventListener("mousemove",()=>{if(document.body.classList.contains("ro")){clearTimeout(rmT);rmT=setTimeout(rhChk,700)}});
 function cpClose(){$("#cpanel").classList.remove("open");$("#rco").classList.remove("on")}
@@ -1712,7 +1714,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=143;
+const BUILD=144;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
