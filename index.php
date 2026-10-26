@@ -99,7 +99,7 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 .glane{display:flex;border-bottom:1px solid var(--line)}
 .gm{position:absolute;top:0;height:23px;border-left:1px solid var(--line);padding:3px 6px;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden}
 .gd{position:absolute;top:23px;height:23px;font-size:11px;color:var(--mut);text-align:center;border-left:1px solid var(--line);line-height:23px;overflow:hidden}
-.gbar{position:absolute;height:26px;border-radius:6px;color:#fff;font-size:12px;line-height:26px;padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.45);box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.gbar{position:absolute;height:26px;border-radius:6px;color:#000;font-size:12px;font-weight:500;line-height:26px;padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:0 1px 2px rgba(0,0,0,.25)}
 .gbar:hover{filter:brightness(1.1)}.gbar.dn{opacity:.55}
 .gtoday{position:absolute;top:0;bottom:0;width:2px;background:#dc2626;z-index:2;pointer-events:none}
 .cc{float:right;margin:0 0 4px 8px}.ro .cc{display:none}
@@ -1714,7 +1714,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=145;
+const BUILD=146;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
