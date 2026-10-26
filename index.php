@@ -477,7 +477,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  </div>
  <div class="acts"><button id="cr" disabled title="Put columns back in the original order and width (only for you, on this device)">↺ Reset</button><span class="sp"></span><button id="cc">Close</button></div>
 </dialog>
-<dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label>Options (comma separated)</label><input id="ceo"></div><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="ceh"> <span>Hide this column on this device</span></label><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
+<dialog id="cedlg"><b>Edit column</b><label>Name</label><input id="cen" maxlength="60"><div id="ceow"><label id="ceol">Options (comma separated)</label><input id="ceo"></div><label style="display:flex;gap:8px;align-items:center;color:var(--ink)"><input type="checkbox" id="ceh"> <span>Hide this column on this device</span></label><small id="cet" style="color:var(--mut)"></small><div class="acts"><span class="sp"></span><button id="cex">Cancel</button><button class="p" id="cesv">Save</button></div></dialog>
 
 <input type="file" id="wf" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
 <dialog id="codlg"><b id="cot">Company details &amp; hourly rates</b>
@@ -1587,7 +1587,7 @@ let ceId=0,ceBuilt="";
 $("#cex").onclick=()=>$("#cedlg").close();
 $("#cesv").onclick=async()=>{const key=ceBuilt||"x_"+ceId,hc=hiddenCols().filter(x=>x!==key);if($("#ceh").checked&&key!=="title")hc.push(key);
   try{if(ceBuilt){const lb=colLabels(),n=$("#cen").value.trim();if(n)lb[ceBuilt]=n;else delete lb[ceBuilt];localStorage.setItem(lbKey(),JSON.stringify(lb))}
-    else await api("col_edit",{id:ceId,name:$("#cen").value,options:$("#ceo").value});
+    else {const cc=cols.find(x=>x.id==ceId),cv=cc&&cc.ctype==="text"&&$("#ceo").value.trim()!=="";await api("col_edit",Object.assign({id:ceId,name:$("#cen").value,options:$("#ceo").value},cv?{ctype:"dropdown"}:{}))}
     localStorage.setItem(hcKey(),JSON.stringify(hc));$("#cedlg").close();await load(true);renderCols();render()}catch(e){alert(e.message)}};
 $("#cm").onclick=()=>{renderCols();$("#cdlg").showModal()};
 $("#cc").onclick=()=>$("#cdlg").close();
@@ -1598,7 +1598,7 @@ $("#ca").onclick=async()=>{
 };
 $("#clist").addEventListener("click",async e=>{
   const bb=e.target.dataset.bce;if(bb){const c=BASE_COLS.find(x=>x.id===bb);ceBuilt=bb;ceId=0;$("#cen").value=colLabels()[bb]||c.label;$("#ceow").hidden=true;$("#ceh").checked=hiddenCols().includes(bb);$("#ceh").disabled=bb==="title";$("#cet").textContent="Built-in column. The name and visibility apply only on this device.";$("#cedlg").showModal();return}
-  const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceBuilt="";ceId=c.id;$("#ceh").checked=hiddenCols().includes("x_"+c.id);$("#ceh").disabled=false;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=c.ctype!=="dropdown";$("#cet").textContent="Type: "+c.ctype+" (the type cannot be changed). Hiding applies only on this device.";$("#cedlg").showModal();return}
+  const eb=e.target.dataset.ce;if(eb){const c=cols.find(x=>x.id==eb);ceBuilt="";ceId=c.id;$("#ceh").checked=hiddenCols().includes("x_"+c.id);$("#ceh").disabled=false;$("#cen").value=c.name;$("#ceo").value=(c.options||[]).join(", ");$("#ceow").hidden=!(c.ctype==="dropdown"||c.ctype==="text");$("#ceol").textContent=c.ctype==="text"?"Turn into a dropdown: type the options, comma separated (leave empty to keep it as text)":"Options (comma separated)";$("#cet").textContent="Type: "+c.ctype+(c.ctype==="text"?" (can be turned into a dropdown, not back)":" (the type cannot be changed)")+". Hiding applies only on this device.";$("#cedlg").showModal();return}
   const id=e.target.dataset.cd;if(!id||!confirm("Remove this column? The values entered in it will be deleted."))return;
   try{delNote(await api("col_del",{id}));await load(true);renderCols()}catch(err){alert(err.message)}
 });
@@ -1642,7 +1642,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=126;
+const BUILD=127;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

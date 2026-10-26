@@ -1,5 +1,5 @@
 <?php
-const BUILD=126;
+const BUILD=127;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
@@ -500,8 +500,8 @@ case 'col_edit':
   need_level('edit');$id=(int)($in['id']??0);$n=mb_substr(trim($in['name']??''),0,60);if($n==='')out(['error'=>'Enter a column name']);
   $cur=null;foreach(get_cols($db) as $e){if((int)$e['id']===$id)$cur=$e;}if(!$cur)out(['error'=>'Column not found']);
   foreach(get_cols($db) as $e)if((int)$e['id']!==$id&&mb_strtolower($e['name'])===mb_strtolower($n))out(['error'=>'A column with that name already exists']);
-  $o=null;if($cur['ctype']==='dropdown'){$l=[];foreach(explode(',',(string)($in['options']??'')) as $p){$p=mb_substr(trim($p),0,60);if($p!==''&&!in_array($p,$l,true))$l[]=$p;}if(!$l)out(['error'=>'Enter at least one option, separated by commas']);$o=json_encode($l,JSON_UNESCAPED_UNICODE);}
-  $db->prepare("UPDATE custom_cols SET name=?,options=? WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);out(['ok'=>1]);
+  $conv=$cur['ctype']==='text'&&trim((string)($in['options']??''))!==''&&($in['ctype']??'')==='dropdown';$o=null;if($cur['ctype']==='dropdown'||$conv){$l=[];foreach(explode(',',(string)($in['options']??'')) as $p){$p=mb_substr(trim($p),0,60);if($p!==''&&!in_array($p,$l,true))$l[]=$p;}if(!$l)out(['error'=>'Enter at least one option, separated by commas']);$o=json_encode($l,JSON_UNESCAPED_UNICODE);}
+  $db->prepare("UPDATE custom_cols SET name=?,options=?".($conv?",ctype='dropdown'":"")." WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);out(['ok'=>1]);
 case 'col_del':
   need_level('full');del_gate($db,'column',(int)($in['id']??0));
 case 'pref_theme':
