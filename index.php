@@ -412,7 +412,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <dialog id="tldg"><div class="acts" style="margin:0 0 8px"><div style="flex:1;min-width:0"><b id="tlord" style="color:var(--pri)"></b><div id="tltit" style="font-weight:600;overflow:hidden;text-overflow:ellipsis"></div></div><button id="tlcl">Close</button></div>
  <div id="tll"></div>
- <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><select id="tlk" title="Regular or overtime"><option value="R">Regular</option><option value="OT">OT</option></select><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
+ <div class="tlf"><input type="date" id="tld"><input type="number" id="tlh" step="0.25" min="0" max="24" placeholder="Hours"><span id="tlrw"></span><select id="tlk" title="Regular or overtime"><option value="R">Regular</option><option value="OT">OT</option></select><input id="tln" placeholder="What did you do? (optional)" maxlength="255"><button class="p" id="tla">Add</button></div>
  <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
@@ -776,17 +776,22 @@ function render(){
 // ---- Hours log ----
 let tlId=0;
 async function openTL(id){const t=tasks.find(x=>x.id==id);if(!t)return;tlId=id;
-  $("#tlord").textContent=t.order_no?"Order #"+t.order_no:"";$("#tltit").textContent=t.title||"";$("#tld").value=today();$("#tlh").value="";$("#tln").value="";
+  $("#tlord").textContent=t.order_no?"Order #"+t.order_no:"";$("#tltit").textContent=t.title||"";{const c=revCol(),w=$("#tlrw");w.innerHTML=c?revCtl(c?((t.x||{})["x_"+c.id]||""):"","","tlr"):"";if(c)$("#tlr").title="Revision"}$("#tld").value=today();$("#tlh").value="";$("#tln").value="";
   document.querySelectorAll("#tldg .tlf input,#tldg .tlf button").forEach(x=>x.disabled=LV==="view");$("#tll").innerHTML="";$("#tldg").showModal();await tlLoad()}
+const revCol=()=>cols.find(c=>/^rev(ision)?\.?$/i.test(String(c.name).trim()));
+function revCtl(v,attr,id){const c=revCol();v=v==null?"":String(v);
+  if(c&&c.ctype==="dropdown"){const o=(c.options||[]).slice();if(v&&!o.includes(v))o.push(v);return `<select ${attr} id="${id||""}" style="width:auto;min-width:54px"><option value=""></option>${o.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select>`}
+  return `<input ${attr} id="${id||""}" value="${ea(v)}" maxlength="20" style="width:64px" placeholder="Rev">`}
 async function tlLoad(){try{const r=await api("tl_list",{task_id:tlId});let tot=0;r.logs.forEach(l=>tot+=+l.hours);
-  $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th><th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}${l.logged_by&&l.logged_by!=l.user_id?' <small style="color:var(--mut)">(logged by someone else)</small>':""}</td><td class="n">${fmtH(l.hours)}${l.kind==="OT"?" <b>OT</b>":""}</td><td>${esc(l.note)}</td><td>${l.user_id==r.me||l.logged_by==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="2"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
+  $("#tll").innerHTML=r.logs.length?`<table class="tlt"><tr><th>Date</th><th>Person</th><th class="n">Hours</th>${revCol()?"<th>Rev</th>":""}<th>Note</th><th></th></tr>${r.logs.map(l=>`<tr><td>${esc(l.work_date)}</td><td>${esc(l.name)}${l.logged_by&&l.logged_by!=l.user_id?' <small style="color:var(--mut)">(logged by someone else)</small>':""}</td><td class="n">${fmtH(l.hours)}${l.kind==="OT"?" <b>OT</b>":""}</td>${revCol()?`<td>${(l.user_id==r.me||l.logged_by==r.me||LV==="full")&&LV!=="view"?revCtl(l.rev,`data-tlr="${l.id}"`):esc(l.rev||"")}</td>`:""}<td>${esc(l.note)}</td><td>${l.user_id==r.me||l.logged_by==r.me||LV==="full"?`<button class="x" data-tld="${l.id}" title="Delete" style="border:0;background:none;width:auto;cursor:pointer">✕</button>`:""}</td></tr>`).join("")}<tr><td colspan="2"><b>Total</b></td><td class="n"><b>${fmtH(tot)}</b></td><td colspan="${revCol()?3:2}"></td></tr></table>`:`<div class="empty">No hours logged yet</div>`}catch(e){}}
 async function tlSend(assign){const h=parseFloat($("#tlh").value);
-  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,kind:$("#tlk").value,note:$("#tln").value,assign_to:assign||0});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}}
+  try{await api("tl_add",{task_id:tlId,date:$("#tld").value,hours:h,kind:$("#tlk").value,note:$("#tln").value,rev:$("#tlr")?$("#tlr").value:"",assign_to:assign||0});$("#tlh").value="";$("#tln").value="";await tlLoad();await load(true)}catch(e){alert(e.message)}}
 $("#tla").onclick=()=>{const h=parseFloat($("#tlh").value);if(!(h>0&&h<=24)){alert("Enter hours between 0.25 and 24");return}
   const t=tasks.find(x=>x.id==tlId);if(t&&!t.assigned_to){$("#asw").innerHTML='<option value="">Choose a person…</option>'+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");$("#asw").value=String(me.id||"");$("#asdg").showModal();return}
   tlSend(0)};
 $("#asx").onclick=()=>$("#asdg").close();
 $("#asok").onclick=()=>{const v=+$("#asw").value;if(!v){alert("Choose a person");return}$("#asdg").close();tlSend(v)};
+$("#tll").addEventListener("change",async e=>{const id=e.target.dataset.tlr;if(!id)return;try{await api("tl_rev",{id,rev:e.target.value})}catch(err){alert(err.message);await tlLoad()}});
 $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!id)return;try{await api("tl_del",{id});await tlLoad();await load(true)}catch(err){alert(err.message)}});
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
@@ -1642,7 +1647,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=127;
+const BUILD=128;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
