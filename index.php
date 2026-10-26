@@ -128,9 +128,9 @@ body.hdark #side .wl .wh,body.hdark #side .wl img[src^="data:"]{filter:brightnes
 .gbar{touch-action:none;user-select:none}.ro .gbar{touch-action:auto}.glane.gdrop{background:rgba(79,70,229,.12)}
 #gtip{position:fixed;z-index:60;background:#0f2a5c;color:#fff;font-size:12px;padding:3px 8px;border-radius:6px;pointer-events:none;white-space:nowrap}
 .wh{filter:brightness(0) invert(1)}
-.uh,.ur2{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 190px;gap:6px;align-items:center}.uh{font-size:11px;color:var(--mut);font-weight:600;margin:10px 0 4px;text-transform:uppercase}
+.uh,.ur2{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 230px;gap:6px;align-items:center}.uh{font-size:11px;color:var(--mut);font-weight:600;margin:10px 0 4px;text-transform:uppercase}
 .ur2{margin:4px 0}.ur2 input,.ur2 select{min-width:0}.pw{display:flex;gap:4px}.pw input{flex:1}.eye{padding:4px 8px;width:auto;flex:none}
-.urow{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 190px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}.urow button[data-pw]{white-space:nowrap}
+.urow{display:grid;grid-template-columns:1.1fr .9fr 1.3fr .9fr 230px;gap:6px;align-items:center;border-bottom:1px solid var(--line);padding:6px 0}.urow>span{overflow:hidden;text-overflow:ellipsis}.urow button[data-pw]{white-space:nowrap}
 @media(max-width:700px){.uh{display:none}.urow,.ur2{grid-template-columns:1fr 1fr}}
 .drng{width:100%;text-align:center;background:transparent;border:1px solid transparent;padding:6px 8px;white-space:nowrap}.drng:hover{border-color:var(--line);background:var(--card)}.drng.empty{color:var(--mut);border:1px dashed var(--line)}.drng.late{color:var(--hi)}.ro .drng{pointer-events:none}
 #rpop{position:fixed;z-index:70;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 36px rgba(0,0,0,.28);padding:14px 16px}
@@ -396,9 +396,17 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 </dialog>
 <div id="copop" hidden><div class="coh">Also working on this task</div><div id="col"></div></div>
 <dialog id="apdlg" style="width:min(720px,96vw)"><b>Approvals</b> <small style="color:var(--mut)">Members ask here before deleting a group, status, column or drawing type.</small><div id="apl" style="margin-top:8px"></div><div class="acts"><span class="sp"></span><button id="apx">Close</button></div></dialog>
+<dialog id="uedlg"><b>Edit user</b>
+ <label>Full name</label><input id="een" maxlength="100">
+ <label>Username</label><input id="eeu" maxlength="40" autocomplete="off">
+ <label>Email</label><input id="eee" type="email" maxlength="190" autocomplete="off" placeholder="name@example.com">
+ <small style="color:var(--mut)">Change the password with Reset password in the list. User type is set in the list too.</small>
+ <div class="acts"><span class="sp"></span><button id="eec">Cancel</button><button class="p" id="ees">Save</button></div>
+</dialog>
 <dialog id="udlg"><b>New user</b>
  <label>Full name</label><input id="un" name="nf_fullname" autocomplete="off" readonly>
  <label>Username</label><input id="uu" name="nf_user" autocomplete="off" readonly>
+ <label>Email (optional)</label><input id="ue" name="nf_mail" type="email" autocomplete="off" readonly>
  <label>Password (8+ characters)</label><span class="pw"><input id="up" name="nf_pass" type="password" autocomplete="new-password" readonly><button type="button" class="eye" title="Show / hide">👁</button></span>
  <label>User type</label><select id="ur"><option value="member">Member</option><option value="guest">Guest (view only)</option><option value="admin">Admin</option></select>
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
@@ -1624,31 +1632,35 @@ $("#acsave").onclick=async()=>{try{
   for(const w of wss)await api("ws_access",{id:w.id,users:by[w.id]});
   await load(true);alert("Access saved.");renderAcc()}catch(e){alert(e.message)}};
 function renderUsers(){
-  $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}</span><span>${esc(u.username||"")}</span>
+  $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}${u.email?`<br><small style="color:var(--mut)" title="${ea(u.email)}">${esc(u.email)}</small>`:""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
    <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
-   <span style="display:flex;gap:4px"><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
+   <span style="display:flex;gap:4px"><button data-ed="${u.id}" title="Edit name, username and email">✎</button><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
+let edId=0;
+$("#eec").onclick=()=>$("#uedlg").close();
+$("#ees").onclick=async()=>{try{await api("user_edit",{id:edId,name:$("#een").value,username:$("#eeu").value,email:$("#eee").value});$("#uedlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}};
 $("#tm").onclick=()=>{renderUsers();$("#tdlg").showModal()};
 $("#tc").onclick=()=>$("#tdlg").close();
-$("#tnew").onclick=()=>{for(const i of ["un","uu","up"]){const el=$("#"+i);el.value="";el.readOnly=true;if(i==="up")el.type="password"}$("#ur").value="member";$("#udlg").showModal()};
-for(const i of ["un","uu","up"])$("#"+i).addEventListener("focus",e=>{e.target.readOnly=false});
+$("#tnew").onclick=()=>{for(const i of ["un","uu","ue","up"]){const el=$("#"+i);el.value="";el.readOnly=true;if(i==="up")el.type="password"}$("#ur").value="member";$("#udlg").showModal()};
+for(const i of ["un","uu","ue","up"])$("#"+i).addEventListener("focus",e=>{e.target.readOnly=false});
 $("#uc").onclick=()=>$("#udlg").close();
 $("#udlg").addEventListener("click",e=>{const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}});
 $("#ta").onclick=async()=>{
-  try{await api("user_add",{name:$("#un").value,username:$("#uu").value,password:$("#up").value,role:$("#ur").value});
-    for(const i of ["un","uu","up"])$("#"+i).value="";$("#udlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}
+  try{await api("user_add",{name:$("#un").value,username:$("#uu").value,password:$("#up").value,email:$("#ue").value,role:$("#ur").value});
+    for(const i of ["un","uu","ue","up"])$("#"+i).value="";$("#udlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}
 };
 $("#tlist").addEventListener("click",async e=>{
   try{
     if(e.target.dataset.rm&&confirm("Remove this user? Their tasks become unassigned.")){await api("user_del",{id:e.target.dataset.rm});await load(true);renderUsers()}
+    if(e.target.dataset.ed){const u=allUsers.find(x=>x.id==e.target.dataset.ed);if(u){edId=u.id;$("#een").value=u.name||"";$("#eeu").value=u.username||"";$("#eee").value=u.email||"";$("#uedlg").showModal()}return}
     if(e.target.dataset.pw){const inp=$('#tlist input[data-np="'+e.target.dataset.pw+'"]'),p=inp.value;if(p.length<8){alert("Type a new password of 8+ characters first.");return}await api("user_pass",{id:e.target.dataset.pw,password:p});inp.value="";alert("Password changed.")}
     const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}
   }catch(err){alert(err.message)}
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=132;
+const BUILD=133;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

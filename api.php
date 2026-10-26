@@ -1,8 +1,8 @@
 <?php
-const BUILD=132;
+const BUILD=133;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 function out($d){
   global $a,$db,$WRITEA;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -15,7 +15,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v28']))return;
+  if(!empty($_SESSION['schema_v29']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -28,6 +28,7 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS task_comments(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,to_user_id INT NULL,kind VARCHAR(12) NOT NULL DEFAULT 'comment',body TEXT NOT NULL,created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id),INDEX(to_user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS comment_reads(user_id INT NOT NULL,task_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,task_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS time_logs(id INT AUTO_INCREMENT PRIMARY KEY,task_id INT NOT NULL,ws_id INT NOT NULL,user_id INT NOT NULL,work_date DATE NOT NULL,hours DECIMAL(5,2) NOT NULL,note VARCHAR(255) NOT NULL DEFAULT '',created_at DATETIME NOT NULL,INDEX(task_id),INDEX(ws_id,work_date),INDEX(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  if(!$db->query("SHOW COLUMNS FROM users LIKE 'email'")->fetch())$db->exec("ALTER TABLE users ADD email VARCHAR(190) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'rev'")->fetch())$db->exec("ALTER TABLE time_logs ADD rev VARCHAR(60) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'kind'")->fetch())$db->exec("ALTER TABLE time_logs ADD kind VARCHAR(4) NOT NULL DEFAULT 'R'");
   $db->exec("CREATE TABLE IF NOT EXISTS invoice_profiles(ws_id INT NOT NULL,slot TINYINT NOT NULL,data MEDIUMTEXT NOT NULL,PRIMARY KEY(ws_id,slot)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -60,7 +61,7 @@ function ensure_schema($db){
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS task_assignees(task_id INT NOT NULL,user_id INT NOT NULL,PRIMARY KEY(task_id,user_id),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v28']=1;
+  $_SESSION['schema_v29']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -266,7 +267,7 @@ case 'list':
   }
   if($me['role']==='admin'){
     $res['drq']=(int)$db->query("SELECT COUNT(*) FROM delete_requests WHERE status='pending'")->fetchColumn();
-    $res['allUsers']=$db->query("SELECT id,name,username,role FROM users ORDER BY name")->fetchAll();
+    $res['allUsers']=$db->query("SELECT id,name,username,email,role FROM users ORDER BY name")->fetchAll();
     $acc=[];foreach($db->query("SELECT ws_id,user_id,level FROM ws_users")->fetchAll() as $r)$acc[$r['ws_id']][$r['user_id']]=$r['level'];
     $res['access']=(object)$acc;
   }
@@ -639,9 +640,19 @@ case 'ws_access':
 case 'user_add':
   admin();$n=trim($in['name']??'');$u=trim($in['username']??'');$p=$in['password']??'';$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
   if($n===''||!preg_match('/^[A-Za-z0-9_.-]{3,40}$/',$u)||strlen($p)<8)out(['error'=>'Need a name, a username (3-40 chars) and an 8+ character password']);
-  try{$db->prepare("INSERT INTO users(name,username,pass_hash,role) VALUES(?,?,?,?)")->execute([mb_substr($n,0,100),$u,password_hash($p,PASSWORD_DEFAULT),$r]);}
+  $em=trim((string)($in['email']??''));if($em!==''&&!filter_var($em,FILTER_VALIDATE_EMAIL))out(['error'=>'That email address does not look right']);
+  try{$db->prepare("INSERT INTO users(name,username,email,pass_hash,role) VALUES(?,?,?,?,?)")->execute([mb_substr($n,0,100),$u,mb_substr($em,0,190),password_hash($p,PASSWORD_DEFAULT),$r]);}
   catch(PDOException $e){out(['error'=>'That username is already taken']);}
   $nid=(int)$db->lastInsertId();
+  out(['ok'=>1]);
+case 'user_edit':
+  admin();$id=(int)($in['id']??0);$n=mb_substr(trim((string)($in['name']??'')),0,100);$u=trim((string)($in['username']??''));$em=trim((string)($in['email']??''));
+  if($n==='')out(['error'=>'Enter a name']);
+  if(!preg_match('/^[A-Za-z0-9_.-]{3,40}$/',$u))out(['error'=>'Username must be 3-40 letters, numbers, dots, dashes or underscores']);
+  if($em!==''&&!filter_var($em,FILTER_VALIDATE_EMAIL))out(['error'=>'That email address does not look right']);
+  $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$id]);if(!(int)$q->fetchColumn())out(['error'=>'User not found']);
+  try{$db->prepare("UPDATE users SET name=?,username=?,email=? WHERE id=?")->execute([$n,$u,mb_substr($em,0,190),$id]);}
+  catch(PDOException $e){out(['error'=>'That username is already taken']);}
   out(['ok'=>1]);
 case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
