@@ -25,7 +25,7 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .gt{padding:5px 14px;border-radius:8px 8px 0 0;border:1px solid var(--line);border-bottom:0;background:var(--col);cursor:pointer;white-space:nowrap;color:var(--ink)}
 .gt.on{background:var(--card);font-weight:600;box-shadow:inset 0 3px 0 var(--pri)}.gt small{color:var(--mut)}.ro #gm{display:none}
 .gh th,.dh th{background:var(--col);color:var(--ink);font-size:13px;cursor:pointer}
-.gcw{position:relative;z-index:30;margin-left:-4px}.gcm{padding:9px 14px;border-radius:7px;border:1px dashed var(--line)}.gcm{font-size:12.5px;font-weight:600}.gcl{display:none;position:absolute;right:0;top:100%;min-width:150px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:4px}.gcw:hover .gcl,.gcw:focus-within .gcl{display:block}.gcl button{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:5px}.gcl button:hover{background:color-mix(in srgb,var(--pri) 14%,var(--card))}.gcw:before{content:"";position:absolute;left:0;right:0;top:100%;height:6px}.stat{cursor:pointer}.stat.on{background:color-mix(in srgb,var(--pc,#888) 42%,var(--card));border-color:var(--pc,var(--pri));box-shadow:0 0 0 1px var(--pc,var(--pri))}.ro #sm,.ro #tlb{display:none}
+.gcw{position:relative;z-index:30;margin-left:-4px}.gcm{padding:9px 14px;border-radius:7px;border:1px dashed var(--line)}.gcm{font-size:12.5px;font-weight:600}.gcl{display:none;position:fixed;left:var(--gl,8px);top:var(--gt,0);right:auto;min-width:150px;max-width:calc(100vw - 16px);z-index:60;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:4px}.gcw:hover .gcl,.gcw:focus-within .gcl{display:block}.gcl button{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:5px}.gcl button:hover{background:color-mix(in srgb,var(--pri) 14%,var(--card))}.gcw:before{content:"";position:absolute;left:0;right:0;top:100%;height:6px}.stat{cursor:pointer}.stat.on{background:color-mix(in srgb,var(--pc,#888) 42%,var(--card));border-color:var(--pc,var(--pri));box-shadow:0 0 0 1px var(--pc,var(--pri))}.ro #sm,.ro #tlb{display:none}
 .stat b{font-size:17px;color:color-mix(in srgb,var(--pc,#888) 55%,#000)}.stat span{color:color-mix(in srgb,var(--pc,#888) 45%,var(--ink));font-size:12.5px;font-weight:600}.stat.more span{color:var(--mut);font-weight:400}@media(prefers-color-scheme:dark){.stat b{color:color-mix(in srgb,var(--pc,#888) 55%,#fff)}}
 .board{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:12px;padding:0 16px 16px;overflow-x:auto}
 .col{background:var(--col);border-radius:12px;padding:10px;min-height:200px}
@@ -661,6 +661,9 @@ function gcSet(m){const ids=groups.map(g=>String(g.id)).concat("none");let gc=[]
   if(m==="c"){gc=ids;cc=ids;dc=true}else if(m==="e"){cc=ids;dc=true}else dc=false;
   try{localStorage.setItem("tf_gc_"+W,JSON.stringify(gc));localStorage.setItem("tf_cc_"+W,JSON.stringify(cc));localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
   for(const t of tasks)if(hiddenRow(t))sel.delete(t.id);render()}
+function gcPos(){const g=$("#gcb"),b=g.querySelector(".gcm");if(!b)return;const r=b.getBoundingClientRect();g.style.setProperty("--gl",Math.max(8,Math.min(r.left,innerWidth-190))+"px");g.style.setProperty("--gt",Math.min(r.bottom+2,innerHeight-130)+"px")}
+for(const ev of ["pointerenter","focusin","pointerdown","touchstart"])$("#gcb").addEventListener(ev,gcPos,{passive:true});
+addEventListener("scroll",()=>{if($("#gcb").matches(":hover,:focus-within"))gcPos()},{passive:true});
 $("#gcb").addEventListener("click",e=>{const b=e.target.closest("[data-gc]");if(b){gcSet(b.dataset.gc);document.activeElement&&document.activeElement.blur()}});
 function lockView(){$("#mhm").hidden=LV==="view"&&!(me&&me.role==="admin");if(LV!=="view")return;document.querySelectorAll("#main .ed").forEach(el=>el.disabled=true);document.querySelectorAll("#main .card").forEach(c=>c.draggable=false)}
 function toggleDone(){dc=!dc;try{localStorage.setItem("tf_dc",dc?"1":"0")}catch(e){}
@@ -1734,7 +1737,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=152;
+const BUILD=153;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
