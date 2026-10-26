@@ -362,7 +362,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  .hm{padding:12px 10px 30px}
  select,input,button{min-height:36px}
 }
-.asw2{display:flex;gap:4px;align-items:center}.asw2 select{flex:1;min-width:0}
+.asw2{display:flex;gap:6px;align-items:center}.asw2 .av{width:26px;height:26px;font-size:10px}.card .meta .av{width:20px;height:20px;font-size:8px;vertical-align:middle}.asw2 select{flex:1;min-width:0}
 .coadd{padding:2px 8px;border-radius:999px;border:1px dashed var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:600;white-space:nowrap}.coadd.has{border-style:solid;background:var(--accbg,#dcf3ea);color:#0b8f6a}
 .coN{font-size:12px;font-weight:600;color:var(--mut)}
 #copop{position:fixed;z-index:70;min-width:200px;max-height:50vh;overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:8px}#copop[hidden]{display:none}
@@ -679,7 +679,7 @@ function cardHTML(t){
   ${G===""&&t.group_id&&gname(t.group_id)?`<span class="tag">📁 ${esc(gname(t.group_id))}</span>`:""}
   ${t.customer?`<span class="tag">${esc(t.customer)}</span>`:""}
   ${t.drawing_type?`<span class="tag">${esc(t.drawing_type)}</span>`:""}
-  ${t.assigned_to?`<span>${esc(uname(t.assigned_to))}${(t.co||[]).length?" +"+t.co.length:""}</span>`:""}
+  ${t.assigned_to?`<span>${avHtml(uname(t.assigned_to),"sm")} ${esc(uname(t.assigned_to))}${(t.co||[]).length?" +"+t.co.length:""}</span>`:""}
   ${cols.map(c=>{const v=xv(t,c);return v?`<span class="tag">${esc(c.name)}: ${esc(v)}</span>`:""}).join("")}
   ${(t.start_date||t.end_date)?`<span class="${late(t)?"late":""}">${esc(fmtRange(t))}</span>`:""}</div></div>`;
 }
@@ -731,12 +731,12 @@ const BASE_COLS=[
  {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed pill" data-f="drawing_type" style="--pc:${t.drawing_type?dtCol(t.drawing_type):"#94a3b8"}">${dtOpts(t.drawing_type)}</select>`},
  {id:"dates",label:"Start / End",cls:"dates",cell:t=>`<button type="button" class="drng ${late(t)?"late":""}${t.start_date||t.end_date?"":" empty"}" data-rng="${t.id}">${(t.start_date||t.end_date)?esc(fmtRange(t)):"Start – End"}</button>`},
  {id:"status",label:"Status",cell:t=>`<select class="ed pill" data-f="status" style="--pc:${scol(t.status||ST[0][0])||"#94a3b8"}">${stOpts(t.status)}</select>`},
- {id:"assigned_to",label:"Assigned to",cell:t=>`<div class="asw2"><select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>${t.id?coBtn(t):""}</div>`},
+ {id:"assigned_to",label:"Assigned to",cell:t=>`<div class="asw2">${t.assigned_to?avHtml(uname(t.assigned_to),"sm"):""}<select class="ed" data-f="assigned_to">${asOpts(t.assigned_to)}</select>${t.id?coBtn(t):""}</div>`},
  {id:"hours",label:"Hours",cell:t=>t.id?`<button type="button" class="hbtn" data-hrs="${t.id}" title="Log or see hours">⏱ ${hoursMap[t.id]?fmtH(hoursMap[t.id]):"Log"}</button>`:""},
  {id:"notes",label:"Notes",cell:t=>`<input class="ed" data-f="notes" value="${ea(t.notes)}">`}];
 const coKey=()=>"tf_co_"+W;
 const cwKey=()=>"tf_cw_"+W;
-const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:170,status:140,assigned_to:150,group_id:140,hours:90,notes:220};
+const DEFW={title:220,order_no:110,customer:160,drawing_type:140,dates:170,status:140,assigned_to:185,group_id:140,hours:90,notes:220};
 function cwSaved(){try{return JSON.parse(localStorage.getItem(cwKey())||"{}")||{}}catch(e){return {}}}
 const colW=id=>Math.max(50,cwSaved()[id]||DEFW[id]||150);
 function colOrderSaved(){try{return !!localStorage.getItem(coKey())||!!localStorage.getItem(cwKey())}catch(e){return false}}
@@ -1239,7 +1239,7 @@ function openDlg(t,grp){
   $("#dlg").showModal();$("#t").focus();if(t)thrLoad(true);
 }
 const avH=n=>{let h=0;for(const c of String(n||"?"))h=(h*31+c.charCodeAt(0))%360;return h};
-const avI=n=>{const w=String(n||"?").trim().split(/\s+/);return((w[0][0]||"?")+(w.length>1?w[w.length-1][0]:"")).toUpperCase()};
+const avI=n=>{const w=String(n||"?").trim().split(/\s+/);return(w.length>1?w[0][0]+w[w.length-1][0]:String(w[0]).slice(0,2)).toUpperCase()};
 const avHtml=(n,c="")=>`<span class="av ${c}" style="--h:${avH(n)}" title="${ea(n)}">${esc(avI(n))}</span>`;
 function dayLbl(d){const t=new Date(),k=x=>x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0"),y=new Date(t.getTime()-864e5);
   return d===k(t)?"Today":d===k(y)?"Yesterday":new Date(d+"T12:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short",year:"numeric"})}
@@ -1790,7 +1790,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=155;
+const BUILD=156;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
