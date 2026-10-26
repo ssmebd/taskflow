@@ -405,7 +405,7 @@ html.lk-l #side:hover{width:196px;overflow:hidden;box-shadow:10px 0 30px rgba(20
 html.lk-l #wlogo .wh,html.lk-l #wlogo img[src^="data:"]{filter:brightness(0)}
 /* Floating dock */
 html.lk-d body,html.lk-d body.sc{padding-left:78px}
-html.lk-d #side,html.lk-d body.sc #side{top:var(--dk,78px);bottom:auto;left:12px;width:58px;height:auto;max-height:calc(100vh - var(--dk,78px) - 16px);border:1px solid #dbe1ee;border-radius:18px;background:#fff;--sb:#fff;--sf:#43506e;box-shadow:0 10px 30px rgba(20,32,58,.16);padding:10px 0;overflow:visible;gap:4px}
+html.lk-d #side,html.lk-d body.sc #side{top:var(--dky,var(--dk,78px));bottom:auto;left:var(--dkx,12px);width:58px;height:auto;max-height:calc(100vh - var(--dky,var(--dk,78px)) - 16px);border:1px solid #dbe1ee;border-radius:18px;background:#fff;--sb:#fff;--sf:#43506e;box-shadow:0 10px 30px rgba(20,32,58,.16);padding:10px 0;overflow:visible;gap:4px}
 html.lk-d #side .rlogo{display:none}
 html.lk-d #side .sf{margin-top:6px;border-top:1px solid #e1e6ef;padding-top:8px}
 html.lk-d #side .rb:hover,html.lk-d #side a.rb:hover,html.lk-d #side .rb.on{background:#e6eeff;color:#1d4ed8}
@@ -415,6 +415,12 @@ html.lk-d #cpanel{left:84px}
 html.lk-d body.rh #side{box-shadow:none}
 html.lk-d body.rh,html.lk-d body.rh.sc{padding-left:44px}
 html.lk-d header{margin-left:-78px;padding-left:96px!important}
+html.lk-d #rhide{display:none!important}
+.dkg{display:none}
+html.lk-d .dkg{display:flex;align-items:center;justify-content:center;width:100%;height:18px;margin:-6px 0 2px;cursor:grab;touch-action:none;user-select:none;flex:none}
+html.lk-d .dkg:active{cursor:grabbing}
+html.lk-d .dkg i{display:block;width:26px;height:4px;border-radius:2px;background:repeating-linear-gradient(90deg,#b4bdd0 0 4px,transparent 4px 7px)}
+html.lk-d .dkg:hover i{background:repeating-linear-gradient(90deg,#1d4ed8 0 4px,transparent 4px 7px)}
 html.lk-n #side,html.lk-l #side,html.lk-d #side{z-index:48}
 html.lk-d body.rh #side{z-index:48}
 /* dock look + hidden side bar: behave like the classic hidden bar (edge strip + Home/Companies tabs); hovering the strip slides the dock out */
@@ -441,7 +447,7 @@ html.lk-d #side .rb[data-l]:hover:after{display:block}
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
-<aside id="side"><span class="rpill"></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
+<aside id="side"><span class="rpill"></span><span class="dkg" title="Drag to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
 <a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
@@ -688,7 +694,7 @@ function applyTheme(v){const m=/^(#[0-9a-f]{6})\|(#[0-9a-f]{6})$/i.exec(v||""),b
   const h=document.querySelector("header");if(h){h.style.setProperty("--nv",bg);h.style.setProperty("--hfg",fg)}
   const lum=c=>{const n=parseInt(c.slice(1),16);return .3*(n>>16)+.59*((n>>8)&255)+.11*(n&255)};document.body.classList.toggle("hdark",lum(fg)<128)}
 try{applyTheme(localStorage.getItem("tf_theme")||"")}catch(e){}
-function setLook(v){const r=document.documentElement;for(const k of ["n","l","d"])r.classList.toggle("lk-"+k,k===v);try{localStorage.setItem("tf_look",v||"")}catch(e){}requestAnimationFrame(()=>{try{stPos()}catch(e){}})}
+function setLook(v){const r=document.documentElement;for(const k of ["n","l","d"])r.classList.toggle("lk-"+k,k===v);{let h="";try{h=localStorage.getItem("tf_rh")}catch(e){}document.body.classList.remove("ro");document.body.classList.toggle("rh",v!=="d"&&h==="1")}try{localStorage.setItem("tf_look",v||"")}catch(e){}requestAnimationFrame(()=>{try{stPos()}catch(e){}})}
 try{setLook(localStorage.getItem("tf_look")||"")}catch(e){}
 function setGlass(on){document.documentElement.classList.toggle("glass",!!on);try{localStorage.setItem("tf_glass",on?"1":"")}catch(e){}}
 try{if(localStorage.getItem("tf_glass"))document.documentElement.classList.add("glass")}catch(e){}
@@ -1604,9 +1610,20 @@ if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWor
 if(new URLSearchParams(location.search).get("chat")==="1")addEventListener("load",()=>setTimeout(()=>{const b=$("#mgb");if(b&&$("#msgw").hidden)b.click()},1200));
 function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList.remove("ro");try{localStorage.setItem("tf_rh",v?"1":"")}catch(e){}cpClose();$("#umenu").hidden=true;$("#smenu").hidden=true}
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden)return;b.classList.remove("ro")}
-try{if(localStorage.getItem("tf_rh")==="1")document.body.classList.add("rh")}catch(e){}
+try{if(localStorage.getItem("tf_rh")==="1"&&!document.documentElement.classList.contains("lk-d"))document.body.classList.add("rh")}catch(e){}
 $("#rco").addEventListener("click",()=>{if(document.body.classList.contains("rh"))document.body.classList.add("ro")});
 function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
+(()=>{const g=document.querySelector("#side .dkg");if(!g)return;const R=document.documentElement,sd=$("#side");
+ const clamp=(x,y)=>{const w=sd.offsetWidth||58,h=sd.offsetHeight||300;return[Math.max(4,Math.min(innerWidth-w-4,x)),Math.max(4,Math.min(innerHeight-h-4,y))]};
+ const put=(x,y)=>{R.style.setProperty("--dkx",x+"px");R.style.setProperty("--dky",y+"px")};
+ const load=()=>{try{const v=JSON.parse(localStorage.getItem("tf_dk")||"null");if(v&&R.classList.contains("lk-d")){const c=clamp(v.x,v.y);put(c[0],c[1])}}catch(e){}};
+ let d=null;
+ g.addEventListener("pointerdown",e=>{const r=sd.getBoundingClientRect();d={ox:e.clientX-r.left,oy:e.clientY-r.top};try{g.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
+ g.addEventListener("pointermove",e=>{if(!d)return;const c=clamp(e.clientX-d.ox,e.clientY-d.oy);put(c[0],c[1])});
+ const end=()=>{if(!d)return;d=null;const r=sd.getBoundingClientRect();try{localStorage.setItem("tf_dk",JSON.stringify({x:Math.round(r.left),y:Math.round(r.top)}))}catch(e){}};
+ g.addEventListener("pointerup",end);g.addEventListener("pointercancel",end);
+ g.addEventListener("dblclick",()=>{R.style.removeProperty("--dkx");R.style.removeProperty("--dky");try{localStorage.removeItem("tf_dk")}catch(e){}});
+ addEventListener("resize",load);load()})();
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
@@ -1856,7 +1873,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=165;
+const BUILD=166;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
