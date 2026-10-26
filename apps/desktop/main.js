@@ -1,7 +1,7 @@
 // TaskFlow desktop shell: opens the live TaskFlow site in its own window.
 const { app, BrowserWindow, Menu, shell, Tray, nativeImage, session } = require('electron');
 const path = require('path');
-const URL_HOME = process.env.TASKFLOW_URL || 'https://gurucadd.com/taskflow/index.php?home=1';
+const URL_HOME = process.env.TASKFLOW_URL || 'https://taskflow.gurucadd.com/index.php?home=1';
 const HOST = new URL(URL_HOME).host;
 
 if (!app.requestSingleInstanceLock()) { app.quit(); }

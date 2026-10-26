@@ -1,6 +1,6 @@
 # TaskFlow apps
 
-Both apps are thin shells around the live site at https://gurucadd.com/taskflow/ . The server on cPanel is unchanged.
+Both apps are thin shells around the live site at https://taskflow.gurucadd.com/ . The server on cPanel is unchanged.
 
 - `desktop/` Windows app (Electron). Built to a `TaskFlow Setup.exe` installer.
 - `android/` Android app (Capacitor). Built to an installable `TaskFlow.apk`.

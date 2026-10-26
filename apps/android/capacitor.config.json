@@ -3,9 +3,9 @@
   "appName": "TaskFlow",
   "webDir": "www",
   "server": {
-    "url": "https://gurucadd.com/taskflow/index.php?home=1",
+    "url": "https://taskflow.gurucadd.com/index.php?home=1",
     "cleartext": false,
-    "allowNavigation": ["gurucadd.com"]
+    "allowNavigation": ["taskflow.gurucadd.com", "gurucadd.com"]
   },
   "android": { "backgroundColor": "#0f2a5c" }
 }
