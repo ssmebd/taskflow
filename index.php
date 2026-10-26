@@ -504,7 +504,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 <script>
 let ST=[["todo","To Do"],["progress","In Progress"],["review","In Review"],["done","Completed"]];
 let dc=(()=>{try{return localStorage.getItem("tf_dc")==="1"}catch(e){return false}})();
-let hoursMap={},draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
+let hoursMap={},draft=null,rowDrag=null,dtypes=[],gdrag=null,gSwallow=false,thrVer=-1,cmeta={},inboxN=0,thrId=null,thrKey='',deepT=+(new URLSearchParams(location.search).get('t')||0),deepM=new URLSearchParams(location.search).get('m'),W=+(new URLSearchParams(location.search).get("w")||(()=>{try{return localStorage.getItem("tf_w")}catch(e){return 0}})()||0),viewInit=false,lastVer=-1,dirty=false,ovl={},ovset={hand:1,one:0},ovOnly=false,lateOnly=false,groups=[],G="",SL=[],LV="",wss=[],names={},allUsers=[],access={},openWp=null;
 let tasks=[],users=[],cols=[],me={},view="list",editing=null,sel=new Set(),last="",pend=false;
 const $=s=>document.querySelector(s);
 const HOME=new URLSearchParams(location.search).get("home")==="1";document.body.classList.toggle("home",HOME);
@@ -580,7 +580,7 @@ function syncFilters(){
 }
 function filtered(){
   const q=$("#q").value.toLowerCase(),p=$("#fp").value,a=$("#fa").value,st=$("#fs").value;
-  return tasks.filter(t=>inGroup(t)&&(!ovOnly||ov(t).length)&&(!st||t.status===st)&&(!p||t.customer===p)&&(!a||String(t.assigned_to)===a||(t.co||[]).some(x=>String(x)===a))&&(!q||[t.title,t.order_no,t.customer,t.drawing_type,t.notes,...Object.values(t.x||{})].join(" ").toLowerCase().includes(q)));
+  return tasks.filter(t=>inGroup(t)&&(!ovOnly||ov(t).length)&&(!lateOnly||late(t))&&(!st||t.status===st)&&(!p||t.customer===p)&&(!a||String(t.assigned_to)===a||(t.co||[]).some(x=>String(x)===a))&&(!q||[t.title,t.order_no,t.customer,t.drawing_type,t.notes,...Object.values(t.x||{})].join(" ").toLowerCase().includes(q)));
 }
 function cardHTML(t){
   return `<div class="card" draggable="true" data-id="${t.id}"${scol(t.status)?` style="border-left:5px solid ${scol(t.status)}"`:""}><input type="checkbox" class="cc" title="Select"${sel.has(t.id)?" checked":""}><b>${esc(t.title)}</b>${cmBadge(t)}${ov(t).length?`<div class="meta"><span class="ovb" title="${ea(ovText(t))}">⚠ Overlap</span></div>`:""}<div class="meta">
@@ -724,9 +724,9 @@ function render(){
   const fsv=$("#fs").value;
   const smore=(()=>{try{return localStorage.getItem("tf_smore")==="1"}catch(e){return false}})(),isDefSt=(k,n)=>/ongoing|progress|review|ready/i.test(n+" "+k),shown=ST.filter(([k,n])=>smore||isDefSt(k,n)||fsv===k),hid=ST.length-shown.length;
   const pill=(c,on,att,num,lab,tt)=>`<div class="stat${on?" on":""}" ${att} style="--pc:${c}"${tt?` title="${tt}"`:""}><b>${num}</b><span>${lab}</span></div>`;
-  $("#stats").innerHTML=pill("#4f46e5",!fsv,'data-fs=""',gt.length,"All tasks")+
+  $("#stats").innerHTML=pill("#4f46e5",!fsv&&!lateOnly,'data-fs=""',gt.length,"All tasks")+
     shown.map(([k,n])=>pill(scol(k)||"#94a3b8",fsv===k,`data-fs="${k}"`,gt.filter(t=>t.status===k).length,esc(n),"Show only this status")).join("")+
-    pill("#dc2626",false,"",gt.filter(late).length,"Overdue")+
+    pill("#dc2626",lateOnly,'data-late="1"',gt.filter(late).length,"Overdue","Show only overdue tasks")+
     (gt.some(t=>ov(t).length)||ovOnly?pill("#dc2626",ovOnly,'data-ov="1"',gt.filter(t=>ov(t).length).length,"⚠ Overlaps","Show only tasks that overlap for the same person"):"")+
     (hid>0||smore?`<div class="stat more" data-more="1" title="${smore?"Show fewer":"Show every status"}"><span>${smore?"− Fewer":"＋ "+hid+" more"}</span></div>`:"");
   const gtb=$("#gtabs"),nn=tasks.filter(t=>!t.group_id).length;
@@ -1465,7 +1465,7 @@ $("#slist").addEventListener("click",async e=>{
   }catch(err){alert(err.message)}
 });
 $("#slist").addEventListener("change",async e=>{const id=e.target.dataset.sc;if(!id)return;try{await api("st_color",{id,color:e.target.value});await load(true);renderSt()}catch(err){alert(err.message)}});
-$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-more]")){try{localStorage.setItem("tf_smore",localStorage.getItem("tf_smore")==="1"?"":"1")}catch(x){}render();return}if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}const el=e.target.closest("[data-fs]");if(!el)return;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;try{localStorage.setItem("tf_gc_"+W,"[]")}catch(x){}render()});
+$("#stats").addEventListener("click",e=>{if(e.target.closest("[data-more]")){try{localStorage.setItem("tf_smore",localStorage.getItem("tf_smore")==="1"?"":"1")}catch(x){}render();return}if(e.target.closest("[data-ov]")){ovOnly=!ovOnly;render();return}if(e.target.closest("[data-late]")){lateOnly=!lateOnly;if(lateOnly)$("#fs").value="";render();return}const el=e.target.closest("[data-fs]");if(!el)return;lateOnly=false;const f=$("#fs");f.value=f.value===el.dataset.fs?"":el.dataset.fs;try{localStorage.setItem("tf_gc_"+W,"[]")}catch(x){}render()});
 $("#gtabs").addEventListener("click",e=>{const a=e.target.closest("[data-g]");if(!a)return;G=a.dataset.g;try{localStorage.setItem("tf_g_"+W,G)}catch(x){}try{const c=getGC();if(G==="")c.clear();else{c.delete(G);if(gParent(G))c.delete(gParent(G))}localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(x){}sel.clear();render()});
 function renderGr(){
   const full=LV==="full";
@@ -1642,7 +1642,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=125;
+const BUILD=126;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
