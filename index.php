@@ -306,6 +306,24 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 .hrr .hmc:first-child,.hrr .hsec:first-child{margin-top:0}
 .hw>*{min-width:0}.hl .hrem .rb{overflow-wrap:anywhere}
 @media(max-width:900px){.hw{grid-template-columns:minmax(0,1fr);gap:14px;padding:10px 10px 30px;width:100%;box-sizing:border-box}.hl{position:relative;top:0;max-height:none;border-radius:22px;padding:20px 16px 14px;box-sizing:border-box;width:100%}.hl h2{font-size:30px}.hch{gap:6px}.hch span{flex:1 1 calc(50% - 6px);min-width:0}.hl .hrem{box-sizing:border-box}.hl .hcg{grid-template-columns:repeat(2,minmax(0,1fr))}.hl .hcc{min-width:0}.hl .hcc b,.hl .hcc small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrr .hrow{grid-template-columns:minmax(0,1fr) auto}.hmr .hmt{max-width:34%}}
+#wkdlg{width:min(1240px,97vw);height:min(86vh,900px);padding:0;display:none;flex-direction:column;overflow:hidden;resize:both}#wkdlg[open]{display:flex}
+#wkdlg .wkh{display:flex;gap:8px;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);margin:0;flex:none;position:static;border-top:0}#wkdlg .wkh b{font-size:16px;white-space:nowrap}#wkdlg .wkh input{flex:1;min-width:120px}.wkbr{display:none}
+.wkb{display:grid;grid-template-columns:270px minmax(0,1fr);flex:1;min-height:0}#wkside{overflow:auto;padding:12px;border-right:1px solid var(--line);background:var(--col)}#wkmain{overflow:auto;padding:22px 28px 40px;scroll-behavior:smooth}
+#wkside .wkc{margin:0 0 4px}#wkside summary{cursor:pointer;font-weight:700;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--mut);padding:7px 4px;list-style:none;display:flex;justify-content:space-between;gap:6px}#wkside summary::-webkit-details-marker{display:none}#wkside summary em{font-style:normal;background:var(--card);border-radius:9px;padding:0 7px;font-size:11px}
+#wkside .wkl{display:block;padding:6px 10px;border-radius:8px;color:var(--ink);font-size:13.5px;cursor:pointer;text-decoration:none;margin:1px 0}#wkside .wkl:hover{background:var(--card)}#wkside .wkl.on{background:var(--card);box-shadow:0 1px 5px rgba(0,0,0,.12);font-weight:600;color:var(--pri,#2563eb)}#wkside .wkh2{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mut);margin:14px 4px 6px}
+.wktg{display:inline-block;padding:2px 9px;margin:2px 3px 2px 0;border-radius:11px;font-size:12px;background:var(--card);border:1px solid var(--line);color:var(--ink);cursor:pointer}.wktg:hover{border-color:var(--pri,#2563eb)}.wktg.on{background:var(--pri,#2563eb);color:#fff;border-color:transparent}.wktg i{font-style:normal;opacity:.55;margin-left:3px}
+#wkmain .wkcrumb{font-size:12.5px;color:var(--mut);margin-bottom:6px}#wkmain .wkcrumb a{color:var(--mut);cursor:pointer}#wkmain h1{margin:0 0 8px;font-size:28px;letter-spacing:-.02em}#wkmain .wkmeta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;font-size:12px;color:var(--mut)}
+.wkart{max-width:820px;line-height:1.62;font-size:15px}.wkart h2{font-size:20px;margin:26px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--line)}.wkart h3{font-size:16px;margin:18px 0 6px}.wkart p{margin:8px 0}.wkart ul,.wkart ol{padding-left:22px;margin:8px 0}.wkart li{margin:3px 0}.wkart code{background:var(--col);padding:1px 6px;border-radius:5px;font-size:13px}.wkart hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+.wkart table{border-collapse:collapse;margin:12px 0;font-size:14px;max-width:100%;display:block;overflow:auto}.wkart th,.wkart td{border:1px solid var(--line);padding:6px 11px;text-align:left}.wkart th{background:var(--col)}.wkart tr:nth-child(even) td{background:color-mix(in srgb,var(--col) 45%,transparent)}
+.wkart blockquote{margin:12px 0;padding:10px 14px;border-left:4px solid #94a3b8;background:var(--col);border-radius:0 10px 10px 0}.wkart blockquote.note{border-color:#2563eb;background:color-mix(in srgb,#2563eb 9%,var(--card))}.wkart blockquote.warn{border-color:#dc2626;background:color-mix(in srgb,#dc2626 9%,var(--card))}.wkart blockquote.tip{border-color:#16a34a;background:color-mix(in srgb,#16a34a 9%,var(--card))}.wkart blockquote.review{border-color:#d97706;background:color-mix(in srgb,#f59e0b 14%,var(--card))}.wkart blockquote .wkbt{display:block;font-weight:700;font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:2px}
+.wkart figure{margin:14px 0}.wkart figure img{max-width:100%;border:1px solid var(--line);border-radius:10px;cursor:zoom-in;background:#fff}.wkart figcaption{font-size:12.5px;color:var(--mut);margin-top:4px}
+#wkmain .wkl{display:block;padding:4px 0;cursor:pointer}.wktoc{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.wktoc a{font-size:12.5px;padding:3px 10px;border-radius:12px;background:var(--col);color:var(--ink);cursor:pointer}
+.wkrel{margin-top:30px;padding-top:12px;border-top:1px solid var(--line)}.wkrel h4{margin:0 0 6px;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.wkhome h1{font-size:30px}.wkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin:16px 0}.wkcard{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}.wkcard:hover{transform:translateY(-2px);border-color:var(--pri,#2563eb);box-shadow:0 8px 20px rgba(20,32,58,.1)}.wkcard b{font-size:15px}.wkcard small{color:var(--mut)}.wkcard .ic{font-size:22px}
+.wkres{max-width:820px}.wkres .wkr{padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--card);cursor:pointer}.wkres .wkr:hover{border-color:var(--pri,#2563eb)}.wkres .wkr b{font-size:15px}.wkres .wkr small{display:block;color:var(--mut);margin:2px 0}.wkres mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
+.wked{max-width:820px;display:flex;flex-direction:column;gap:8px}.wked label{font-size:12px;font-weight:600;color:var(--mut);margin:0}.wked .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.wked textarea{min-height:48vh;font:13.5px/1.5 ui-monospace,Menlo,Consolas,monospace}.wktb{display:flex;flex-wrap:wrap;gap:4px}.wktb button{padding:3px 9px;font-size:12.5px}
+#wkzoom{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}#wkzoom[hidden]{display:none}#wkzoom img{max-width:100%;max-height:100%;background:#fff;border-radius:6px}
+@media(max-width:800px){#wkdlg{width:100vw;height:100dvh;max-width:100vw;max-height:100dvh;border-radius:0;resize:none}.wkb{grid-template-columns:minmax(0,1fr)}#wkside{display:none;border-right:0;border-bottom:1px solid var(--line);max-height:45vh}#wkdlg.nav #wkside{display:block}#wkmain{padding:16px 14px 40px}.wkbr{display:inline-block}#wkdlg .wkh{flex-wrap:wrap}#wkdlg .wkh input{order:5;flex-basis:100%}.wked .two{grid-template-columns:1fr}.wkart{font-size:14.5px}#wkmain h1{font-size:23px}}
 .hsec{margin-top:18px}.hsec h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hsec h3 i{width:9px;height:9px;border-radius:50%;background:var(--c,#64748b)}.hsec h3 em{font-style:normal;font-weight:600;color:var(--ink)}
 .hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);text-decoration:none}
 .hrow:hover{border-color:var(--pri)}.hrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow small{color:var(--mut)}
@@ -527,12 +545,13 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
   <div id="cv_o" class="rres"></div>
  </div>
  <div id="rt_wk" class="rbody" hidden>
-  <div id="wk_list"><div class="two" style="grid-template-columns:1fr auto"><input id="wk_q" placeholder="Search wiki…"><button class="p" id="wk_new">+ Page</button></div><div id="wk_items"></div></div>
-  <div id="wk_ed" hidden><input id="wk_t" placeholder="Title (e.g. Roof drawing rules)" maxlength="150"><textarea id="wk_b" rows="14" placeholder="Write rules, notes, sizes…"></textarea>
-   <div class="acts"><button id="wk_del" class="danger">Delete</button><span class="sp"></span><button id="wk_back">Back</button><button class="p" id="wk_save">Save</button></div><small id="wk_meta" style="color:var(--mut)"></small></div>
+  <div style="text-align:center;padding:18px 8px"><div style="font-size:34px">📚</div><b style="display:block;margin:6px 0 4px">Wiki</b><div style="color:var(--mut);font-size:13px;margin-bottom:12px">Drawing rules, standards and know-how, grouped, tagged and searchable.</div><button class="p" id="wk_open">Open the wiki</button></div>
  </div>
 </aside>
 <div id="pbox"></div>
+<dialog id="wkdlg"><div class="acts wkh"><b>📚 Wiki</b><input id="wkq" type="search" placeholder="Search rules, sizes, tags…" autocomplete="off"><button id="wkbr" class="wkbr" type="button">☰ Browse</button><button class="p" id="wknew" type="button">+ New page</button><button id="wkx" type="button">Close</button></div>
+ <div class="wkb"><nav id="wkside"></nav><main id="wkmain"></main></div></dialog>
+<div id="wkzoom" hidden></div>
 <div id="main"></div>
 
 <dialog id="dlg">
@@ -1327,16 +1346,83 @@ function fracIn(t,den){let n=Math.round(t*den),neg=n<0;n=Math.abs(n);const w=Mat
 const fracRows=m=>{const t=m/0.0254;return `<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px"><b style="font-size:13px">Nearest inch fraction</b>`+[8,16,32].map(d=>`<div>1/${d}: ${fracIn(t,d)}</div>`).join("")+`</div>`};
 function cvCalc(){const v=+$("#cv_v").value||0,u=CVU[+$("#cv_u").value],base=v*u[1];$("#cv_o").innerHTML=CVU.filter(x=>x[2]===u[2]&&x!==u).map(x=>`<div>${f3(base/x[1],4)} <b style="font-size:14px">${x[0]}</b></div>`).join("")+(u[2]==="L"?`<div style="color:var(--mut)">${ftIn(base)}</div>`+fracRows(base):"")}
 $("#cv_v").addEventListener("input",cvCalc);$("#cv_u").addEventListener("change",cvCalc);
-let wkPages=[],wkId=0;
-async function wkLoad(){try{const r=await api("wiki_list",{});wkPages=r.pages||[];wkDraw()}catch(e){alert(e.message)}}
-function wkDraw(){const q=$("#wk_q").value.trim().toLowerCase(),l=wkPages.filter(p=>!q||(p.title+" "+p.body).toLowerCase().includes(q));
-  $("#wk_items").innerHTML=l.map(p=>`<div class="wki" data-wk="${p.id}"><b>${esc(p.title)}</b><small>${esc((p.body||"").replace(/\s+/g," ").slice(0,80))}</small></div>`).join("")||'<div class="empty">No pages yet</div>'}
-$("#wk_q").addEventListener("input",wkDraw);
-$("#wk_items").addEventListener("click",e=>{const d=e.target.closest("[data-wk]");if(!d)return;wkEdit(wkPages.find(p=>p.id==d.dataset.wk))});
-function wkEdit(p){wkId=p?+p.id:0;$("#wk_t").value=p?p.title:"";$("#wk_b").value=p?p.body:"";$("#wk_meta").textContent=p&&p.by_name?"Last edited by "+p.by_name+" · "+p.updated_at:"";$("#wk_del").style.visibility=p?"visible":"hidden";$("#wk_list").hidden=true;$("#wk_ed").hidden=false}
-$("#wk_new").onclick=()=>wkEdit(null);$("#wk_back").onclick=()=>{$("#wk_ed").hidden=true;$("#wk_list").hidden=false};
-$("#wk_save").onclick=async()=>{try{await api("wiki_save",{id:wkId,title:$("#wk_t").value,body:$("#wk_b").value});$("#wk_back").onclick();await wkLoad()}catch(e){alert(e.message)}};
-$("#wk_del").onclick=async()=>{if(!wkId||!confirm("Delete this page?"))return;try{await api("wiki_del",{id:wkId});$("#wk_back").onclick();await wkLoad()}catch(e){alert(e.message)}};
+let wkPages=[],wkCur=0,wkEd=null,wkTag="",wkLoaded=false;
+const wkTagsOf=p=>String(p.tags||"").split(",").map(x=>x.trim()).filter(Boolean);
+const wkCan=()=>me.role!=="guest";
+function mdI(s){s=esc(s);
+  s=s.replace(/!\[([^\]]*)\]\((wimg:\d+|https?:[^)\s]+)\)/g,(m,a,u)=>`<figure><img src="${u.startsWith("wimg:")?"api.php?a=wiki_img&id="+u.slice(5):u}" alt="${a}" loading="lazy" data-wz><figcaption>${a}</figcaption></figure>`);
+  s=s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,(m,t,u)=>/^https?:/.test(u)?`<a href="${u}" target="_blank" rel="noopener">${t}</a>`:/^wiki:/.test(u)?`<a data-wkp="${ea(u.slice(5))}" style="color:var(--pri,#2563eb);cursor:pointer">${t}</a>`:m);
+  return s.replace(/\*\*([^*]+)\*\*/g,"<b>$1</b>").replace(/(^|[^*\w])\*([^*]+)\*/g,"$1<i>$2</i>").replace(/`([^`]+)`/g,"<code>$1</code>")}
+function mdR(src){const L=String(src||"").replace(/\r/g,"").split("\n"),o=[],toc=[];let i=0,n=0;
+  const cell=r=>r.trim().replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+  while(i<L.length){const l=L[i];
+    if(!l.trim()){i++;continue}
+    let m;
+    if(m=l.match(/^(#{1,3})\s+(.*)$/)){const lv=m[1].length+0;if(lv===2||lv===1){const id="wkh"+(n++);toc.push([id,m[2]]);o.push(`<h2 id="${id}">${mdI(m[2])}</h2>`)}else o.push(`<h3>${mdI(m[2])}</h3>`);i++;continue}
+    if(/^---+\s*$/.test(l)){o.push("<hr>");i++;continue}
+    if(l.startsWith("|")&&i+1<L.length&&/^\|?\s*:?-{2,}/.test(L[i+1])){const h=cell(l);i+=2;const rows=[];while(i<L.length&&L[i].startsWith("|")){rows.push(cell(L[i]));i++}
+      o.push(`<table><tr>${h.map(c=>`<th>${mdI(c)}</th>`).join("")}</tr>${rows.map(r=>`<tr>${r.map(c=>`<td>${mdI(c)}</td>`).join("")}</tr>`).join("")}</table>`);continue}
+    if(l.startsWith(">")){const b=[];while(i<L.length&&L[i].startsWith(">")){b.push(L[i].replace(/^>\s?/,""));i++}
+      let k="",t=b.join("\n"),mm=t.match(/^\[!(note|warn|tip|review)\]\s*/i);if(mm){k=mm[1].toLowerCase();t=t.slice(mm[0].length)}
+      const lab={note:"Note",warn:"Warning",tip:"Tip",review:"Needs confirmation"}[k]||"";
+      o.push(`<blockquote class="${k}">${lab?`<span class="wkbt">${lab}</span>`:""}${t.split(/\n{2,}/).map(x=>mdI(x).replace(/\n/g,"<br>")).join("<br><br>")}</blockquote>`);continue}
+    if(/^\s*([-*])\s+/.test(l)||/^\s*\d+[.)]\s+/.test(l)){const ol=/^\s*\d+[.)]\s+/.test(l),it=[];while(i<L.length&&(ol?/^\s*\d+[.)]\s+/.test(L[i]):/^\s*([-*])\s+/.test(L[i]))){it.push(L[i].replace(ol?/^\s*\d+[.)]\s+/:/^\s*([-*])\s+/,""));i++}
+      o.push(`<${ol?"ol":"ul"}>${it.map(x=>`<li>${mdI(x)}</li>`).join("")}</${ol?"ol":"ul"}>`);continue}
+    const p=[];while(i<L.length&&L[i].trim()&&!/^(#{1,3}\s|---+\s*$|>|\||\s*[-*]\s+|\s*\d+[.)]\s+)/.test(L[i])){p.push(L[i]);i++}
+    if(!p.length){p.push(L[i]);i++}
+    const h=mdI(p.join("\n")).replace(/\n/g,"<br>");o.push(/^<figure>.*<\/figure>$/.test(h)?h:`<p>${h}</p>`)}
+  return{html:o.join("\n"),toc}}
+async function wkLoad(force){try{const r=await api("wiki_list",{});wkPages=r.pages||[];wkLoaded=true;if(r.seed_err)console.warn("wiki seed:",r.seed_err);if(r.seeded)wkToast=r.seeded+" starter pages were added"}catch(e){alert(e.message)}}
+let wkToast="";
+async function wkOpen(id){if(!$("#wkdlg").open)$("#wkdlg").showModal();$("#wkdlg").classList.remove("nav");if(!wkLoaded)await wkLoad();if(id)wkCur=id;wkEd=null;wkDraw()}
+const wkCats=()=>{const m=new Map();for(const p of wkPages){const c=p.cat||"General";if(!m.has(c))m.set(c,[]);m.get(c).push(p)}return[...m.entries()].sort((a,b)=>(a[0]==="Import Review")-(b[0]==="Import Review")||a[0].localeCompare(b[0]))};
+const wkTags=()=>{const m=new Map();for(const p of wkPages)for(const t of wkTagsOf(p)){const k=t.toLowerCase();const e=m.get(k)||{t,n:0};e.n++;m.set(k,e)}return[...m.values()].sort((a,b)=>b.n-a.n||a.t.localeCompare(b.t))};
+function wkMatch(p,q,tag){if(tag&&!wkTagsOf(p).some(t=>t.toLowerCase()===tag))return 0;if(!q)return 1;const hay=(p.title+" "+(p.cat||"")+" "+(p.tags||"")+" "+p.body).toLowerCase();return q.split(/\s+/).every(w=>hay.includes(w))?1:0}
+function wkSnip(p,q){const b=String(p.body||"").replace(/!\[[^\]]*\]\([^)]*\)/g," ").replace(/[#>*|`\[\]]/g," ").replace(/\s+/g," ").trim();let k=0;const w=q.split(/\s+/)[0];if(w){const ix=b.toLowerCase().indexOf(w);if(ix>60)k=ix-50}
+  let t=esc(b.slice(k,k+170));q.split(/\s+/).filter(x=>x.length>1).forEach(w=>{t=t.replace(new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi"),m=>`<mark>${m}</mark>`)});return(k?"\u2026":"")+t+"\u2026"}
+function wkDraw(){const q=$("#wkq").value.trim().toLowerCase(),cats=wkCats(),tags=wkTags(),cur=wkPages.find(p=>p.id==wkCur);
+  const openCats=(()=>{try{return JSON.parse(localStorage.getItem("tf_wkc")||"null")}catch(e){return null}})();
+  $("#wkside").innerHTML=`<a class="wkl${!cur&&!q&&!wkTag&&!wkEd?" on":""}" data-wkhome>\u{1F3E0} Wiki home <span style="color:var(--mut)">(${wkPages.length})</span></a>`+cats.map(([c,l])=>{const has=cur&&(cur.cat||"General")===c,op=openCats?openCats.includes(c)||has:true;return `<details class="wkc" data-c="${ea(c)}" ${op?"open":""}><summary><span>${esc(c)}</span><em>${l.length}</em></summary>${l.map(p=>`<a class="wkl${p.id==wkCur&&!q?" on":""}" data-wkp="${ea(p.title)}" data-id="${p.id}">${esc(p.title)}</a>`).join("")}</details>`}).join("")+(tags.length?`<div class="wkh2">Tags</div><div>${tags.slice(0,40).map(t=>`<span class="wktg${wkTag===t.t.toLowerCase()?" on":""}" data-tag="${ea(t.t.toLowerCase())}">${esc(t.t)}<i>${t.n}</i></span>`).join("")}</div>`:"");
+  const M=$("#wkmain");
+  if(wkEd){wkDrawEdit();return}
+  if(q||wkTag){const l=wkPages.filter(p=>wkMatch(p,q,wkTag));
+    M.innerHTML=`<div class="wkres"><h1>${q?`Search: \u201c${esc(q)}\u201d`:"Tag: "+esc(wkTag)}</h1><div class="wkmeta">${l.length} page${l.length===1?"":"s"}${wkTag?` \u00B7 tagged <span class="wktg on" data-tag="">${esc(wkTag)} \u2715</span>`:""}</div>`+(l.map(p=>`<div class="wkr" data-id="${p.id}"><b>${esc(p.title)}</b><small>${esc(p.cat||"General")}${wkTagsOf(p).length?" \u00B7 "+wkTagsOf(p).map(esc).join(", "):""}</small><div style="font-size:13px">${wkSnip(p,q)}</div></div>`).join("")||'<div class="empty">Nothing found. Try fewer words or another tag.</div>')+"</div>";return}
+  if(cur){const r=mdR(cur.body),tg=wkTagsOf(cur),rel=wkPages.filter(p=>p.id!==cur.id&&(((p.cat||"General")===(cur.cat||"General"))||wkTagsOf(p).some(t=>tg.map(x=>x.toLowerCase()).includes(t.toLowerCase())))).map(p=>({p,s:wkTagsOf(p).filter(t=>tg.map(x=>x.toLowerCase()).includes(t.toLowerCase())).length*2+((p.cat||"General")===(cur.cat||"General")?1:0)})).sort((a,b)=>b.s-a.s).slice(0,6);
+    M.innerHTML=`<div class="wkart"><div class="wkcrumb"><a data-wkhome>Wiki</a> \u203A <a data-cat="${ea(cur.cat||"General")}">${esc(cur.cat||"General")}</a></div><h1>${esc(cur.title)}</h1><div class="wkmeta">${tg.map(t=>`<span class="wktg" data-tag="${ea(t.toLowerCase())}">${esc(t)}</span>`).join("")}<span>${cur.by_name?"Edited by "+esc(cur.by_name)+" \u00B7 ":""}${esc(String(cur.updated_at||"").slice(0,10))}</span>${wkCan()?'<button type="button" id="wkedit" style="margin-left:auto">\u270F Edit</button>':""}</div>${r.toc.length>2?`<div class="wktoc">${r.toc.map(t=>`<a data-sc="${t[0]}">${esc(t[1])}</a>`).join("")}</div>`:""}${r.html}${rel.length?`<div class="wkrel"><h4>Related pages</h4>${rel.map(x=>`<a class="wkl" data-id="${x.p.id}" style="padding-left:0;color:var(--pri,#2563eb)">\u2192 ${esc(x.p.title)}</a>`).join("")}</div>`:""}</div>`;M.scrollTop=0;return}
+  const rec=[...wkPages].sort((a,b)=>String(b.updated_at).localeCompare(String(a.updated_at))).slice(0,6),ic=["\u{1F9F1}","\u{1F529}","\u{1F6E1}\uFE0F","\u{1F6AA}","\u{1F4D0}","\u{1F9F5}","\u{1F4CB}","\u{1F527}"];
+  M.innerHTML=`<div class="wkhome"><h1>Wiki</h1><div style="color:var(--mut)">${wkPages.length} pages in ${cats.length} categories. Search above, browse a category, or pick a tag on the left.</div>${wkToast?`<div class="wkart"><blockquote class="tip">${esc(wkToast)}</blockquote></div>`:""}<div class="wkgrid">${cats.map(([c,l],i)=>`<div class="wkcard" data-cat="${ea(c)}"><span class="ic">${ic[i%ic.length]}</span><b>${esc(c)}</b><small>${l.length} page${l.length===1?"":"s"}: ${l.slice(0,3).map(p=>esc(p.title)).join(", ")}${l.length>3?"\u2026":""}</small></div>`).join("")||'<div class="empty">No pages yet. Add the first one with + New page.</div>'}</div>${rec.length?`<h3 style="margin:22px 0 6px">Recently updated</h3>${rec.map(p=>`<a class="wkl" data-id="${p.id}" style="color:var(--pri,#2563eb)">${esc(p.title)} <span style="color:var(--mut);font-size:12px">\u00B7 ${esc(p.cat||"General")}</span></a>`).join("")}`:""}</div>`}
+function wkDrawEdit(){const e=wkEd,cats=[...new Set(wkPages.map(p=>p.cat||"General"))],tg=wkTags();
+  $("#wkmain").innerHTML=`<div class="wked"><h1 style="font-size:20px">${e.id?"Edit page":"New page"}</h1><label>Title</label><input id="wke_t" maxlength="150" value="${ea(e.title)}"><div class="two"><div><label>Category (group)</label><input id="wke_c" list="wke_cl" maxlength="80" value="${ea(e.cat)}" placeholder="e.g. Covers & Fabric"><datalist id="wke_cl">${cats.map(c=>`<option value="${ea(c)}">`).join("")}</datalist></div><div><label>Tags (comma separated)</label><input id="wke_g" list="wke_gl" value="${ea(e.tags)}" placeholder="e.g. chemset, bolts, M16"><datalist id="wke_gl">${tg.map(t=>`<option value="${ea(t.t)}">`).join("")}</datalist></div></div>
+   <label>Content</label><div class="wktb"><button type="button" data-ins="## ">H2</button><button type="button" data-ins="### ">H3</button><button type="button" data-ins="**|**">Bold</button><button type="button" data-ins="- ">List</button><button type="button" data-ins="1. ">Numbered</button><button type="button" data-ins="\n| Col A | Col B |\n|---|---|\n| | |\n">Table</button><button type="button" data-ins="> [!note] ">Note</button><button type="button" data-ins="> [!warn] ">Warning</button><button type="button" data-ins="> [!tip] ">Tip</button><button type="button" id="wke_img">\u{1F5BC} Image</button><button type="button" id="wke_pv">Preview</button><input type="file" id="wke_f" accept="image/*" hidden></div>
+   <textarea id="wke_b">${esc(e.body)}</textarea><div id="wke_p" class="wkart" hidden></div>
+   <div class="acts" style="position:static;border:0;margin:0;padding:0"><button id="wke_d" class="danger" style="${e.id?"":"visibility:hidden"}">Delete</button><span class="sp"></span><button id="wke_x">Cancel</button><button class="p" id="wke_s">Save page</button></div><small style="color:var(--mut)">Tip: link to another page with [text](wiki:Page title). Images show with a caption.</small></div>`;$("#wkmain").scrollTop=0}
+async function wkImgUp(f){if(!f)return null;let d=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)});
+  if(f.size>1500000&&/^image\/(png|jpeg|webp)/.test(f.type)){d=await new Promise(res=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1600/im.width),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.86))};im.onerror=()=>res(d);im.src=d})}
+  const r=await api("wiki_up",{data:d,name:f.name});return r.id}
+function wkSetCur(id){wkCur=id;wkEd=null;$("#wkq").value="";wkTag="";$("#wkdlg").classList.remove("nav");wkDraw()}
+const wkd=$("#wkdlg");
+$("#wk_open").onclick=()=>wkOpen();$("#wkx").onclick=()=>wkd.close();$("#wknew").onclick=()=>{if(!wkCan())return;wkEd={id:0,title:"",cat:wkCur&&(wkPages.find(p=>p.id==wkCur)||{}).cat||"",tags:"",body:""};wkd.classList.remove("nav");wkDraw()};
+$("#wkbr").onclick=()=>wkd.classList.toggle("nav");
+$("#wkq").addEventListener("input",()=>{wkEd=null;wkDraw()});
+wkd.addEventListener("click",async e=>{const t=e.target;
+  if(t.closest("[data-wkhome]")){wkCur=0;wkTag="";wkEd=null;$("#wkq").value="";wkDraw();return}
+  const sc=t.closest("[data-sc]");if(sc){const h=document.getElementById(sc.dataset.sc);if(h)h.scrollIntoView({behavior:"smooth",block:"start"});return}
+  const tg=t.closest("[data-tag]");if(tg){wkTag=tg.dataset.tag===wkTag?"":tg.dataset.tag;wkEd=null;wkDraw();return}
+  const ct=t.closest("[data-cat]");if(ct&&!ct.closest("details")){const c=ct.dataset.cat,f=wkPages.find(p=>(p.cat||"General")===c);if(f)wkSetCur(f.id);return}
+  const wp=t.closest("[data-wkp]");if(wp){const nm=wp.dataset.wkp.toLowerCase(),f=wkPages.find(p=>p.title.toLowerCase()===nm);if(f)wkSetCur(f.id);return}
+  const id=t.closest("[data-id]");if(id&&!t.closest("details summary")){wkSetCur(+id.dataset.id);return}
+  if(t.closest("#wkedit")){const p=wkPages.find(x=>x.id==wkCur);if(p){wkEd={id:p.id,title:p.title,cat:p.cat||"",tags:p.tags||"",body:p.body||""};wkDraw()}return}
+  const ins=t.closest("[data-ins]");if(ins){const ta=$("#wke_b"),v=ins.dataset.ins.replace(/\\n/g,"\n"),a=ta.selectionStart,b=ta.selectionEnd,sel=ta.value.slice(a,b);const ins2=v.includes("|**")||v==="**|**"?"**"+(sel||"text")+"**":v+sel;ta.setRangeText(ins2,a,b,"end");ta.focus();return}
+  if(t.closest("#wke_img")){$("#wke_f").click();return}
+  if(t.closest("#wke_pv")){const pv=$("#wke_p"),on=pv.hidden;pv.hidden=!on;$("#wke_b").hidden=on;if(on)pv.innerHTML=mdR($("#wke_b").value).html;t.closest("#wke_pv").textContent=on?"Edit":"Preview";return}
+  if(t.closest("#wke_x")){wkEd=null;wkDraw();return}
+  if(t.closest("#wke_s")){try{const r=await api("wiki_save",{id:wkEd.id,title:$("#wke_t").value,cat:$("#wke_c").value,tags:$("#wke_g").value,body:$("#wke_b").value});await wkLoad();wkSetCur(r.id)}catch(er){alert(er.message)}return}
+  if(t.closest("#wke_d")){if(!confirm("Delete this page?"))return;try{await api("wiki_del",{id:wkEd.id});await wkLoad();wkCur=0;wkEd=null;wkDraw()}catch(er){alert(er.message)}return}
+  if(t.matches("img[data-wz]")){const z=$("#wkzoom");z.innerHTML=`<img src="${ea(t.src)}">`;z.hidden=false}});
+wkd.addEventListener("change",async e=>{if(e.target.id!=="wke_f")return;const f=e.target.files[0];e.target.value="";if(!f)return;try{const id=await wkImgUp(f),ta=$("#wke_b"),cap=prompt("Caption for this image (optional)","")||"";ta.setRangeText("\n!["+cap.trim()+"](wimg:"+id+")\n",ta.selectionStart,ta.selectionEnd,"end")}catch(er){alert(er.message)}});
+wkd.addEventListener("toggle",()=>{});wkd.addEventListener("close",()=>{wkEd=null});
+document.addEventListener("click",e=>{const z=$("#wkzoom");if(z&&!z.hidden&&z.contains(e.target))z.hidden=true});
+document.addEventListener("toggle",e=>{const d=e.target;if(d.matches&&d.matches("#wkside details")){try{const o=[...document.querySelectorAll("#wkside details[open]")].map(x=>x.dataset.c);localStorage.setItem("tf_wkc",JSON.stringify(o))}catch(x){}}},true);
 try{if(localStorage.getItem("tf_rp"))toolsOpen(true)}catch(e){}
 function startDraft(gid){if(LV==="view")return;const g=/^\d+$/.test(String(gid))?String(gid):"";
   if(g){const c=getGC();let ch=c.delete(g);if(gParent(g))ch=c.delete(gParent(g))||ch;if(ch)try{localStorage.setItem("tf_gc_"+W,JSON.stringify([...c]))}catch(e){}}
@@ -1932,7 +2018,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=181;
+const BUILD=182;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

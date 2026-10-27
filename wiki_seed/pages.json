@@ -1,0 +1,119 @@
+{
+ "src": "onenote-general-1",
+ "pages": [
+  {
+   "title": "Steel Lengths & Stock Packs",
+   "cat": "Steel & Materials",
+   "tags": "steel, lengths, SHS, stock, ordering, offcuts",
+   "body": "Rules of thumb for which stock length each section is cut from, so quantities and offcuts are planned the right way. Source: general rules from Wade (12/08/2022), plus later notes.\n\n## Stock length by section\n\n| Section | Stock length to use |\n|---|---|\n| 50x50x4 | 8 m |\n| 75x75x4 used in frames | 12 m packs |\n| Any other 75x75x4 (end walls, BRDs, BRLs etc.) | 8 m |\n| 100x100x4 | 12 m |\n| 100x100x5 | 8 m |\n| 60.2x2.3 pipe | 6.5 m or 7.2 m, see below |\n\n## 60.2 x 2.3 pipe (braces)\n\nIt depends on the cut length of the brace:\n\n- Cut length **greater than 3200 mm**: use **7.2 m** lengths, because you cannot get two pieces out of a 6.5 m length.\n- Cut length **less than that**: use **6.5 m** lengths.\n\n## Long sections\n\n> [!review] The note says: \"We don't want to supply longer than 3 m. For longer sections, divide the length in half and add around 50 mm to each (to give a minimum 100 mm overlap).\" It does not say which part this applies to. Confirm before relying on it.\n\nSee also [Spigot Connections](wiki:Spigot Connections).\n"
+  },
+  {
+   "title": "Spigot Connections",
+   "cat": "Steel & Materials",
+   "tags": "spigot, CHS, SHS, arc length, Ross, shelter",
+   "body": "Which CHS size is used for the spigot, by frame size and arc length.\n\n## CHS size by frame size\n\n| Frame / situation | CHS |\n|---|---|\n| 50 SHS, and 75 SHS up to arc length 14,400 | **42 CHS** |\n| 75 SHS over arc length 14,400, and all 100 SHS under 30 m arc length | **60 CHS** |\n| Larger SHS sizes, trusses, and 30 m arc length or above | **89 CHS** |\n\n- **Eliminate 34 CHS.** It is no longer used.\n- CASA / CATA shelters above 18 m (W): single-member frames will have spigot connections, as recommended by Ross.\n\n> [!review] These CHS sizes were listed under the \"Spigot in Shelter\" notes. Confirm they are the spigot sizes before updating drawings.\n\nSee also [Steel Lengths & Stock Packs](wiki:Steel Lengths & Stock Packs) and [TP & CP Rules](wiki:TP & CP Rules).\n"
+  },
+  {
+   "title": "Material Grades & Welding",
+   "cat": "Steel & Materials",
+   "tags": "C450, welding, E49XX, W50XX, CFW, brackets, SHS75x4",
+   "body": "## Material grade\n\n- **All EWCs with SHS75x4 are C450.** This is a note on the drawing (example: CATA1418AIMFD-GP-001).\n- As per instruction from Ross, SHS75x4 **C450** material needs to be used.\n\n## Weld type on drawings\n\nJust add the type of welding: **E49XX / W50XX**.\n\n## CFW length each side of a bracket\n\n| Arc size | Weld each side |\n|---|---|\n| 50 mm arcs | minimum 60 mm, 6 mm CFW each side of the bracket |\n| 75 mm arcs | 80 mm each side |\n| 100 mm arcs | 100 mm, 6 mm CFW each side |\n\n> [!note] The 6 mm size is written against the 50 mm and 100 mm entries in the original notes. The 75 mm line only says \"80 mm each side\".\n\n![Example drawing: full door wall, CATA1418AIMFD-GP-001, with the EWC material schedule and the C450 note]({{img:cata1418-full-door-wall.png}})\n"
+  },
+  {
+   "title": "Galvanising: Vents, Drainage & Coating",
+   "cat": "Steel & Materials",
+   "tags": "galv, HDG, vent holes, drainage, Duragal, tolerance, clearance",
+   "body": "## Coating allowance (hot dip galvanising)\n\nReply from Tony McKay (Design Manager), 23 July 2025:\n\n> HDG coating thickness may be around 600 um (0.6 mm). Therefore we need **1.2 mm extra clearance minimum**, plus any tolerance. So **at least 1.5 mm extra**.\n\nUse this when sizing holes and fits. See [Bolt Hole Sizes & Clearance](wiki:Bolt Hole Sizes & Clearance).\n\n## Vent holes and drainage\n\n- Paint the sections that need galv vents. This also includes twist lock beams.\n- Anything from **150x150 SHS up** needs to have drainage.\n- The notes list the largest profiles in Duragal as 200x100x5, 125x125x5 and 150x100x5, with the comment \"Hence vent hole not needed\".\n\n> [!review] The original note about Duragal profiles is incomplete. Confirm which sections need a vent hole before changing standard drawings.\n"
+  },
+  {
+   "title": "Bolt Hole Sizes & Clearance",
+   "cat": "Fasteners & Footings",
+   "tags": "bolts, hole size, M12, M16, M20, M24, clearance, colour code, tapped hole",
+   "body": "## Standard hole sizes\n\nFrom the \"Standard Information: Bolt Clearance\" drawing:\n\n| Bolt | Hole |\n|---|---|\n| M12 | 14 mm |\n| M16 | 18 mm |\n| M20 | 22 mm |\n| M24 | 26 mm |\n\n![Standard information: bolt clearance, with edge distances and washer sizes for M12, M16, M20 and M24]({{img:bolt-clearance.jpg}})\n\n## Bolt hole colour code\n\n| Bolt size | Colour |\n|---|---|\n| M12 | Red |\n| M16 | Green |\n| M20 | Blue |\n| M24 | Yellow |\n| M30 | Orange |\n\n## Chemset base plates\n\n- Use a **2 mm oversize hole** for all Chemset base plates. Example: 20 mm hole for M16 Chemset.\n- For an M16 threaded rod plate hole, use **14 mm**. Tapped holes are shown as `4 x Ø14.0 TAP M16`.\n\n![Tapped hole callout: 4 x Ø14.0 TAP M16]({{img:tapped-hole-m16.png}})\n\n## Galvanising\n\nAdd at least **1.5 mm** extra clearance for the HDG coating. See [Galvanising: Vents, Drainage & Coating](wiki:Galvanising: Vents, Drainage & Coating).\n\nSee also [Chemset Anchors](wiki:Chemset Anchors).\n"
+  },
+  {
+   "title": "Chemset Anchors",
+   "cat": "Fasteners & Footings",
+   "tags": "chemset, anchors, M16, pier, Trubolt, embedment, threaded rod, through bolt",
+   "body": "## Rules\n\n- Chemset to pier side distance: **minimum 100 mm**.\n- Chemset base plate holes: **2 mm oversize** (example: 20 mm hole for M16 Chemset).\n- Allow **2 nozzles per cartridge**.\n- Typical connection: **M16 Chemset bolt, 150 embedment**, on the pier.\n\n![Detail B, typical connection: M16 Chemset bolts at 150 embedment, parts AG-EWC530 and AG-EWC533 on a pier, minimum 100 marked]({{img:chemset-pier-detail.png}})\n\n## Chemset or through bolt?\n\nEngineering comment: loads would be applied in tension (uplift) and would be cyclical. They recommend a through bolt as a substitute in applications like end walls, where the main force is in shear.\n\nA separate reply says a through bolt would not work in the application being discussed.\n\n> [!review] The two comments above come from different threads. Check with Engineering for each application before substituting.\n\n## Threaded rod part codes seen in the notes\n\nThe code reads: M, bolt diameter, length, then THRBOLT.\n\n| Code | Bolt |\n|---|---|\n| M12100THRBOLT | M12 x 100 |\n| M16105THRBOLT | M16 x 105 |\n| M16140THRBOLT | M16 x 140 |\n| M16190THRBOLT | M16 x 190 |\n| M20160THRBOLT | M20 x 160 |\n| M20200THRBOLT | M20 x 200 |\n\nSee also [Hold-Down (HD) Bolt Detail](wiki:Hold-Down (HD) Bolt Detail).\n"
+  },
+  {
+   "title": "Hold-Down (HD) Bolt Detail",
+   "cat": "Fasteners & Footings",
+   "tags": "HD bolt, hold down, footing, concrete, grade 4.6, blockout, template",
+   "body": "New hold-down bolt detail (scale N.T.S.). The notes apply unless noted otherwise on the design drawings.\n\n## Bolt sizes\n\n| Ø D | T | W | E | H |\n|---|---|---|---|---|\n| 16 | 12 | 6 | 350 | 100 |\n| 20 | 16 | 6 | 450 | 150 |\n| 24 | 16 | 6 | 600 | 200 |\n| 30 | 20 | 6 | 800 | 250 |\n| 36 | 25 | 6 | 1000 | - |\n| 42 | 32 | 6 | 1100 | - |\n| 48 | 32 | 8 | 1200 | - |\n| 56 | 36 | 10 | 1300 | - |\n\nProjection P = grout + base plate + 2 x D minimum, typical.\n\n## Notes\n\n1. All bolts shall be accurately set with a template.\n2. All polystyrene shall be removed from blockouts after the concrete has cured.\n3. All bolts shall be supplied with 1 nut and 1 flat washer.\n4. All bolts, nuts and washers shall have a hot dip galvanised finish.\n5. All bolts shall be grade 4.6 unless noted otherwise.\n6. All bolts shall be securely fixed to ensure no possible movement during concrete placement.\n\n![Hold down (H.D) bolt detail with the size table and notes]({{img:hd-bolt-detail.png}})\n"
+  },
+  {
+   "title": "Dee-Shackle Specification",
+   "cat": "Fasteners & Footings",
+   "tags": "shackle, Walker Certification, galvanised, specification",
+   "body": "Dee shackle specification table, including the **Walker Certification** versions. It lists size, code (galvanised and self-colour), load rating, weight and dimensions.\n\n![Dee shackle specifications and Walker Certification]({{img:dee-shackle-spec.png}})\n\nOpen the image to see the full table.\n"
+  },
+  {
+   "title": "Cover Fabric GSM by Wind Region",
+   "cat": "Covers & Fabric",
+   "tags": "cover, GSM, fabric, wind region, FR, flashing, Colorbond",
+   "body": "## GSM to use\n\n| Fabric | Where it applies |\n|---|---|\n| **260 GSM** | All covers in region A and B, under 20,000 mm wide |\n| **320 GSM** | Covers over 20,000 mm wide for all C region shelters, and all D region shelters under 20,000 mm wide |\n| **407 GSM** | All covers over 30,000 mm wide, and D region covers over 20,000 mm wide |\n\n> [!warn] If the shelter is **double stacked**, use the **next wind region up**.\n\n![Allshelter cover GSM rules]({{img:cover-gsm.jpg}})\n\n## Other fabric notes\n\n- **350 GSM must be used as minimum from now on.**\n- FR rated cover drawings should have the note **FABRIC: FR**.\n- Note which side is to be coloured. The rear side of the sheet will be grey.\n- If the flashings are to match the covers (white), use **0.55 Colorbond Surf Mist**.\n\n> [!review] The \"350 GSM minimum from now on\" note is newer text with no date. It may override the 260 GSM line above. Confirm with the Director.\n\nSee also [Cover Details](wiki:Cover Details: Hems, Banners, Flaps & Pockets).\n"
+  },
+  {
+   "title": "Cover Details: Hems, Banners, Flaps & Pockets",
+   "cat": "Covers & Fabric",
+   "tags": "cover, hem, banner, flap, pocket, endwall, beam sock, velcro, overlap",
+   "body": "## Dimensions\n\n- **Hem line is 220** for all new endwall covers.\n- The **banner** requires a minimum of **150 mm above the flap and pocket**.\n- The **flap** needs to be slightly longer to compensate when attaching to a concrete slab.\n- On TB shelters the cover should attach to the containers.\n\n## Pocket and overlap sketch\n\nCover sections overlap by **1050 mm**. The sketch shows a 200 mm CP pocket on section 1, a 75 mm pocket for the cable on section 2, and the cambucle and D's positions.\n\n![Cover section overlap with 200 mm CP pocket and 75 mm cable pocket]({{img:cp-pocket-overlap.png}})\n\n## Beam socks on the endwall cover\n\nNot every column needs a beam sock. Depending on the cover width, the central column alone may be enough. They do not necessarily need to be full height.\n\n## Velcro\n\nThe rough side is called the **hook**. The soft side is called the **loop**.\n\nSee also [Cover Fabric GSM by Wind Region](wiki:Cover Fabric GSM by Wind Region) and [TP & CP Rules](wiki:TP & CP Rules).\n"
+  },
+  {
+   "title": "TP & CP Rules",
+   "cat": "Covers & Fabric",
+   "tags": "TP, CP, ratchet, tension pipe, 14 m, 15 m, endwall, cover",
+   "body": "## When CP is required\n\n- **All shelters with arc length 14 m or more require CP.**\n- Simplest rule to work off: covers on shelters with an arc length of **14 m or more** are to have CPs added. Russell Reddel (Director) replied \"well noted, moving forward\" on 3 Feb 2025.\n- **Vertical TPs** for endwalls where the shelter width is **15 m or more**.\n\n## Tension pipes (TP)\n\nOur preference is always to send tension pipes, unless the client specifically requests us not to.\n\n## Ratchets\n\n| Item | Ratchet |\n|---|---|\n| CP ratchets | all **36 mm** |\n| TP ratchet, frame size SHS50 | **36 mm** |\n| TP ratchet, frame size SHS75 or higher | **50 mm** |\n\n- Ratchets are the 362E and/or 502E types, and J-hook ratchets are used.\n- Match the ratchet quantity with the quantity on the drawing.\n\nSee also [Cover Details](wiki:Cover Details: Hems, Banners, Flaps & Pockets).\n"
+  },
+  {
+   "title": "Endwall Rules (EWB, EWC, PEW, FEW)",
+   "cat": "Endwalls & Doors",
+   "tags": "endwall, EWB, EWC, PEW, FEW, BRL, double stacked, A-frame, container",
+   "body": "## Critical guideline\n\n> [!warn] The **1st EWB starts at container height** and **all EWBs have the same length**. As Ross says: \"We always assume that the first EWB comes down to container height and that all EWBs are the same length.\"\n\n## Double stacked endwall codes\n\n| Type | Code |\n|---|---|\n| Double stacked, full | CASA1200ADSIMFE |\n| Double stacked, partial | CASA1200ADSIMPE (structurally the PE stays the same for single and double stack) |\n| Double stacked, partial extended | CASA1200ADSIMPE-EXT |\n\n## Bracing\n\n- From CATA14 up we could add the cable brace for PEW. It would work for any FEW right down to the smaller jobs. For PEW it is a little harder; practically, a framework with 3 or more EWCs should work.\n- If we win the order, strongly advise **3 x runs of BRL**.\n- Smaller jobs need extra BRLs for proper fabric support.\n\n## Other\n\n- The **A-frame** is part of the shelter and should be included in all drawings.\n- Barn and bifold doors are included with the endwall BOMs as one line item.\n- Improvement suggestion: use cutouts on the top pocket of the end walls that only expose the pipe to the inside of the structure, not the outside.\n\n![Example: full door wall for CATA1418AIMFD-GP-001, EWB and EWC material schedule]({{img:cata1418-full-door-wall.png}})\n\nSee also [Doors](wiki:Doors: PA, Roller, Barn & Bifold) and [TP & CP Rules](wiki:TP & CP Rules).\n"
+  },
+  {
+   "title": "Doors: PA, Roller, Barn & Bifold",
+   "cat": "Endwalls & Doors",
+   "tags": "doors, PA door, roller door, barn door, bifold, BOM, FDS, clearance, safety",
+   "body": "## BOM and drawing rules\n\n- PA doors and roller doors are **buy/sell items**: keep them as a **separate line item**. However, **PA doors are added to the Part List in FDS**.\n- Add the PA door in the top BOM.\n- Show the PA door fixing in the layout.\n- Barn and bifold doors are included with the endwall BOMs as one line item.\n\n## Roller door clearance\n\n> [!warn] Extreme safety warning: safe practices must be observed when working at heights, lifting roller doors and adjusting roller door spring tension.\n\nFrom the manufacturer's instructions:\n\n- For a standard (non-windlocked) installation the curtain should be at least **100 mm wider** overall than the opening. Windlocked side room increases by 35 mm each side.\n- Plain-side room is **120 mm minimum**.\n- Chain operators need **90 mm motor clearance** and **195 mm motor side room**.\n- Head room, back room and the mounting room table for each opening height are on the image below.\n\n![Roller door clearance: plan view, side view, mounting room table]({{img:roller-door-clearance.png}})\n\n> [!review] A separate note says \"Minimum 705 mm from opening\". It does not say which door or fixing it applies to. Confirm before using it.\n"
+  },
+  {
+   "title": "Cables, Ropes & SERT",
+   "cat": "Cables, Ropes & Gutters",
+   "tags": "cable, rope, SERT, pelmet, turnbuckle, 10mm, 6mm, galv cable, Headwind, rivets",
+   "body": "## Wire cable in pelmets\n\n- **All CALS and CALT shelters should now have wire cable in the pelmets.** Russell Reddel (Director), 13 Jan 2025.\n- Also use cable and turnbuckles for the pelmets on shelters with an arc length of **20 m or over**.\n\n## Rope and SERT size\n\n- Use **10 mm rope and SERT** for the shelter and endwalls. **6 mm is not suitable** for shelters with an arc length of 20 m or over.\n- Russell Reddel, 4 Feb 2025: all CALS and CALT, plus any shelter and endwall **18 m wide and over**, should use 10 mm.\n- Project Headwind will allow us to roll this out across the whole range.\n\n## Fixing SERT\n\nAlways use **rivets** to fix the SERT to the gutter, not tek screws. As recommended by Geoff at RBS.\n\n## Galvanised cable length\n\nExample job: S12573 Complete Hire & Sales, CALS4030AOM (Jan 2025).\n\n- Galvanised cable is tensioned as shown. The cable length for one end is approx **45,420 mm**.\n- Question: show exact length in the top BOM, or allow extra?\n- Answer from Tony McKay: we normally allow extra, the clamps are fitted on site, suggest **50 m**.\n\n![Galvanised cable tensioned along the cover overhang]({{img:galv-cable-diagram.png}})\n\n> [!review] The notes also say batten will be used in future for jobs with 10 mm rope, with the word \"(obsulate)\" next to it. The meaning is unclear. Confirm before using.\n"
+  },
+  {
+   "title": "Gutters & Flashings",
+   "cat": "Cables, Ropes & Gutters",
+   "tags": "gutter, flashing, box gutter, Colorbond, BOM, SERT",
+   "body": "- A **standard shelter gutter is a separate item** and is not included in the shelter BOM.\n- Recommended minimum fall for box gutters is **1:200**.\n- If the flashings are to match the covers (white), the material is **0.55 Colorbond Surf Mist**.\n- Fix SERT to the gutter with **rivets**, not tek screws. See [Cables, Ropes & SERT](wiki:Cables, Ropes & SERT).\n"
+  },
+  {
+   "title": "Shelter Drawing Rules & Checking",
+   "cat": "Drawing & BOM Rules",
+   "tags": "drawing, BOM, FDS, checking, shelter code, TB, twist lock, Zapp, kit, plates",
+   "body": "## Codes and BOMs\n\n- Shelters with **twist lock beams** have a **unique code**. The decision was **not to inactivate the existing TB code**, and to import the new BOM with components gradually.\n- Use **ST-RCT362-ZAPP** for new Zapp shelter drawings.\n- Example shelter codes seen in the notes: CATA1418AIMFD-GP-001, CASA1200ADSIMFE, CALS4030AOM.\n\n## Checking list\n\nHeadings from the original drawing checking notes:\n\n- Marking with the drawing title\n- Match quantity (BOM against drawing)\n- Assembly BOM import\n- Accessories kit\n- Information page for container / without container\n- Plate marking and placement dimensions, and plate details\n- Section size with Engineering\n\n## Always on the drawing\n\n- The **A-frame** is part of the shelter and is included in all drawings.\n- Cover on TB shelters attaches to the containers.\n- PA doors are added to the Part List in FDS. See [Doors](wiki:Doors: PA, Roller, Barn & Bifold).\n\n> [!review] The note \"The recommendation is, unless the client needs to reduce our price and remove items, the kit should be...\" has no list in the original. Please add the standard kit contents here.\n"
+  },
+  {
+   "title": "Notch Details (SHS75 and SHS100)",
+   "cat": "Drawing & BOM Rules",
+   "tags": "notch, SHS75, SHS100, Richard Gaal, STP, dimensions",
+   "body": "Confirmed notch dimensions were sent by Richard Gaal (Supply Chain Manager) on 24 July 2024, \"RE: STP Files\". The notch is **the same for 75 mm and 100 mm tube**.\n\n## Typical notch (Detail A)\n\nThe detail is dimensioned 15, 8, **60** and 8 mm. On the annotated 3D sketch **60 mm** and **15 mm** are marked as confirmed.\n\n![Detail A: typical notch details]({{img:notch-detail-a.png}})\n\n![Annotated notch on SHS, 60 mm and 15 mm confirmed]({{img:notch-slot-annotated.png}})\n\nSee also [Steel Lengths & Stock Packs](wiki:Steel Lengths & Stock Packs).\n"
+  },
+  {
+   "title": "Extrusion Joint Gasket Parts",
+   "cat": "Drawing & BOM Rules",
+   "tags": "extrusion, gasket, spacer, AG-GASKET001, AG-SPACER001, AG-PLSP001, joint, bolts",
+   "body": "Parts used at **each join in the extrusions**:\n\n| Part | Code |\n|---|---|\n| Gasket | AG-GASKET001 |\n| Spacer | AG-SPACER001 |\n| PLSP part (as coded) | AG-PLSP001 |\n\n- **One of each** of these three items is required at each join in the extrusions.\n- Plus **2 x M12x30 G4.6** bolts and nuts.\n\n![The three gasket and spacer part codes]({{img:gasket-parts.png}})\n\n> [!review] The original note is cut off after the M12x30 bolts. Confirm the full list of fasteners for each join.\n"
+  },
+  {
+   "title": "Unplaced Notes (please review)",
+   "cat": "Import Review",
+   "tags": "review, unplaced, OneNote, import",
+   "body": "These lines were in the OneNote \"General\" section, but the original page they belonged to could not be recovered. They are kept here so nothing is lost. Move each one into the right page, or delete it.\n\n- \"This is a minimum of 60 mm in 12.0 m.\"\n- \"Achieved with 2 x 3 m frames with a cleat welded to the center of the frame.\"\n- \"Minimum 705 mm from opening.\" (near the roller door notes)\n- \"All new drawings 15 m and wider could incorporate this rule and any CALS, CALT or ACLS with existing drawings upgraded before production, CAD workload and production lead time permitting.\"\n- \"Its official:\" followed by a note by Russell that was not recoverable.\n- Table headings with no values recovered: Shelter Code, O/A Length, Cut Length, Cover overlap, Banner of cover, Bolt size.\n- Other headings with no text: Frameguard, Duct tape, HB Welding, and \"SHS-CHS Steel uses Rules in Lake\".\n\n> [!note] The original OneNote file is not a normal document, so some tables and page layouts could not be read. Diagrams and tables are included as images where possible.\n"
+  }
+ ]
+}

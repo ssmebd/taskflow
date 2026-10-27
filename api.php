@@ -1,5 +1,5 @@
 <?php
-const BUILD=181;
+const BUILD=182;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -165,6 +165,11 @@ function out($d){
   echo json_encode($d);exit;
 }
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
+if(($_GET['a']??'')==='wiki_img'){
+  try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
+  if(!$r){http_response_code(404);exit;}
+  header('Content-Type: '.$r['mime']);header('Cache-Control: private, max-age=604800');header('X-Content-Type-Options: nosniff');echo $r['data'];exit;
+}
 if(($_SERVER['HTTP_X_REQUESTED_WITH']??'')!=='fetch'){http_response_code(400);out(['error'=>'bad request']);}
 $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
@@ -197,8 +202,34 @@ function col_peers($db,$w){$q=$db->prepare("SELECT col_grp FROM workspaces WHERE
 function col_put($db,$w,$name,$type,$opts){$q=$db->prepare("SELECT id FROM custom_cols WHERE ws_id=? AND LOWER(name)=LOWER(?)");$q->execute([$w,$name]);if($q->fetchColumn())return;
   $q=$db->prepare("SELECT COUNT(*) FROM custom_cols WHERE ws_id=?");$q->execute([$w]);if((int)$q->fetchColumn()>=30)return;
   $db->prepare("INSERT INTO custom_cols(name,ctype,options,sort_no,ws_id) VALUES(?,?,?,?,?)")->execute([$name,$type,$opts,(int)$db->query("SELECT COALESCE(MAX(sort_no),0)+1 FROM custom_cols")->fetchColumn(),$w]);}
+function wiki_seed_dir(){
+  $repo='';$f=__DIR__.'/deploy_config.php';
+  if(is_file($f)){try{$c=include $f;if(is_array($c)&&!empty($c['repo']))$repo=$c['repo'];}catch(Throwable $e){}}
+  if($repo==='')$repo=dirname(__DIR__,2).'/repositories/taskflow';
+  foreach([$repo.'/wiki_seed',__DIR__.'/wiki_seed'] as $d)if(is_file($d.'/pages.json'))return $d;
+  return '';
+}
+function wiki_tags($t){$o=[];$seen=[];foreach(preg_split('/[,;\n]+/',(string)$t) as $x){$x=mb_substr(trim(ltrim(trim($x),'#')),0,30);if($x===''||isset($seen[mb_strtolower($x)]))continue;$seen[mb_strtolower($x)]=1;$o[]=$x;if(count($o)>=14)break;}return implode(', ',$o);}
+function wiki_seed_run($db,$uid){
+  $d=wiki_seed_dir();if($d==='')return ['n'=>0,'err'=>'No starter pages found'];
+  $j=json_decode((string)file_get_contents($d.'/pages.json'),true);if(!is_array($j)||empty($j['pages']))return ['n'=>0,'err'=>'Starter file is not valid'];
+  $src=mb_substr((string)($j['src']??'seed'),0,40);$map=[];$n=0;
+  foreach($j['pages'] as $p){
+    $t=mb_substr(trim((string)($p['title']??'')),0,150);if($t==='')continue;
+    $q=$db->prepare("SELECT id FROM wiki_pages WHERE title=? AND src=?");$q->execute([$t,$src]);if($q->fetchColumn())continue;
+    $body=(string)($p['body']??'');
+    $body=preg_replace_callback('/\{\{img:([^}]+)\}\}/',function($m)use($db,$d,&$map){
+      $nm=trim($m[1]);if(isset($map[$nm]))return 'wimg:'.$map[$nm];
+      $fp=$d.'/img/'.basename($nm);if(!is_file($fp))return '';
+      $raw=file_get_contents($fp);$inf=@getimagesizefromstring($raw);if(!$inf)return '';
+      $db->prepare("INSERT INTO wiki_media(name,mime,data,created_at) VALUES(?,?,?,NOW())")->execute([mb_substr($nm,0,120),$inf['mime'],$raw]);
+      $map[$nm]=(int)$db->lastInsertId();return 'wimg:'.$map[$nm];},$body);
+    $db->prepare("INSERT INTO wiki_pages(title,body,cat,tags,src,updated_by,updated_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$t,mb_substr($body,0,60000),mb_substr((string)($p['cat']??''),0,80),wiki_tags(is_array($p['tags']??null)?implode(',',$p['tags']):(string)($p['tags']??'')),$src,$uid]);$n++;
+  }
+  return ['n'=>$n,'err'=>''];
+}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v32']))return;
+  if(!empty($_SESSION['schema_v33']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -248,7 +279,9 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS task_assignees(task_id INT NOT NULL,user_id INT NOT NULL,PRIMARY KEY(task_id,user_id),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS presence(user_id INT NOT NULL PRIMARY KEY,seen DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'col_grp'")->fetch())$db->exec("ALTER TABLE workspaces ADD col_grp INT NOT NULL DEFAULT 0");
-  $_SESSION['schema_v32']=1;
+  foreach(["cat VARCHAR(80) NOT NULL DEFAULT ''","tags VARCHAR(400) NOT NULL DEFAULT ''","src VARCHAR(40) NOT NULL DEFAULT ''"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM wiki_pages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE wiki_pages ADD $cd");}
+  $db->exec("CREATE TABLE IF NOT EXISTS wiki_media(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(120) NOT NULL DEFAULT '',mime VARCHAR(40) NOT NULL,data MEDIUMBLOB NOT NULL,created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v33']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -734,13 +767,28 @@ case 'my_hours':
   $plan=[];try{$q=$db->prepare("SELECT t.id,t.title,t.order_no,t.customer,t.start_date,t.end_date,t.status,w.name AS ws FROM tasks t LEFT JOIN workspaces w ON w.id=t.ws_id WHERE (t.assigned_to=? OR t.id IN(SELECT task_id FROM task_assignees WHERE user_id=?)) AND COALESCE(t.start_date,t.end_date) IS NOT NULL AND COALESCE(t.start_date,t.end_date)<=? AND COALESCE(t.end_date,t.start_date)>=? ORDER BY t.start_date,t.id LIMIT 600");$q->execute([$who,$who,$t,$f]);$plan=$q->fetchAll();}catch(Throwable $e){}
   out(['rows'=>$rows,'user'=>$who,'plan'=>$plan]);
 case 'wiki_list':
-  out(['pages'=>$db->query("SELECT p.id,p.title,p.body,p.updated_at,COALESCE(u.name,'') AS by_name FROM wiki_pages p LEFT JOIN users u ON u.id=p.updated_by ORDER BY p.title")->fetchAll()]);
+  $seeded=0;$serr='';
+  if($me['role']==='admin'){try{$sd=wiki_seed_dir();if($sd!==''){$j=json_decode((string)file_get_contents($sd.'/pages.json'),true);$sr=mb_substr((string)($j['src']??'seed'),0,40);$q=$db->prepare("SELECT COUNT(*) FROM wiki_pages WHERE src=?");$q->execute([$sr]);if(!(int)$q->fetchColumn()){$r=wiki_seed_run($db,$uid);$seeded=$r['n'];$serr=$r['err'];}}}catch(Throwable $e){$serr=$e->getMessage();}}
+  out(['pages'=>$db->query("SELECT p.id,p.title,p.body,p.cat,p.tags,p.updated_at,COALESCE(u.name,'') AS by_name FROM wiki_pages p LEFT JOIN users u ON u.id=p.updated_by ORDER BY p.cat,p.title")->fetchAll(),'seeded'=>$seeded,'seed_err'=>$serr]);
+case 'wiki_seed':
+  admin();$r=wiki_seed_run($db,$uid);out(['ok'=>1,'n'=>$r['n'],'err'=>$r['err']]);
 case 'wiki_save':
+  if($me['role']==='guest')out(['error'=>'Guests cannot edit the wiki']);
   $id=(int)($in['id']??0);$t=mb_substr(trim((string)($in['title']??'')),0,150);$b=mb_substr((string)($in['body']??''),0,60000);if($t==='')out(['error'=>'Give the page a title']);
-  if($id){$db->prepare("UPDATE wiki_pages SET title=?,body=?,updated_by=?,updated_at=NOW() WHERE id=?")->execute([$t,$b,$uid,$id]);}
-  else{$db->prepare("INSERT INTO wiki_pages(title,body,updated_by,updated_at) VALUES(?,?,?,NOW())")->execute([$t,$b,$uid]);$id=(int)$db->lastInsertId();}
+  $ct=mb_substr(trim((string)($in['cat']??'')),0,80);$tg=wiki_tags($in['tags']??'');
+  if($id){$db->prepare("UPDATE wiki_pages SET title=?,body=?,cat=?,tags=?,updated_by=?,updated_at=NOW() WHERE id=?")->execute([$t,$b,$ct,$tg,$uid,$id]);}
+  else{$db->prepare("INSERT INTO wiki_pages(title,body,cat,tags,updated_by,updated_at) VALUES(?,?,?,?,?,NOW())")->execute([$t,$b,$ct,$tg,$uid]);$id=(int)$db->lastInsertId();}
   out(['ok'=>1,'id'=>$id]);
+case 'wiki_up':
+  if($me['role']==='guest')out(['error'=>'Guests cannot upload']);
+  $d=(string)($in['data']??'');if(strpos($d,',')!==false&&strpos($d,'base64')!==false)$d=substr($d,strpos($d,',')+1);
+  $raw=base64_decode($d,true);if($raw===false||strlen($raw)<50)out(['error'=>'Could not read the image']);
+  if(strlen($raw)>4500000)out(['error'=>'Image is too large (max 4 MB)']);
+  $inf=@getimagesizefromstring($raw);if(!$inf||!in_array($inf['mime'],['image/png','image/jpeg','image/gif','image/webp'],true))out(['error'=>'Only PNG, JPEG, GIF or WebP images']);
+  $db->prepare("INSERT INTO wiki_media(name,mime,data,created_at) VALUES(?,?,?,NOW())")->execute([mb_substr((string)($in['name']??'image'),0,120),$inf['mime'],$raw]);
+  out(['ok'=>1,'id'=>(int)$db->lastInsertId()]);
 case 'wiki_del':
+  if($me['role']==='guest')out(['error'=>'Guests cannot delete pages']);
   $db->prepare("DELETE FROM wiki_pages WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'dt_add':
   need_level('edit');$n=mb_substr(trim($in['name']??''),0,100);if($n==='')out(['error'=>'Enter a drawing type']);
