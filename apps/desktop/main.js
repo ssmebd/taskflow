@@ -28,17 +28,26 @@ function pushState() {
   c.send('tabs', { active: activeId, tabs: tabs.map((t) => ({ id: t.id, title: t.title, home: t.home, pinned: !!t.pinned })) });
   scheduleSave();
 }
-function layout() {
+let lastSize = '', layoutQ = false;
+function layout(force) {
   if (!win || win.isDestroyed()) return;
   const [w, h] = win.getContentSize();
+  const key = w + 'x' + h + ':' + activeId + ':' + tabs.length;
+  if (!force && key === lastSize) return;
+  lastSize = key;
+  const b = { x: 0, y: TOP, width: w, height: Math.max(0, h - TOP) };
   tabs.forEach((t) => {
-    t.view.setBounds({ x: 0, y: TOP, width: w, height: Math.max(0, h - TOP) });
-    t.view.setVisible(t.id === activeId);
+    const on = t.id === activeId;
+    if (on) t.view.setBounds(b);          // only the visible tab follows the live resize
+    else if (force) t.view.setBounds(b);  // hidden tabs are fixed up on tab changes
+    t.view.setVisible(on);
   });
 }
+// resize events fire many times per frame: do the work once per frame instead
+function layoutSoon() { if (layoutQ) return; layoutQ = true; setImmediate(() => { layoutQ = false; layout(); }); }
 function activate(id) {
   const t = tabs.find((x) => x.id === id); if (!t) return;
-  activeId = id; layout(); pushState(); t.view.webContents.focus();
+  activeId = id; layout(true); pushState(); t.view.webContents.focus();
   win.setTitle(t.title === 'Home' ? 'TaskFlow' : t.title + ' – TaskFlow');
 }
 
@@ -98,7 +107,7 @@ function newTab(url, opts = {}) {
     Menu.buildFromTemplate(items).popup({ window: win });
   });
   wc.loadURL(url);
-  if (opts.background) { layout(); pushState(); } else activate(t.id);
+  if (opts.background) { layout(true); pushState(); } else activate(t.id);
   return t;
 }
 function closeTab(id) {
@@ -106,11 +115,11 @@ function closeTab(id) {
   if (i < 0 || tabs[i].home || tabs[i].pinned) return;
   const [t] = tabs.splice(i, 1);
   try { win.contentView.removeChildView(t.view); t.view.webContents.close(); } catch (e) {}
-  if (activeId === id) activate((tabs[i] || tabs[i - 1] || tabs[0]).id); else { layout(); pushState(); }
+  if (activeId === id) activate((tabs[i] || tabs[i - 1] || tabs[0]).id); else { layout(true); pushState(); }
 }
 const wsOf = (u) => { try { return new URL(u).searchParams.get('w') || ''; } catch (e) { return ''; } };
 function sortTabs() { const r = (t) => (t.home ? 0 : t.pinned ? 1 : 2); tabs = tabs.map((t, i) => [t, i]).sort((a, b) => r(a[0]) - r(b[0]) || a[1] - b[1]).map((x) => x[0]); }
-function setPin(t, on) { if (t.home) return; t.pinned = on; sortTabs(); layout(); pushState(); }
+function setPin(t, on) { if (t.home) return; t.pinned = on; sortTabs(); layout(true); pushState(); }
 function pinCompany(c, on) {
   const id = String(c.id);
   const t = tabs.find((x) => !x.home && wsOf(x.url) === id);
@@ -247,9 +256,9 @@ function create() {
   Menu.setApplicationMenu(null);
   win.removeMenu();
   win.on('close', (e) => { if (!quitting) { e.preventDefault(); win.hide(); } });
-  win.on('resize', layout);
-  win.on('maximize', layout); win.on('unmaximize', layout);
-  win.on('enter-full-screen', layout); win.on('leave-full-screen', layout);
+  win.on('resize', layoutSoon);
+  for (const ev of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen', 'restore']) win.on(ev, () => layout(true));
+  win.on('resized', () => layout(true));
   hook(win.webContents);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.loadFile(path.join(__dirname, 'chrome.html'));
