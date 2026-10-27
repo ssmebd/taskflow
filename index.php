@@ -39,6 +39,8 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .tag{border:1px solid var(--line);border-radius:999px;padding:1px 8px}
 .late{color:var(--hi);font-weight:600}
 .listwrap{padding:0 16px 16px;overflow-x:auto}
+@media(min-width:701px){.listwrap{overflow:auto;overscroll-behavior:contain;max-height:calc(100dvh - 200px)}
+.listwrap thead th{position:sticky;top:0;z-index:7;background:var(--card);box-shadow:0 1px 0 var(--line),0 4px 8px -6px rgba(20,30,70,.25)}}
 table{table-layout:fixed;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
 table td{overflow:hidden}table .ed{min-width:0}
 th.ch{position:relative;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
@@ -919,7 +921,7 @@ document.addEventListener("dragover",e=>{if(!dragCol)return;const th=e.target.cl
 document.addEventListener("drop",e=>{if(!dragCol)return;const th=e.target.closest&&e.target.closest("th.ch");if(th){e.preventDefault();const from=dragCol;dragCol=null;moveCol(from,th.dataset.col)}});
 document.addEventListener("dragend",()=>{dragCol=null;document.querySelectorAll("th.ch.over").forEach(x=>x.classList.remove("over"))});
 $("#cr").onclick=()=>{try{localStorage.removeItem(coKey());localStorage.removeItem(cwKey())}catch(e){}render()};
-(()=>{let on=false,tk=0;const f=()=>{tk=0;const y=window.scrollY;if(!on&&y>70){on=true;document.body.classList.add("hs")}else if(on&&y<6){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true})})();
+(()=>{let on=false,tk=0;const f=()=>{tk=0;const lw=document.querySelector(".listwrap"),y=Math.max(window.scrollY,lw?lw.scrollTop:0);if(!on&&y>70){on=true;document.body.classList.add("hs")}else if(on&&y<6){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true,capture:true})})();
 let homeData=null,homeAt=0,homeBusy=false;
 async function renderHome(){
   const m=$("#main");
@@ -1772,7 +1774,7 @@ function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden)return;b.classList.remove("ro")}
 try{if(localStorage.getItem("tf_rh")==="1"&&!document.documentElement.classList.contains("lk-d"))document.body.classList.add("rh")}catch(e){}
 $("#rco").addEventListener("click",()=>{if(document.body.classList.contains("rh"))document.body.classList.add("ro")});
-function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");document.documentElement.style.setProperty("--hb",Math.round(h.getBoundingClientRect().bottom)+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
+function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");(()=>{const lw=document.querySelector(".listwrap");if(lw&&innerWidth>700&&!window.scrollY){const t=lw.getBoundingClientRect().top;lw.style.maxHeight=Math.max(240,Math.round(innerHeight-t-4))+"px"}})();document.documentElement.style.setProperty("--hb",Math.round(h.getBoundingClientRect().bottom)+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
 (()=>{const g=document.querySelector("#side .dkg");if(!g)return;const R=document.documentElement,sd=$("#side");
  const clamp=(x,y)=>{const w=sd.offsetWidth||58,h=sd.offsetHeight||300;return[Math.max(4,Math.min(innerWidth-w-4,x)),Math.max(4,Math.min(innerHeight-h-4,y))]};
  const put=(x,y)=>{R.style.setProperty("--dkx",x+"px");R.style.setProperty("--dky",y+"px")};
@@ -2037,7 +2039,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=189;
+const BUILD=190;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
