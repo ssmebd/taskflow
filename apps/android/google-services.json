@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "741288388853",
+    "project_id": "taskflow-gurucadd",
+    "storage_bucket": "taskflow-gurucadd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:741288388853:android:211703bbe2d17354a47dbc",
+        "android_client_info": {
+          "package_name": "com.gurucadd.taskflow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARu3fBy8BVYtv8vfQnEB6dcx2MBvBPYXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
