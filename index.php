@@ -287,6 +287,8 @@ body,body.sc{padding-left:56px}
 #cpanel .cr span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home #fa,body.home #add,body.home #gtabs,body.home #stats,body.home #gcb,body.home #bar{display:none!important}
 .hm{max-width:900px;margin:0 auto;padding:18px 16px 40px}.hm h2{margin:0 0 2px;font-size:22px}.hm .sub{color:var(--mut);margin-bottom:16px}
+.hmc{margin-top:16px}.hmc h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hmc h3 i{width:9px;height:9px;border-radius:50%;background:#7c3aed}.hmc h3 em{font-style:normal;background:var(--col);padding:0 7px;border-radius:9px;font-size:11px}
+.hmr{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);cursor:pointer;font:inherit}.hmr:hover{border-color:#7c3aed}.hmr .av{flex:none}.hmr .hmb{flex:1;min-width:0}.hmr .hmb b{display:block}.hmr .hmb small{display:block;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hmr .hmt{font-size:11px;color:var(--mut);white-space:nowrap;text-align:right}.hmr .hmu{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;margin-top:3px}
 .hsec{margin-top:18px}.hsec h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hsec h3 i{width:9px;height:9px;border-radius:50%;background:var(--c,#64748b)}.hsec h3 em{font-style:normal;font-weight:600;color:var(--ink)}
 .hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);text-decoration:none}
 .hrow:hover{border-color:var(--pri)}.hrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow small{color:var(--mut)}
@@ -880,15 +882,19 @@ async function renderHome(){
   if(!homeData||Date.now()-homeAt>2500){if(homeBusy)return;homeBusy=true;try{homeData=await api("my_tasks");homeAt=Date.now()}catch(e){m.innerHTML='<div class="hm"><div class="empty">'+esc(e.message)+'</div></div>';homeBusy=false;return}homeBusy=false}
   const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
   const now=new Date(),td=ymd(now),wk=ymd(new Date(now.getTime()+7*864e5));
-  const B=[["late","Overdue","#dc2626"],["today","Due today","#f59e0b"],["week","Next 7 days","#2563eb"],["later","Later","#64748b"],["none","No deadline","#94a3b8"]];
-  const bk={late:[],today:[],week:[],later:[],none:[]};
-  for(const t of homeData.tasks){const e=t.end_date||"";bk[!e?"none":e<td?"late":e===td?"today":e<=wk?"week":"later"].push(t)}
+  const B=[["late","Overdue","#dc2626"],["today","Due today","#f59e0b"],["going","Ongoing now","#16a34a"],["soon","Upcoming: starts in the next 7 days","#2563eb"],["later","Later","#64748b"],["none","Not scheduled","#94a3b8"]];
+  const bk={late:[],today:[],going:[],soon:[],later:[],none:[]};
+  for(const t of homeData.tasks){const e=t.end_date||"",st0=t.start_date||"";bk[e&&e<td?"late":e===td?"today":st0&&st0>td?(st0<=wk?"soon":"later"):(st0||e)?"going":"none"].push(t)}
   const fd=s=>{const d=new Date(s+"T00:00:00");return d.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
   const row=t=>{const st=(homeData.st[t.ws_id]||{})[t.status],nm=st?st.n:t.status,pc=st&&st.c?st.c:"#888";
-    return `<a class="hrow" href="index.php?w=${t.ws_id}&t=${t.id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ")}</small></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="hco">${esc(homeData.ws[t.ws_id]||"")}</span><span class="hst" style="--pc:${esc(pc)}">${esc(nm)}</span></div><span class="hdl${t.end_date&&t.end_date<td?" late":""}">${t.end_date?fd(t.end_date):"No deadline"}</span></a>`};
+    return `<a class="hrow" href="index.php?w=${t.ws_id}&t=${t.id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ")}</small></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="hco">${esc(homeData.ws[t.ws_id]||"")}</span><span class="hst" style="--pc:${esc(pc)}">${esc(nm)}</span></div><span class="hdl${t.end_date&&t.end_date<td?" late":""}">${t.start_date&&t.start_date>td?"Starts "+fd(t.start_date):t.end_date?fd(t.end_date):"No deadline"}</span></a>`};
+  if(!window.__hm||Date.now()-window.__hmAt>8000){try{window.__hm=(await api("home_msgs")).convs||[];window.__hmAt=Date.now()}catch(e){window.__hm=window.__hm||[]}}const hc=window.__hm;
+  const hday=a=>{const d=new Date(String(a).replace(" ","T")),t0=new Date();t0.setHours(0,0,0,0);const tm=d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});return d>=t0?tm:"Yesterday "+tm};
+  const msgHtml=hc.length?`<div class="hmc"><h3><i></i>Messages since yesterday <em>${hc.reduce((a,c)=>a+c.n,0)}</em></h3>${hc.map(c=>`<button class="hmr" data-hp="${c.peer}">${avHtml(c.name)}<span class="hmb"><b>${esc(c.name)}</b><small>${c.peer?"":esc(c.from)+": "}${esc(c.body)}</small></span><span class="hmt">${esc(hday(c.at))}${c.unread?`<br><span class="hmu">${c.unread} new</span>`:""}</span></button>`).join("")}</div>`:"";
   const n=homeData.tasks.length,lt=bk.late.length;
-  m.innerHTML=`<div class="hm"><h2>Hello, ${esc((me.name||"").split(" ")[0]||"there")}</h2><div class="sub">${n?`${n} open task${n===1?"":"s"} assigned to you across all your companies${lt?`, ${lt} overdue`:""}.`:"Nothing is assigned to you right now."}</div>`+
+  m.innerHTML=`<div class="hm"><h2>Hello, ${esc((me.name||"").split(" ")[0]||"there")}</h2><div class="sub">${n?`${n} open task${n===1?"":"s"} assigned to you across all your companies${lt?`, ${lt} overdue`:""}.`:"Nothing is assigned to you right now."}</div>`+msgHtml+
     B.filter(b=>bk[b[0]].length).map(b=>`<div class="hsec" style="--c:${b[2]}"><h3><i></i>${b[1]} <em>${bk[b[0]].length}</em></h3>${bk[b[0]].map(row).join("")}</div>`).join("")+`</div>`}
+document.addEventListener("click",e=>{const b=e.target.closest(".hmr[data-hp]");if(!b)return;const p=+b.dataset.hp;mgPeer=p;if($("#msgw").hidden)$("#mgb").click();else mgSel(p)});
 function render(){
   const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f&&$("#main").contains(ae)){pend=true;return}
   pend=false;for(const id of [...sel])if(!tasks.some(t=>t.id==id))sel.delete(id);
@@ -1896,7 +1902,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=175;
+const BUILD=176;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

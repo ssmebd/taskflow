@@ -25,7 +25,7 @@ const ui = () => win && !win.isDestroyed() && win.webContents;
 
 function pushState() {
   const c = ui(); if (!c) return;
-  c.send('tabs', { active: activeId, tabs: tabs.map((t) => ({ id: t.id, title: t.title, home: t.home })) });
+  c.send('tabs', { active: activeId, tabs: tabs.map((t) => ({ id: t.id, title: t.title, home: t.home, pinned: !!t.pinned })) });
   scheduleSave();
 }
 function layout() {
@@ -48,8 +48,9 @@ function scheduleSave() {
   clearTimeout(saveT);
   saveT = setTimeout(() => {
     try {
-      const list = tabs.filter((t) => !t.home).map((t) => t.url);
-      fs.writeFileSync(stateFile(), JSON.stringify({ list, active: tabs.findIndex((t) => t.id === activeId) }));
+      const list = tabs.filter((t) => t.pinned).map((t) => t.url);
+      const a = active();
+      fs.writeFileSync(stateFile(), JSON.stringify({ list, active: a && (a.home || a.pinned) ? tabs.findIndex((t) => t.id === activeId) : 0 }));
     } catch (e) {}
   }, 800);
 }
@@ -65,7 +66,7 @@ function newTab(url, opts = {}) {
   const view = new WebContentsView({ webPreferences: { backgroundThrottling: false } });
   view.setBackgroundColor('#0f2a5c');
   const wc = view.webContents;
-  const t = { id: nextId++, view, home: !!opts.home, title: opts.home ? 'Home' : 'Loading…', url };
+  const t = { id: nextId++, view, home: !!opts.home, pinned: !!opts.pinned, title: opts.home ? 'Home' : 'Loading…', url };
   tabs.push(t);
   win.contentView.addChildView(view);
   hook(wc);
@@ -102,11 +103,36 @@ function newTab(url, opts = {}) {
 }
 function closeTab(id) {
   const i = tabs.findIndex((t) => t.id === id);
-  if (i < 0 || tabs[i].home) return;
+  if (i < 0 || tabs[i].home || tabs[i].pinned) return;
   const [t] = tabs.splice(i, 1);
   try { win.contentView.removeChildView(t.view); t.view.webContents.close(); } catch (e) {}
   if (activeId === id) activate((tabs[i] || tabs[i - 1] || tabs[0]).id); else { layout(); pushState(); }
 }
+const wsOf = (u) => { try { return new URL(u).searchParams.get('w') || ''; } catch (e) { return ''; } };
+function sortTabs() { const r = (t) => (t.home ? 0 : t.pinned ? 1 : 2); tabs = tabs.map((t, i) => [t, i]).sort((a, b) => r(a[0]) - r(b[0]) || a[1] - b[1]).map((x) => x[0]); }
+function setPin(t, on) { if (t.home) return; t.pinned = on; sortTabs(); layout(); pushState(); }
+function pinCompany(c, on) {
+  const id = String(c.id);
+  const t = tabs.find((x) => !x.home && wsOf(x.url) === id);
+  if (on) { if (t) { setPin(t, true); activate(t.id); } else newTab(ORIGIN + '/index.php?w=' + c.id, { pinned: true }), sortTabs(), pushState(); }
+  else if (t) setPin(t, false);
+}
+function pinItems() {
+  if (!companies.length) return [{ label: 'Open a company from Home first', enabled: false }];
+  return companies.map((c) => {
+    const t = tabs.find((x) => !x.home && wsOf(x.url) === String(c.id));
+    return { label: c.name || ('Company ' + c.id), type: 'checkbox', checked: !!(t && t.pinned), click: (i) => pinCompany(c, i.checked) };
+  });
+}
+ipcMain.on('tab-menu', (e, id, x, y) => {
+  if (e.sender !== ui()) return;
+  const t = tabs.find((q) => q.id === (id | 0)); if (!t) return;
+  Menu.buildFromTemplate([
+    { label: t.pinned ? 'Unpin tab' : 'Pin tab', enabled: !t.home, click: () => setPin(t, !t.pinned) },
+    { label: 'Reload', click: () => t.view.webContents.reload() },
+    { label: 'Close tab', enabled: !t.home && !t.pinned, click: () => closeTab(t.id) }
+  ]).popup({ window: win, x: x | 0, y: y | 0 });
+});
 function cycle(d) {
   const i = tabs.findIndex((t) => t.id === activeId);
   activate(tabs[(i + d + tabs.length) % tabs.length].id);
@@ -157,7 +183,8 @@ function template(name) {
   if (name === 'file') return [
     { label: 'New tab', accelerator: 'Ctrl+T', click: () => newTab(URL_HOME) },
     { label: 'Open company in new tab', submenu: companyItems() },
-    { label: 'Close tab', accelerator: 'Ctrl+W', enabled: !!(a && !a.home), click: () => a && closeTab(a.id) },
+    { label: 'Pin company', submenu: pinItems() },
+    { label: 'Close tab', accelerator: 'Ctrl+W', enabled: !!(a && !a.home && !a.pinned), click: () => a && closeTab(a.id) },
     { type: 'separator' },
     { label: 'Start with Windows', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (i) => app.setLoginItemSettings({ openAtLogin: i.checked }) },
     { label: 'Hide to tray', click: () => win.hide() },
@@ -179,6 +206,7 @@ function template(name) {
   if (name === 'tools') return [
     { label: 'Home (all companies)', click: () => { const h = tabs.find((t) => t.home); if (h) activate(h.id); } },
     { label: 'Open company in new tab', submenu: companyItems() },
+    { label: 'Pin company', submenu: pinItems() },
     { type: 'separator' },
     { label: 'Back', enabled: !!(wc && wc.canGoBack()), click: () => wc.goBack() },
     { label: 'Forward', enabled: !!(wc && wc.canGoForward()), click: () => wc.goForward() },
@@ -227,7 +255,7 @@ function create() {
   win.loadFile(path.join(__dirname, 'chrome.html'));
   const saved = loadSaved();
   const home = newTab(URL_HOME, { home: true });
-  saved.list.forEach((u) => newTab(u, { background: true }));
+  saved.list.forEach((u) => newTab(u, { background: true, pinned: true }));
   const pick = saved.list.length && saved.active > 0 ? tabs[saved.active] : home;
   activate((pick || home).id);
 }

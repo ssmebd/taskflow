@@ -1,5 +1,5 @@
 <?php
-const BUILD=175;
+const BUILD=176;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -435,6 +435,13 @@ case 'msg_send':
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
+case 'home_msgs':
+  $q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.created_at>=DATE_SUB(CURDATE(),INTERVAL 1 DAY) AND m.from_id<>? AND (m.to_id=? OR m.to_id=0) ORDER BY m.id DESC LIMIT 200");$q->execute([$uid,$uid]);
+  $rd=[];$q2=$db->prepare("SELECT peer_id,last_id FROM msg_reads WHERE user_id=?");$q2->execute([$uid]);foreach($q2->fetchAll() as $r)$rd[(int)$r['peer_id']]=(int)$r['last_id'];
+  $cv=[];foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:(int)$m['from_id'];
+    if(!isset($cv[$pr]))$cv[$pr]=['peer'=>$pr,'name'=>$pr?$m['name']:'Team chat','from'=>$m['name'],'body'=>mb_substr((string)$m['body'],0,140),'at'=>$m['created_at'],'n'=>0,'unread'=>0];
+    $cv[$pr]['n']++;if((int)$m['id']>($rd[$pr]??0))$cv[$pr]['unread']++;}
+  out(['convs'=>array_values($cv)]);
 case 'my_tasks':
   $ids=array_map(fn($w)=>(int)$w['id'],$WS);
   if(!$ids)out(['tasks'=>[],'st'=>(object)[],'ws'=>(object)[]]);

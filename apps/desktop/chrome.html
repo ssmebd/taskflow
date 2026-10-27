@@ -12,7 +12,7 @@
 .tab .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tab .x{all:unset;width:18px;height:18px;border-radius:9px;text-align:center;line-height:18px;font-size:14px;opacity:.6}
 .tab .x:hover{background:rgba(0,0,0,.15);opacity:1}
-.tab.home .x{display:none}
+.tab.home .x,.tab.pin .x{display:none}.tab.pin{flex:0 1 150px}
 .tab .ic{width:14px;height:14px;flex:none;opacity:.9}
 #plus{all:unset;width:28px;height:28px;margin-bottom:0;border-radius:6px;text-align:center;line-height:27px;font-size:18px;color:#cfd9ee}
 #plus:hover{background:rgba(255,255,255,.14);color:#fff}
@@ -21,13 +21,15 @@
 <div id="tb"><span id="tabs" style="display:contents"></span><button id="plus" title="Open a company in a new tab (Ctrl+T for a new tab)">+</button></div>
 <script>
 const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const PIN='<svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M14 3l7 7-3 1-3.5 3.5.5 4.5-1.5 1.5L10 15l-5 5-1-1 5-5-4.5-4.5L6 8l4.5.5L14 5z"/></svg>';
 const HOME='<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>';
 document.querySelectorAll("#rb [data-m]").forEach(b=>{
   b.addEventListener("mousedown",e=>{e.preventDefault();const r=b.getBoundingClientRect();b.classList.add("on");tf.menu(b.dataset.m,Math.round(r.left),Math.round(r.bottom));setTimeout(()=>b.classList.remove("on"),250)});
 });
 $("#plus").onclick=e=>{const r=e.currentTarget.getBoundingClientRect();tf.newTab(Math.round(r.left),Math.round(r.bottom))};
 $("#tabs").addEventListener("click",e=>{const x=e.target.closest(".x");const t=e.target.closest(".tab");if(!t)return;if(x)tf.close(+t.dataset.id);else tf.activate(+t.dataset.id)});
-$("#tabs").addEventListener("auxclick",e=>{const t=e.target.closest(".tab");if(t&&e.button===1&&!t.classList.contains("home"))tf.close(+t.dataset.id)});
-function draw(s){$("#tabs").innerHTML=s.tabs.map(t=>`<div class="tab${t.id===s.active?" on":""}${t.home?" home":""}" data-id="${t.id}" title="${esc(t.title)}">${t.home?HOME:""}<span class="t">${esc(t.title)}</span><button class="x">×</button></div>`).join("")}
+$("#tabs").addEventListener("contextmenu",e=>{const t=e.target.closest(".tab");if(!t)return;e.preventDefault();tf.tabMenu(+t.dataset.id,e.clientX,e.clientY)});
+$("#tabs").addEventListener("auxclick",e=>{const t=e.target.closest(".tab");if(t&&e.button===1&&!t.classList.contains("home")&&!t.classList.contains("pin"))tf.close(+t.dataset.id)});
+function draw(s){$("#tabs").innerHTML=s.tabs.map(t=>`<div class="tab${t.id===s.active?" on":""}${t.home?" home":""}${t.pinned?" pin":""}" data-id="${t.id}" title="${esc(t.title)}">${t.home?HOME:t.pinned?PIN:""}<span class="t">${esc(t.title)}</span><button class="x">×</button></div>`).join("")}
 tf.onTabs(draw);tf.ready();
 </script>
