@@ -1,5 +1,5 @@
 <?php
-const BUILD=176;
+const BUILD=177;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -170,6 +170,28 @@ $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
+const WORK_H=8.0;
+// Overtime is automatic: all of Saturday/Sunday, and anything beyond 8 hours on a weekday.
+function ot_rebalance($db,$who,$d){
+  try{
+    $wk=(int)date('N',strtotime($d))>=6;$cum=0.0;
+    $q=$db->prepare("SELECT id,task_id,ws_id,user_id,logged_by,hours,kind,note,rev,work_date FROM time_logs WHERE user_id=? AND work_date=? ORDER BY id");$q->execute([$who,$d]);
+    foreach($q->fetchAll() as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
+      if($wk)$k='OT';
+      elseif($cum+$h<=WORK_H+0.001)$k='R';
+      elseif($cum>=WORK_H-0.001)$k='OT';
+      else{$k='R';$sp=round($cum+$h-WORK_H,2);$h=round(WORK_H-$cum,2);}
+      if($sp>0){
+        $db->prepare("UPDATE time_logs SET hours=?,kind='R' WHERE id=?")->execute([$h,$r['id']]);
+        $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,created_at) VALUES(?,?,?,?,?,?,'OT',?,?,NOW())")->execute([$r['task_id'],$r['ws_id'],$r['user_id'],$r['logged_by'],$r['work_date'],$sp,$r['note'],$r['rev']]);
+        $cum=WORK_H;
+      }else{
+        if($k!==$r['kind'])$db->prepare("UPDATE time_logs SET kind=? WHERE id=?")->execute([$k,$r['id']]);
+        $cum+=$h;
+      }
+    }
+  }catch(Throwable $e){}
+}
 function col_peers($db,$w){$q=$db->prepare("SELECT col_grp FROM workspaces WHERE id=?");$q->execute([$w]);$g=(int)$q->fetchColumn();if($g<=0)return [];
   $q=$db->prepare("SELECT id FROM workspaces WHERE col_grp=? AND id<>?");$q->execute([$g,$w]);return array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
 function col_put($db,$w,$name,$type,$opts){$q=$db->prepare("SELECT id FROM custom_cols WHERE ws_id=? AND LOWER(name)=LOWER(?)");$q->execute([$w,$name]);if($q->fetchColumn())return;
@@ -435,6 +457,16 @@ case 'msg_send':
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
+case 'hours_gap':
+  $td=(string)($in['today']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$td))$td=date('Y-m-d');
+  $q=$db->prepare("SELECT MIN(work_date) FROM time_logs WHERE user_id=?");$q->execute([$uid]);$first=$q->fetchColumn();
+  if(!$first||$me['role']==='guest')out(['days'=>[],'last'=>null,'need'=>WORK_H]);
+  $to=date('Y-m-d',strtotime($td.' -1 day'));$from=date('Y-m-d',strtotime($td.' -15 day'));if($first>$from)$from=$first;
+  $q=$db->prepare("SELECT work_date,SUM(hours) h FROM time_logs WHERE user_id=? AND work_date BETWEEN ? AND ? GROUP BY work_date");$q->execute([$uid,date('Y-m-d',strtotime($td.' -20 day')),$to]);
+  $sm=[];foreach($q->fetchAll() as $r)$sm[$r['work_date']]=(float)$r['h'];
+  $days=[];for($t=strtotime($from);$t<=strtotime($to);$t+=86400){$d=date('Y-m-d',$t);if((int)date('N',$t)>=6)continue;$h=$sm[$d]??0.0;if($h<WORK_H-0.001)$days[]=['date'=>$d,'h'=>$h];}
+  $last=null;for($t=strtotime($to);$t>strtotime($to.' -7 day');$t-=86400){if((int)date('N',$t)>=6)continue;$d=date('Y-m-d',$t);if($d>=$first)$last=['date'=>$d,'h'=>$sm[$d]??0.0];break;}
+  out(['days'=>$days,'last'=>$last,'need'=>WORK_H]);
 case 'home_msgs':
   $q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.created_at>=DATE_SUB(CURDATE(),INTERVAL 1 DAY) AND m.from_id<>? AND (m.to_id=? OR m.to_id=0) ORDER BY m.id DESC LIMIT 200");$q->execute([$uid,$uid]);
   $rd=[];$q2=$db->prepare("SELECT peer_id,last_id FROM msg_reads WHERE user_id=?");$q2->execute([$uid]);foreach($q2->fetchAll() as $r)$rd[(int)$r['peer_id']]=(int)$r['last_id'];
@@ -450,7 +482,8 @@ case 'my_tasks':
   $tk=$q->fetchAll();$st=[];
   foreach($db->query("SELECT ws_id,skey,name,color FROM statuses WHERE ws_id IN($in)")->fetchAll() as $r)$st[$r['ws_id']][$r['skey']]=['n'=>$r['name'],'c'=>$r['color']];
   $wn=[];foreach($WS as $w)$wn[$w['id']]=$w['name'];
-  out(['tasks'=>$tk,'st'=>(object)$st,'ws'=>(object)$wn]);
+  $cn=[];foreach($db->query("SELECT ws_id,COUNT(*) o,SUM(end_date IS NOT NULL AND end_date<CURDATE()) l FROM tasks WHERE status<>'done' AND ws_id IN($in) GROUP BY ws_id")->fetchAll() as $r)$cn[$r['ws_id']]=['open'=>(int)$r['o'],'late'=>(int)$r['l']];
+  out(['tasks'=>$tk,'st'=>(object)$st,'ws'=>(object)$wn,'cnt'=>(object)$cn]);
 case 'list':
   $ver=(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn();
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];
@@ -622,9 +655,9 @@ case 'tl_add':
   if(!$who){$as=(int)($in['assign_to']??0);if(!$as)out(['error'=>'This task is unassigned. Choose who it is assigned to.','need_assign'=>1]);
     $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$as]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);
     $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
-  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,created_at) VALUES(?,?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n,$rv]);out(['ok'=>1]);
+  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,created_at) VALUES(?,?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n,$rv]);ot_rebalance($db,$who,$d);out(['ok'=>1]);
 case 'tl_rev':
-  need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
+  need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&(int)$o['logged_by']!==(int)$uid&&$LV!=='full')out(['error'=>'You can only edit your own entries']);
   $db->prepare("UPDATE time_logs SET rev=? WHERE id=?")->execute([mb_substr(trim((string)($in['rev']??'')),0,60),$id]);out(['ok'=>1]);
@@ -632,7 +665,7 @@ case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&(int)$o['logged_by']!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
-  $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);out(['ok'=>1]);
+  $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_report':
   admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
