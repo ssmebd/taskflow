@@ -593,7 +593,7 @@ body.lsc #gtabs,body.lsc #strow{display:none!important}
  <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px"><b>⏰ Hours reminders (8am &amp; 3pm Dhaka)</b>
   <div style="font-size:12px;color:var(--mut);margin:4px 0">In cPanel → Cron Jobs, set the time to <b>Every 30 minutes</b> (<code>*/30</code>), then paste this as the Command. Nothing to edit:</div>
   <textarea id="remc" readonly rows="2" style="width:100%;font:12px monospace" onclick="this.select()"></textarea>
-  <div class="acts" style="flex-wrap:wrap;margin-top:4px"><button id="remcp">Copy command</button><button id="remam">Send test: morning</button><button id="rempm">Send test: afternoon</button></div></div>
+  <div class="acts" style="flex-wrap:wrap;margin-top:4px"><button id="remcp">Copy command</button><button id="remam">Send test: morning</button><button id="pshtst">Send test phone notification</button><button id="rempm">Send test: afternoon</button></div></div>
  <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px"><b>📊 Worklog (last 15 days, all companies)</b><div id="wls" style="font-size:13px;margin:4px 0"></div>
  <div class="acts" style="flex-wrap:wrap"><button class="p" id="wln">Create worklog now</button><button id="wlm">Create and email me</button></div>
  <div id="wll" style="max-height:24vh;overflow:auto;margin-top:6px"></div></div>
@@ -1794,6 +1794,10 @@ window.lsBusy=false;
   setTimeout(()=>{B.forEach(x=>{["transition","overflow","boxSizing","height","marginTop","marginBottom","paddingTop","paddingBottom","opacity"].forEach(p=>x.style[p]="")});if(collapse)b.classList.add("lsc");window.lsBusy=false},340)};
  addEventListener("scroll",e=>{const lw=e.target;if(window.lsBusy||!lw||!lw.classList||!lw.classList.contains("listwrap")||innerWidth<=700)return;const y=lw.scrollTop,room=lw.scrollHeight-lw.clientHeight;
   if(!on&&y>40&&room>260){on=true;run(lw,true)}else if(on&&y<4){on=false;run(lw,false)}},true)})();
+(()=>{try{const C=window.Capacitor;if(!C||!C.isNativePlatform||!C.isNativePlatform())return;const PN=C.Plugins&&C.Plugins.PushNotifications;if(!PN)return;
+ PN.addListener("registration",t=>{try{api("push_reg",{token:t.value}).catch(()=>{})}catch(e){}});
+ PN.addListener("pushNotificationActionPerformed",()=>{try{const b=$("#mgb");if(b&&$("#msgw").hidden)b.click()}catch(e){}});
+ setTimeout(()=>{PN.checkPermissions().then(r=>r.receive==="granted"?r:PN.requestPermissions()).then(r=>{if(r.receive==="granted")PN.register()}).catch(()=>{})},2500)}catch(e){}})();
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
@@ -2010,6 +2014,7 @@ async function bkLoad(){try{const r=await api("bk_list",{});
   $("#wll").innerHTML=(r.wfiles||[]).length?`<table class="tlt">${r.wfiles.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:"";
   $("#bkl").innerHTML=r.files.length?`<table class="tlt"><tr><th>When</th><th class="n">Size</th><th></th></tr>${r.files.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:'<div class="empty">No copies yet</div>'}catch(e){$("#bks").textContent=e.message}}
 $("#remcp").onclick=()=>{const t=$("#remc");t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand("copy")}$("#remcp").textContent="Copied ✓";setTimeout(()=>$("#remcp").textContent="Copy command",1500)};
+$("#pshtst").onclick=async()=>{try{await api("push_test",{});alert("Sent. It should reach your phone in a few seconds.")}catch(e){alert(e.message)}};
 for(const k of["am","pm"])$("#rem"+k).onclick=async()=>{if(!confirm("This sends the real reminder messages to everyone now. Continue?"))return;try{const r=await api("rem_test",{slot:k});alert(r.res)}catch(e){alert(e.message)}};
 async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#bkn"));b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api(wl?"wl_run":"bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
 $("#abk").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#bkdlg").showModal();bkLoad()};
@@ -2045,7 +2050,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=194;
+const BUILD=195;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

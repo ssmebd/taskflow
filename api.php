@@ -1,5 +1,5 @@
 <?php
-const BUILD=194;
+const BUILD=195;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -35,7 +35,7 @@ function rem_run($db,$slot='',$force=false){
   $admins=array_values(array_filter($users,fn($u)=>$u['role']==='admin'));
   $sender=function($to)use($users,$admins){foreach($admins as $a)if((int)$a['id']!==(int)$to)return (int)$a['id'];foreach($users as $u)if((int)$u['id']!==(int)$to)return (int)$u['id'];return 0;};
   $ins=$db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())");
-  $send=function($from,$to,$b)use($ins){if(!$from||!$to)return;try{$ins->execute([$from,$to,mb_substr($b,0,1900)]);}catch(Throwable $e){}};
+  $send=function($from,$to,$b)use($ins){if(!$from||!$to)return;try{$ins->execute([$from,$to,mb_substr($b,0,1900)]);push_q($to,'TaskFlow',$b);}catch(Throwable $e){}};
   $prog=[];foreach($db->query("SELECT ws_id,skey,name FROM statuses")->fetchAll() as $r)if($r['skey']==='progress'||preg_match('/progress|ongoing|working/i',(string)$r['name']))$prog[$r['ws_id'].'|'.$r['skey']]=1;
   $open=$db->query("SELECT t.id,t.ws_id,t.status,t.assigned_to FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.status<>'done'")->fetchAll();
   $asg=[];foreach($db->query("SELECT task_id,user_id FROM task_assignees")->fetchAll() as $r)$asg[(int)$r['task_id']][]=(int)$r['user_id'];
@@ -58,6 +58,41 @@ function rem_run($db,$slot='',$force=false){
     $send((int)$u['id'],$aid,"🔔 TaskFlow alert: ".$u['name']." is not assigned to any open task, so nothing is ongoing for them. Please assign work.");}
   return 'Sent '.$slot.' reminders to '.$nUsers.' users; '.count($unas).' unassigned alert(s)';
 }
+// ---- Phone push (Firebase Cloud Messaging, HTTP v1). Needs the service-account key file on the server:
+// define('FCM_KEY_FILE','/home/USER/taskflow-fcm.json') in config.php, or just place taskflow-fcm.json in your home folder.
+$PUSHQ=[];
+function push_q($to,$title,$body){global $PUSHQ;$PUSHQ[]=[(int)$to,(string)$title,(string)$body];}
+function push_key(){
+  $c=[];if(defined('FCM_KEY_FILE'))$c[]=FCM_KEY_FILE;$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-fcm.json';$c[]=dirname(__DIR__,2).'/taskflow-fcm.json';$c[]=__DIR__.'/../taskflow-fcm.json';
+  foreach($c as $f)if($f&&is_file($f)){$j=json_decode((string)file_get_contents($f),true);if(is_array($j)&&!empty($j['private_key'])&&!empty($j['client_email'])&&!empty($j['project_id']))return $j;}
+  return null;}
+function push_b64($s){return rtrim(strtr(base64_encode($s),'+/','-_'),'=');}
+function push_token($k){
+  $cf=sys_get_temp_dir().'/tf_fcm_'.md5($k['client_email']).'.json';
+  if(is_file($cf)){$c=json_decode((string)file_get_contents($cf),true);if(is_array($c)&&($c['exp']??0)>time()+120)return $c['tok'];}
+  $uri=$k['token_uri']??'https://oauth2.googleapis.com/token';$now=time();
+  $in=push_b64(json_encode(['alg'=>'RS256','typ'=>'JWT'])).'.'.push_b64(json_encode(['iss'=>$k['client_email'],'scope'=>'https://www.googleapis.com/auth/firebase.messaging','aud'=>$uri,'iat'=>$now,'exp'=>$now+3600]));
+  if(!openssl_sign($in,$sig,$k['private_key'],OPENSSL_ALGO_SHA256))return '';
+  $ch=curl_init($uri);curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_POSTFIELDS=>http_build_query(['grant_type'=>'urn:ietf:params:oauth:grant-type:jwt-bearer','assertion'=>$in.'.'.push_b64($sig)]),CURLOPT_RETURNTRANSFER=>1,CURLOPT_TIMEOUT=>6,CURLOPT_CONNECTTIMEOUT=>4]);
+  $r=json_decode((string)curl_exec($ch),true);curl_close($ch);
+  if(empty($r['access_token']))return '';
+  @file_put_contents($cf,json_encode(['tok'=>$r['access_token'],'exp'=>$now+(int)($r['expires_in']??3500)]));@chmod($cf,0600);return $r['access_token'];}
+function push_send_one($k,$tok,$token,$title,$body){
+  $ch=curl_init('https://fcm.googleapis.com/v1/projects/'.$k['project_id'].'/messages:send');
+  curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$tok,'Content-Type: application/json'],CURLOPT_POSTFIELDS=>json_encode(['message'=>['token'=>$token,'notification'=>['title'=>$title,'body'=>$body],'android'=>['priority'=>'HIGH','notification'=>['sound'=>'default']]]]),CURLOPT_RETURNTRANSFER=>1,CURLOPT_TIMEOUT=>6,CURLOPT_CONNECTTIMEOUT=>4]);
+  $o=(string)curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);return [$code,$o];}
+function push_flush(){global $PUSHQ,$db,$uid;if(!$PUSHQ||!isset($db)||!function_exists('curl_init'))return;$q=$PUSHQ;$PUSHQ=[];
+  if(function_exists('fastcgi_finish_request'))@fastcgi_finish_request();
+  try{$k=push_key();if(!$k)return;
+    $tok='';$sel=$db->prepare("SELECT token FROM push_tokens WHERE user_id=?");$del=$db->prepare("DELETE FROM push_tokens WHERE token=?");
+    foreach($q as [$to,$title,$body]){
+      if($to>0)$ids=[$to];else{$ids=$db->query("SELECT DISTINCT user_id FROM push_tokens")->fetchAll(PDO::FETCH_COLUMN);}
+      foreach($ids as $u){if($to===0&&(int)$u===(int)($uid??0))continue;$sel->execute([$u]);
+        foreach($sel->fetchAll(PDO::FETCH_COLUMN) as $t){if($tok==='')$tok=push_token($k);if($tok==='')return;
+          [$code,$o]=push_send_one($k,$tok,$t,$title,mb_substr($body,0,180));
+          if($code===404||($code===400&&strpos($o,'INVALID_ARGUMENT')!==false)||strpos($o,'UNREGISTERED')!==false)$del->execute([$t]);}}}
+  }catch(Throwable $e){}}
+register_shutdown_function('push_flush');
 function bk_dir(){
   $c=[];$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-backups';$c[]=dirname(__DIR__,2).'/taskflow-backups';$c[]=__DIR__.'/backups';
   foreach($c as $d){
@@ -406,7 +441,7 @@ function notify_assign($db,$tid,$new,$old,$pre="📌 New task assigned to you: "
   try{$q=$db->prepare("SELECT title,order_no FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$t=$q->fetch();if(!$t)return;
   $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
   $b=$pre.$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);}catch(Throwable $e){}}
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);push_q($new,'TaskFlow',$b);}catch(Throwable $e){}}
 function del_name($db,$kind,$id){global $W;
   $t=['group'=>['task_groups','name'],'status'=>['statuses','name'],'column'=>['custom_cols','name'],'dtype'=>['drawing_types','name']][$kind]??null;if(!$t)return null;
   $q=$db->prepare("SELECT {$t[1]} FROM {$t[0]} WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$n=$q->fetchColumn();return $n===false?null:(string)$n;}
@@ -439,7 +474,7 @@ function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
     $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$kind];
     $b="🗑 Delete request: ".$kn." \"".$nm."\"".($cn!==''?" in ".$cn:"")." — please review under Settings ▸ Approvals.";
     foreach($db->query("SELECT id FROM users WHERE role='admin'")->fetchAll(PDO::FETCH_COLUMN) as $ad){if((int)$ad===$uid)continue;
-      $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$ad,mb_substr($b,0,1900)]);}
+      $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$ad,mb_substr($b,0,1900)]);push_q((int)$ad,'TaskFlow',$b);}
   }
   out(['ok'=>1,'pending'=>1]);}
 if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empty($in[$k]))$ids[]=(int)$in[$k];if(!empty($in['ids'])&&is_array($in['ids']))foreach(array_slice($in['ids'],0,5) as $x)$ids[]=(int)$x;
@@ -462,6 +497,16 @@ case 'bk_list':
   out(['files'=>$d?bk_files($d):[],'last'=>$last,'wfiles'=>$d?wl_files($d):[],'wlast'=>$wl,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='','remcmd'=>'*/30 * * * * curl -s "'.rem_url().'" >/dev/null 2>&1']);
 case 'rem_test':
   admin();$sl=($in['slot']??'am')==='pm'?'pm':'am';out(['res'=>rem_run($db,$sl,true)]);
+case 'push_reg':
+  $t=trim((string)($in['token']??''));if($t===''||strlen($t)>400)out(['error'=>'bad token']);
+  $db->exec("CREATE TABLE IF NOT EXISTS push_tokens(token VARCHAR(400) NOT NULL,user_id INT NOT NULL,platform VARCHAR(12) NOT NULL DEFAULT 'android',updated_at DATETIME NOT NULL,PRIMARY KEY(token(190)),KEY(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->prepare("INSERT INTO push_tokens(token,user_id,platform,updated_at) VALUES(?,?,?,NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id),updated_at=NOW()")->execute([$t,$uid,'android']);out(['ok'=>1]);
+case 'push_test':
+  $db->exec("CREATE TABLE IF NOT EXISTS push_tokens(token VARCHAR(400) NOT NULL,user_id INT NOT NULL,platform VARCHAR(12) NOT NULL DEFAULT 'android',updated_at DATETIME NOT NULL,PRIMARY KEY(token(190)),KEY(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $n=(int)$db->query("SELECT COUNT(*) FROM push_tokens WHERE user_id=".(int)$uid)->fetchColumn();
+  if(!push_key())out(['error'=>'Server has no Firebase key file yet (taskflow-fcm.json)']);
+  if(!$n)out(['error'=>'No phone registered for you yet. Open the Android app once and allow notifications.']);
+  push_q($uid,'TaskFlow test','Phone notifications are working \u2705');out(['ok'=>1,'phones'=>$n]);
 case 'wl_run':
   admin();$r=wl_run($db,!empty($in['mail']));out(['res'=>$r]);
 case 'bk_run':
@@ -507,7 +552,7 @@ case 'dr_act':
   if($ap){if(del_name($db,$r['kind'],(int)$r['target_id'])!==null)del_do($db,$r['kind'],(int)$r['target_id']);}
   $db->prepare("UPDATE delete_requests SET status=?,decided_by=?,decided_at=NOW() WHERE id=?")->execute([$ap?'approved':'rejected',$uid,$id]);
   $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$r['kind']]??$r['kind'];
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$r['requested_by'],mb_substr(($ap?"✅ Approved: ":"❌ Not approved: ").$kn." \"".$r['target_name']."\" delete request.",1900)]);
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$r['requested_by'],mb_substr(($ap?"✅ Approved: ":"❌ Not approved: ").$kn." \"".$r['target_name']."\" delete request.",1900)]);push_q((int)$r['requested_by'],'TaskFlow',($ap?'Approved: ':'Not approved: ').$kn.' delete request');
   out(['ok'=>1]);
 case 'ping':
   $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
@@ -535,7 +580,7 @@ case 'msg_list':
 case 'msg_send':
   $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);if($b==='')out(['error'=>'Write a message first']);
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();push_q($peer,$peer?($me['name']??'Message'):'Team chat: '.($me['name']??''),$b);
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
 case 'hours_gap':
   $td=(string)($in['today']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$td))$td=date('Y-m-d');
@@ -947,7 +992,7 @@ case 'cm_add':
   $q=$db->prepare("SELECT id FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);if(!$q->fetch())out(['error'=>'Task not found']);
   if($kind==='instruction'&&!$to)out(['error'=>'Choose who the instruction is for']);
   if($to){$q=$db->prepare("SELECT COUNT(*) FROM users u WHERE u.id=? AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?))");$q->execute([$to,$W]);if(!$q->fetchColumn())out(['error'=>'That person cannot open this workspace']);}
-  $db->prepare("INSERT INTO task_comments(task_id,ws_id,user_id,to_user_id,kind,body,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$tid,$W,$me['id'],$to?:null,$kind,$body]);
+  $db->prepare("INSERT INTO task_comments(task_id,ws_id,user_id,to_user_id,kind,body,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$tid,$W,$me['id'],$to?:null,$kind,$body]);if($to)push_q($to,($kind==='instruction'?'Instruction from ':'Message from ').($me['name']??''),$body);
   $nid=(int)$db->lastInsertId();
   $db->prepare("INSERT INTO comment_reads(user_id,task_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$me['id'],$tid,$nid]);
   out(['ok'=>1]);
