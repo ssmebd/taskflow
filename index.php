@@ -408,6 +408,7 @@ html.lk-l #wlogo .wh,html.lk-l #wlogo img[src^="data:"]{filter:brightness(0)}
 html.lk-d body,html.lk-d body.sc{padding-left:78px}
 html.lk-d #side,html.lk-d body.sc #side{top:var(--dky,var(--dk,78px));bottom:auto;left:var(--dkx,12px);width:58px;height:auto;max-height:calc(100vh - var(--dky,var(--dk,78px)) - 16px);border:1px solid #dbe1ee;border-radius:18px;background:#fff;--sb:#fff;--sf:#43506e;box-shadow:0 10px 30px rgba(20,32,58,.16);padding:10px 0;overflow:visible;gap:4px}
 html.lk-d #side .rlogo{display:none}
+html.lk-d #sidetabs{display:none!important}html.lk-d #side .rb.mobonly{display:flex}
 html.lk-d #side .sf{margin-top:6px;border-top:1px solid #e1e6ef;padding-top:8px}
 html.lk-d #side .rb:hover,html.lk-d #side a.rb:hover,html.lk-d #side .rb.on{background:#e6eeff;color:#1d4ed8}
 html.lk-d #side .rb[data-l]:hover:after{content:attr(data-l);position:absolute;left:calc(100% + 12px);top:50%;transform:translateY(-50%);padding:6px 11px;border-radius:8px;background:#14203a;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 6px 16px rgba(20,32,58,.25);pointer-events:none;z-index:60}
@@ -471,8 +472,8 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
 <a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
-<button class="rb mobonly" id="rchat" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.7 7L3 21l2-5.6A8 8 0 1121 12z"/></svg><b id="rchn" class="apn" hidden></b></button>
-<button class="rb mobonly" id="rtools" title="Tools"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3z"/><path d="M13 7l4 4M8 12l2 2"/></svg></button>
+<button class="rb mobonly" id="rtools" data-l="Tools" title="Tools: containers, converter, wiki"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17L17 3l4 4L7 21H3z"/><path d="M13 7l4 4M8 12l2 2"/></svg></button>
+<button class="rb mobonly" id="rchat" data-l="Chat" title="Messages"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 01-11.7 7L3 21l2-5.6A8 8 0 1121 12z"/></svg><b id="rchn" class="apn" hidden></b></button>
 <div class="sf"><button class="rb dskonly" id="rhide" data-l="Hide" type="button" title="Hide / pin the side bar"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/><path d="M19 5v14"/></svg></button><span id="setw"><button id="sbtn" class="rb" data-l="Settings" aria-haspopup="true" title="Settings"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
   <div id="smenu" hidden>
    <button id="gm">📁 Groups</button>
@@ -1895,7 +1896,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=172;
+const BUILD=173;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
