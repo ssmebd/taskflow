@@ -304,7 +304,8 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
 .hl .hcg{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0}.hl .hcc{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);color:#fff;border-radius:18px;padding:12px;backdrop-filter:blur(6px)}.hl .hcc:hover{background:rgba(255,255,255,.17);border-color:rgba(255,255,255,.4);box-shadow:0 10px 24px rgba(0,0,0,.25)}.hl .hcc small{color:rgba(255,255,255,.7)}.hl .hcc small .lt{color:#fca5a5}.hl .hcc .hcl{height:36px}.hl .hcc .hcl img{background:transparent;padding:0;max-height:34px;max-width:100%}.hl .hcc .hcl .ini{width:36px;height:36px;border-radius:11px}.hl .hcc b{font-size:14px}
 .hlf{margin-top:18px;font-style:italic;font-size:12px;color:rgba(255,255,255,.55)}.hlf i{color:#22c55e;font-style:normal;font-weight:900}
 .hrr .hmc:first-child,.hrr .hsec:first-child{margin-top:0}
-@media(max-width:900px){.hw{grid-template-columns:1fr;padding:10px 10px 30px}.hl{position:relative;top:0;max-height:none;border-radius:22px}}
+.hw>*{min-width:0}.hl .hrem .rb{overflow-wrap:anywhere}
+@media(max-width:900px){.hw{grid-template-columns:minmax(0,1fr);gap:14px;padding:10px 10px 30px;width:100%;box-sizing:border-box}.hl{position:relative;top:0;max-height:none;border-radius:22px;padding:20px 16px 14px;box-sizing:border-box;width:100%}.hl h2{font-size:30px}.hch{gap:6px}.hch span{flex:1 1 calc(50% - 6px);min-width:0}.hl .hrem{box-sizing:border-box}.hl .hcg{grid-template-columns:repeat(2,minmax(0,1fr))}.hl .hcc{min-width:0}.hl .hcc b,.hl .hcc small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrr .hrow{grid-template-columns:minmax(0,1fr) auto}.hmr .hmt{max-width:34%}}
 .hsec{margin-top:18px}.hsec h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hsec h3 i{width:9px;height:9px;border-radius:50%;background:var(--c,#64748b)}.hsec h3 em{font-style:normal;font-weight:600;color:var(--ink)}
 .hrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 14px;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);text-decoration:none}
 .hrow:hover{border-color:var(--pri)}.hrow b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hrow small{color:var(--mut)}
@@ -1927,7 +1928,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=179;
+const BUILD=180;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
