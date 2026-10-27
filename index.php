@@ -497,6 +497,8 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
 @keyframes tfLift{0%{transform:none}30%{transform:translateY(2%)}100%{transform:translateY(-102%)}}
 @keyframes tfSettle{from{opacity:.0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .colgrip{position:absolute;right:-3px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2;touch-action:none}.colgrip:hover,.colgrip:active{background:linear-gradient(90deg,transparent 3px,var(--pri,#4f46e5) 3px,var(--pri,#4f46e5) 5px,transparent 5px)}table.mhcol td,table.mhcol th{overflow-wrap:anywhere}
+@media(min-width:701px){#gtabs,#stats{max-height:320px;transition:max-height .28s cubic-bezier(.4,0,.2,1),opacity .2s ease,margin .28s ease,padding .28s ease}
+body.lsc #gcb{display:none!important}body.lsc #gtabs,body.lsc #stats{max-height:0;opacity:0;overflow:hidden;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;border-width:0;pointer-events:none}}
 </style><script>try{if(sessionStorage.getItem("tf_enter")==="1"){sessionStorage.removeItem("tf_enter");document.documentElement.classList.add("tfc")}}catch(e){}</script></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -1788,6 +1790,9 @@ function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h
  addEventListener("resize",load);load()})();
 (()=>{const m=$("#main"),R=document.documentElement,lift=()=>{if(!R.classList.contains("tfc"))return;R.classList.add("tfco");setTimeout(()=>R.classList.remove("tfc","tfco"),1000)},go=()=>{if(document.body.classList.contains("rdy"))return;if(R.classList.contains("tfc")){setTimeout(()=>{document.body.classList.add("rdy");lift()},450)}else document.body.classList.add("rdy")};setTimeout(go,2500);
  new MutationObserver(()=>{if(m.firstElementChild&&!/^Loading/.test(m.textContent.trim()))go()}).observe(m,{childList:true,subtree:true})})();
+(()=>{let on=false;addEventListener("scroll",e=>{const lw=e.target;if(!lw||!lw.classList||!lw.classList.contains("listwrap")||innerWidth<=700)return;const y=lw.scrollTop,room=lw.scrollHeight-lw.clientHeight;
+ if(!on&&y>40&&room>260){on=true;document.body.classList.add("lsc")}else if(on&&(y<4)){on=false;document.body.classList.remove("lsc")}else return;
+ const t0=performance.now(),tick=()=>{stPos();if(performance.now()-t0<420)requestAnimationFrame(tick)};tick()},true)})();
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
@@ -2039,7 +2044,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=190;
+const BUILD=191;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
