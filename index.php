@@ -658,7 +658,7 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
 <dialog id="codlg"><b id="cot">Company details &amp; hourly rates</b>
  <p style="color:var(--mut);font-size:13px;margin:6px 0">Only admins can see this. Rates are used to calculate invoice amounts.</p>
  <div class="pgrid">
-  <label>Company name (shown in the app)<input id="con" maxlength="60"></label><label>Name on invoice<input id="coc"></label>
+  <label>Company name (shown in the app)<input id="con" maxlength="60"></label><label>Keep columns in sync with<select id="cosy"></select></label><label>Name on invoice<input id="coc"></label>
   <label>Address<input id="coa"></label><label>Bank / payment details<input id="cob"></label>
   <label>Currency code<input id="coy" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="cos" maxlength="4" placeholder="$"></label>
   <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label>
@@ -979,17 +979,17 @@ $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!i
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
 // ---- Company details & hourly rates (admin) ----
-let coId=0;
+let coId=0,coSy0=0;
 async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
-  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=["items","summary"].includes(c.layout)?c.layout:"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#cosy").innerHTML='<option value="0">Not linked</option>'+wss.filter(x=>x.id!=id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#cosy").value=r.colsync||0;coSy0=+(r.colsync||0);$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=["items","summary"].includes(c.layout)?c.layout:"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
   $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
   $("#codlg").showModal()}catch(e){alert(e.message)}}
 $("#cox").onclick=()=>$("#codlg").close();
 $("#cosv").onclick=async()=>{const rates={};document.querySelectorAll("#cor [data-cr]").forEach(i=>{if(i.value!=="")rates[i.dataset.cr]=+i.value});
   const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,layout:$("#colay").value,wl_title:$("#cowt").value,prefix:$("#copx").value,suffix:$("#cosf").value,seq:$("#cosq").value.replace(/\D/g,"")||"1",po:$("#copo").value,sec_labels:$("#cosl").value,rates};
   try{const w=wss.find(x=>x.id==coId),n=$("#con").value.trim();if(n&&w&&n!==w.name)await apiW("ws_rename",{id:coId,name:n},coId);
-    await apiW("inv_set",{slot:0,profile},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
+    await apiW("inv_set",{slot:0,profile},coId);if(+$("#cosy").value!==coSy0)await apiW("ws_colsync",{id:coId,with:+$("#cosy").value},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
 // ---- Worklog & invoice reports ----
 let rrows=[],rprofs=[],rcsvRows=[],rComp={rates:{},rate:0,ot:1};
 const rShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")};
@@ -1896,7 +1896,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=173;
+const BUILD=174;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

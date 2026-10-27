@@ -1,5 +1,5 @@
 <?php
-const BUILD=173;
+const BUILD=174;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -170,8 +170,13 @@ $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
+function col_peers($db,$w){$q=$db->prepare("SELECT col_grp FROM workspaces WHERE id=?");$q->execute([$w]);$g=(int)$q->fetchColumn();if($g<=0)return [];
+  $q=$db->prepare("SELECT id FROM workspaces WHERE col_grp=? AND id<>?");$q->execute([$g,$w]);return array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
+function col_put($db,$w,$name,$type,$opts){$q=$db->prepare("SELECT id FROM custom_cols WHERE ws_id=? AND LOWER(name)=LOWER(?)");$q->execute([$w,$name]);if($q->fetchColumn())return;
+  $q=$db->prepare("SELECT COUNT(*) FROM custom_cols WHERE ws_id=?");$q->execute([$w]);if((int)$q->fetchColumn()>=30)return;
+  $db->prepare("INSERT INTO custom_cols(name,ctype,options,sort_no,ws_id) VALUES(?,?,?,?,?)")->execute([$name,$type,$opts,(int)$db->query("SELECT COALESCE(MAX(sort_no),0)+1 FROM custom_cols")->fetchColumn(),$w]);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v31']))return;
+  if(!empty($_SESSION['schema_v32']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -220,7 +225,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS task_assignees(task_id INT NOT NULL,user_id INT NOT NULL,PRIMARY KEY(task_id,user_id),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS presence(user_id INT NOT NULL PRIMARY KEY,seen DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v31']=1;
+  if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'col_grp'")->fetch())$db->exec("ALTER TABLE workspaces ADD col_grp INT NOT NULL DEFAULT 0");
+  $_SESSION['schema_v32']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -659,7 +665,17 @@ case 'inv_pay':
 case 'inv_del':
   admin();$db->prepare("DELETE FROM invoices WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'co_get':
-  admin();out(['company'=>inv_company($db)]);
+  admin();$pe=col_peers($db,$W);out(['company'=>inv_company($db),'colsync'=>$pe?$pe[0]:0]);
+case 'ws_colsync':
+  admin();$id=(int)($in['id']??0);$with=(int)($in['with']??0);
+  if(!$with){$db->prepare("UPDATE workspaces SET col_grp=0 WHERE id=?")->execute([$id]);out(['ok'=>1]);}
+  if($with===$id)out(['error'=>'Pick a different company']);
+  $q=$db->prepare("SELECT col_grp FROM workspaces WHERE id=?");$q->execute([$with]);$g=(int)$q->fetchColumn();if($g<=0)$g=$with;
+  $db->prepare("UPDATE workspaces SET col_grp=? WHERE id IN(?,?)")->execute([$g,$id,$with]);
+  $q=$db->prepare("SELECT id FROM workspaces WHERE col_grp=?");$q->execute([$g]);$m=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));
+  $all=[];foreach($m as $w){$q=$db->prepare("SELECT name,ctype,options FROM custom_cols WHERE ws_id=? ORDER BY sort_no,id");$q->execute([$w]);foreach($q->fetchAll() as $c)$all[]=$c;}
+  foreach($m as $w)foreach($all as $c)col_put($db,$w,$c['name'],$c['ctype'],$c['options']);
+  out(['ok'=>1]);
 case 'inv_set':
   admin();$slot=(int)($in['slot']??0);if($slot<0||$slot>9)out(['error'=>'Bad profile']);
   if(!empty($in['remove'])){$db->prepare("DELETE FROM invoice_profiles WHERE ws_id=? AND slot=?")->execute([$W,$slot]);out(['ok'=>1,'profiles'=>inv_profiles($db)]);}
@@ -709,13 +725,16 @@ case 'col_add':
     if(!$o)out(['error'=>'Enter at least one option, separated by commas']);}
   foreach(get_cols($db) as $e)if(mb_strtolower($e['name'])===mb_strtolower($n))out(['error'=>'A column with that name already exists']);
   $db->prepare("INSERT INTO custom_cols(name,ctype,options,sort_no,ws_id) VALUES(?,?,?,?,?)")->execute([$n,$t,$o?json_encode($o,JSON_UNESCAPED_UNICODE):null,(int)$db->query("SELECT COALESCE(MAX(sort_no),0)+1 FROM custom_cols")->fetchColumn(),$W]);
+  foreach(col_peers($db,$W) as $pw)col_put($db,$pw,$n,$t,$o?json_encode($o,JSON_UNESCAPED_UNICODE):null);
   out(['ok'=>1]);
 case 'col_edit':
   need_level('edit');$id=(int)($in['id']??0);$n=mb_substr(trim($in['name']??''),0,60);if($n==='')out(['error'=>'Enter a column name']);
   $cur=null;foreach(get_cols($db) as $e){if((int)$e['id']===$id)$cur=$e;}if(!$cur)out(['error'=>'Column not found']);
   foreach(get_cols($db) as $e)if((int)$e['id']!==$id&&mb_strtolower($e['name'])===mb_strtolower($n))out(['error'=>'A column with that name already exists']);
   $conv=$cur['ctype']==='text'&&trim((string)($in['options']??''))!==''&&($in['ctype']??'')==='dropdown';$o=null;if($cur['ctype']==='dropdown'||$conv){$l=[];foreach(explode(',',(string)($in['options']??'')) as $p){$p=mb_substr(trim($p),0,60);if($p!==''&&!in_array($p,$l,true))$l[]=$p;}if(!$l)out(['error'=>'Enter at least one option, separated by commas']);$o=json_encode($l,JSON_UNESCAPED_UNICODE);}
-  $db->prepare("UPDATE custom_cols SET name=?,options=?".($conv?",ctype='dropdown'":"")." WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);out(['ok'=>1]);
+  $db->prepare("UPDATE custom_cols SET name=?,options=?".($conv?",ctype='dropdown'":"")." WHERE id=? AND ws_id=?")->execute([$n,$o,$id,$W]);
+  foreach(col_peers($db,$W) as $pw){$u=$db->prepare("UPDATE custom_cols SET name=?,options=?".($conv?",ctype='dropdown'":"")." WHERE ws_id=? AND LOWER(name)=LOWER(?)");$u->execute([$n,$o,$pw,$cur['name']]);if(!$u->rowCount())col_put($db,$pw,$n,($conv||$cur['ctype']==='dropdown')?'dropdown':$cur['ctype'],$o);}
+  out(['ok'=>1]);
 case 'col_del':
   need_level('full');del_gate($db,'column',(int)($in['id']??0));
 case 'pref_theme':
