@@ -20,7 +20,7 @@ $repo=escapeshellarg($cfg['repo']);$git=escapeshellarg($cfg['git']??'git');
 $home=preg_match('#^(/home\d*/[^/]+)/#',$cfg['repo'],$m)?$m[1]:(getenv('HOME')?:'');
 $out=shell_exec(($home?'export HOME='.escapeshellarg($home).'; ':'')."cd $repo && $git fetch origin 2>&1 && $git reset --hard origin/main 2>&1");
 $ok=true;
-foreach(['index.php','api.php','login.php','logo.php','remember.php','manifest.webmanifest','sw.js','icon-192.png','icon-512.png','icon-maskable-512.png','logo.svg'] as $f){
+foreach(['index.php','api.php','login.php','logo.php','remember.php'] as $f){
   if(!copy($cfg['repo'].'/'.$f,$cfg['live'].'/'.$f)){$ok=false;$out.="copy failed: $f\n";}
 }
 if(function_exists('opcache_reset'))@opcache_reset();
