@@ -494,6 +494,7 @@ html.tfc.tfco body:before{animation:tfLift .85s cubic-bezier(.65,0,.2,1) forward
 html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22,.8,.25,1) both}
 @keyframes tfLift{0%{transform:none}30%{transform:translateY(2%)}100%{transform:translateY(-102%)}}
 @keyframes tfSettle{from{opacity:.0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.colgrip{position:absolute;right:-3px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2;touch-action:none}.colgrip:hover,.colgrip:active{background:linear-gradient(90deg,transparent 3px,var(--pri,#4f46e5) 3px,var(--pri,#4f46e5) 5px,transparent 5px)}table.mhcol td,table.mhcol th{overflow-wrap:anywhere}
 </style><script>try{if(sessionStorage.getItem("tf_enter")==="1"){sessionStorage.removeItem("tf_enter");document.documentElement.classList.add("tfc")}}catch(e){}</script></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -1279,9 +1280,17 @@ function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={},only=$("#mhmo")
     const pl=mhPlan.filter(t=>{const a=t.start_date||t.end_date,e=t.end_date||t.start_date;return a<=d&&d<=e});
     const plh=pl.length?`<div style="margin-top:6px;font-size:12px"><span style="color:var(--mut)">Assigned &amp; ongoing:</span> ${pl.map(t=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:9px;border:1px solid var(--line);background:${lg[t.id]?"#e6f4ea":past&&!wk?"#fff4d6":"var(--col)"}" title="${ea(t.title)}">${esc(t.order_no||t.title)}${t.ws?" · "+esc(t.ws):""} · ${lg[t.id]?"✓ "+fmtH(lg[t.id])+" h":past&&!wk?"no hours":"planned"}</span>`).join("")}</div>`:(wk?"":`<div style="margin-top:6px;font-size:12px;color:var(--mut)">No task assigned with dates covering this day</div>`);
     const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
-    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td style="text-align:left;width:56%"><b>${fmtH(rg)} h regular${ot?" + "+fmtH(ot)+" h OT":""}</b>${det}${plh}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
+    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td style="text-align:left"><b>${fmtH(rg)} h regular${ot?" + "+fmtH(ot)+" h OT":""}</b>${det}${plh}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
   $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b>${short?` · missing <b style="color:#c5221f">${fmtH(short)} h</b>`:""}</div>`;
-  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th style="text-align:left">Hours logged and tasks</th><th>Status</th><th></th></tr>${rows||`<tr><td colspan="5" class="empty">${only?"No missed days in the selected dates \u{1F389}":"Tick one or more days above"}</td></tr>`}</table>`}
+  $("#mhout").innerHTML=`<table class="rt mhcol"><tr><th>Date</th><th>Day</th><th style="text-align:left">Hours logged and tasks</th><th>Status</th><th></th></tr>${rows||`<tr><td colspan="5" class="empty">${only?"No missed days in the selected dates \u{1F389}":"Tick one or more days above"}</td></tr>`}</table>`;mhCols()}
+function mhCols(){const t=document.querySelector("#mhout table.mhcol");if(!t)return;const ths=[...t.rows[0].cells],DEF=[100,70,0,170,110];let W=[];try{W=JSON.parse(localStorage.getItem("tf_mhcols")||"[]")}catch(e){}
+  const cg=document.createElement("colgroup");ths.forEach((_,i)=>{const c=document.createElement("col");const w=W[i]||DEF[i];if(w)c.style.width=w+"px";cg.appendChild(c)});t.prepend(cg);t.style.tableLayout="fixed";t.style.width="100%";t.style.minWidth=DEF.reduce((a,b)=>a+b,0)+260+"px";
+  const wrap=$("#mhout");wrap.style.overflowX="auto";
+  ths.forEach((th,i)=>{if(i===ths.length-1)return;th.style.position="relative";const g=document.createElement("span");g.className="colgrip";g.title="Drag to resize (double-click to reset)";th.appendChild(g);
+    g.addEventListener("pointerdown",e=>{e.preventDefault();e.stopPropagation();const col=cg.children[i],x0=e.clientX,w0=th.getBoundingClientRect().width;try{g.setPointerCapture(e.pointerId)}catch(x){}
+      const mv=ev=>{col.style.width=Math.max(50,Math.round(w0+ev.clientX-x0))+"px"},up=()=>{g.removeEventListener("pointermove",mv);g.removeEventListener("pointerup",up);W=[...cg.children].map(c=>parseInt(c.style.width)||0);try{localStorage.setItem("tf_mhcols",JSON.stringify(W))}catch(x){}};
+      g.addEventListener("pointermove",mv);g.addEventListener("pointerup",up)});
+    g.addEventListener("dblclick",()=>{cg.children[i].style.width=DEF[i]?DEF[i]+"px":"";W=[...cg.children].map(c=>parseInt(c.style.width)||0);try{localStorage.setItem("tf_mhcols",JSON.stringify(W))}catch(x){}})})}
 function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.filter(x=>x.role!=="guest").map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
   $("#mhdg").showModal();mhRange(ltoday(),ltoday())}
 $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
@@ -2028,7 +2037,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=187;
+const BUILD=188;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
