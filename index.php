@@ -610,7 +610,7 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
  <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
- <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button></div>
+ <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button><button id="mh30">Last 30 days</button><label style="margin:0 0 0 6px;display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="mhmo"> Missed days only</label></div>
  <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select></div>
  <div class="rctl"><label style="margin:0">Download</label><select id="mhdl"><option value="day">Today</option><option value="week">This week (Mon–Sun)</option><option value="lweek">Last week</option><option value="month">This month</option><option value="lmonth">Last month</option><option value="sel">Dates selected above</option></select><button id="mhdb" title="Save your hours as an Excel file laid out like the worklog">⬇ Excel</button></div>
  <div id="mhs"></div><div id="mhout"></div></dialog>
@@ -1231,7 +1231,7 @@ $("#ivsv").onclick=async()=>{const rates={};document.querySelectorAll("#prl [dat
 $("#pdel").onclick=async()=>{if(!profEdit||!confirm("Delete this profile?"))return;try{await api("inv_set",{slot:profEdit,remove:1});$("#ivdlg").close();await runReport()}catch(e){alert(e.message)}};
 // ---- Personal hours check ----
 const ltoday=()=>new Date().toLocaleDateString("en-CA");
-let mhRows=[],mhUser=0,mhAddDate="",mhSel=new Set(),mhWk="";
+let mhPlan=[],mhRows=[],mhUser=0,mhAddDate="",mhSel=new Set(),mhWk="";
 const isoAdd=(s,n)=>{const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)};
 const wkStart=s=>{const d=new Date(s+"T00:00:00Z");return isoAdd(s,-((d.getUTCDay()+6)%7))};
 const WDN=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -1240,22 +1240,26 @@ function mhRange(a,b){mhSel=new Set();for(let d=a,n=0;d<=b&&n<400;d=isoAdd(d,1),
 function mhSync(){const s=mhSorted();if(s.length){$("#mhf").value=s[0];$("#mht").value=s[s.length-1]}mhChips()}
 function mhChips(){$("#mhdays").innerHTML=`<button data-mhwk="-7" title="Previous week" style="padding:2px 8px">‹</button>`+[0,1,2,3,4,5,6].map(i=>{const d=isoAdd(mhWk,i),dow=(i+1)%7;return `<label style="margin:0 2px;display:inline-flex;gap:2px;align-items:center;white-space:nowrap"><input type="checkbox" data-mhd="${d}" ${mhSel.has(d)?"checked":""}>${WDN[dow]} ${+d.slice(8)}</label>`}).join("")+`<button data-mhwk="7" title="Next week" style="padding:2px 8px">›</button>`}
 async function mhLoad(){const s=mhSorted();if(!s.length){mhRows=[];mhDraw();return}
-  try{const r=await api("my_hours",{from:s[0],to:s[s.length-1],user:+$("#mhu").value||0});mhRows=r.rows;mhUser=r.user;mhDraw()}catch(e){alert(e.message)}}
-function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={};
+  try{const r=await api("my_hours",{from:s[0],to:s[s.length-1],user:+$("#mhu").value||0});mhRows=r.rows;mhPlan=r.plan||[];mhUser=r.user;mhDraw()}catch(e){alert(e.message)}}
+function mhDraw(){const tg=+$("#mhg").value||0,td=ltoday(),by={},only=$("#mhmo")&&$("#mhmo").checked;
   mhRows.forEach(x=>{if(mhSel.has(x.work_date))(by[x.work_date]=by[x.work_date]||[]).push(x)});
-  let exp=0,miss=0,rows="",R=0,O=0;
-  for(const d of mhSorted()){const dow=new Date(d+"T00:00:00Z").getUTCDay(),l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;R+=rg;O+=ot;
-    const past=d<=td;if(past){exp+=tg;if(rg<tg)miss++}
-    let st="",cl="";if(!past){st="Upcoming";cl="color:var(--mut)"}else if(rg>=tg){st="✓ Complete"+(rg>tg?" · "+fmtH(rg-tg)+" h over target (log as OT?)":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(tg-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
+  let exp=0,miss=0,rows="",R=0,O=0,short=0;
+  for(const d of mhSorted()){const dow=new Date(d+"T00:00:00Z").getUTCDay(),wk=dow===0||dow===6,t0=wk?0:tg,l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),ot=l.filter(x=>x.kind==="OT").reduce((s,x)=>s+ +x.hours,0),rg=h-ot;R+=rg;O+=ot;
+    const past=d<=td;if(past){exp+=t0;if(rg<t0){miss++;short+=t0-rg}}
+    let st="",cl="";if(!past){st="Upcoming";cl="color:var(--mut)"}else if(wk){st=h?"Weekend · all overtime":"Weekend";cl="color:var(--mut)"}else if(rg>=t0){st="✓ Complete"+(ot?" · "+fmtH(ot)+" h OT":"");cl="color:#188038"}else if(rg>0){st="⚠ Short by "+fmtH(t0-rg)+" h";cl="color:#b45f06;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
+    if(only&&!(past&&!wk&&rg<t0))continue;
+    const lg={};l.forEach(x=>{lg[x.task_id]=(lg[x.task_id]||0)+ +x.hours});
+    const pl=mhPlan.filter(t=>{const a=t.start_date||t.end_date,e=t.end_date||t.start_date;return a<=d&&d<=e});
+    const plh=pl.length?`<div style="margin-top:6px;font-size:12px"><span style="color:var(--mut)">Assigned &amp; ongoing:</span> ${pl.map(t=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:9px;border:1px solid var(--line);background:${lg[t.id]?"#e6f4ea":past&&!wk?"#fff4d6":"var(--col)"}" title="${ea(t.title)}">${esc(t.order_no||t.title)}${t.ws?" · "+esc(t.ws):""} · ${lg[t.id]?"✓ "+fmtH(lg[t.id])+" h":past&&!wk?"no hours":"planned"}</span>`).join("")}</div>`:(wk?"":`<div style="margin-top:6px;font-size:12px;color:var(--mut)">No task assigned with dates covering this day</div>`);
     const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
-    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td class="n"><b>${fmtH(rg)} Regular${ot?" + "+fmtH(ot)+" OT = "+fmtH(h):""}</b>${det}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
-  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b></div>`;
-  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th class="n">Hours logged</th><th>Status</th><th></th></tr>${rows||'<tr><td colspan="5" class="empty">Tick one or more days above</td></tr>'}</table>`}
+    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td style="text-align:left;width:56%"><b>${fmtH(rg)} h regular${ot?" + "+fmtH(ot)+" h OT":""}</b>${det}${plh}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button>`}</td></tr>`}
+  $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">Logged <b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b> · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b>${short?` · missing <b style="color:#c5221f">${fmtH(short)} h</b>`:""}</div>`;
+  $("#mhout").innerHTML=`<table class="rt"><tr><th>Date</th><th>Day</th><th style="text-align:left">Hours logged and tasks</th><th>Status</th><th></th></tr>${rows||`<tr><td colspan="5" class="empty">${only?"No missed days in the selected dates \u{1F389}":"Tick one or more days above"}</td></tr>`}</table>`}
 function mhOpen(){const sel=$("#mhu");if(me.role==="admin"&&allUsers.length){sel.hidden=false;sel.innerHTML=allUsers.filter(x=>x.role!=="guest").map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");sel.value=String(me.id)}else sel.hidden=true;
   $("#mhdg").showModal();mhRange(ltoday(),ltoday())}
 $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=true;mhOpen()});
 $("#mhcl").onclick=()=>$("#mhdg").close();
-$("#mhtd").onclick=()=>mhRange(ltoday(),ltoday());
+$("#mhtd").onclick=()=>mhRange(ltoday(),ltoday());$("#mh30").onclick=()=>mhRange(isoAdd(ltoday(),-29),ltoday());$("#mhmo").addEventListener("change",mhDraw);
 $("#mhw").onclick=()=>{const s=wkStart(ltoday());mhRange(s,isoAdd(s,6))};
 $("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhRange(s,isoAdd(s,6))};
 $("#mh14").onclick=()=>mhRange(isoAdd(ltoday(),-13),ltoday());
@@ -1928,7 +1932,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=180;
+const BUILD=181;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
