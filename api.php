@@ -1,5 +1,5 @@
 <?php
-const BUILD=171;
+const BUILD=172;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -171,7 +171,7 @@ $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v30']))return;
+  if(!empty($_SESSION['schema_v31']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -219,7 +219,8 @@ function ensure_schema($db){
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS task_assignees(task_id INT NOT NULL,user_id INT NOT NULL,PRIMARY KEY(task_id,user_id),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v30']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS presence(user_id INT NOT NULL PRIMARY KEY,seen DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v31']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -402,7 +403,14 @@ case 'dr_act':
   out(['ok'=>1]);
 case 'ping':
   $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
-  out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>(int)$q->fetchColumn()]);
+  $msgn=(int)$q->fetchColumn();$on=[];
+  try{
+    $db->prepare("INSERT INTO presence(user_id,seen) VALUES(?,NOW()) ON DUPLICATE KEY UPDATE seen=NOW()")->execute([$uid]);
+    if($W){$q=$db->prepare("SELECT u.id,u.name FROM presence p JOIN users u ON u.id=p.user_id WHERE p.seen>=DATE_SUB(NOW(),INTERVAL 25 SECOND) AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?)) ORDER BY u.name");$q->execute([$W]);}
+    else $q=$db->query("SELECT u.id,u.name FROM presence p JOIN users u ON u.id=p.user_id WHERE p.seen>=DATE_SUB(NOW(),INTERVAL 25 SECOND) ORDER BY u.name");
+    foreach($q->fetchAll() as $r)$on[]=['id'=>(int)$r['id'],'name'=>$r['name']];
+  }catch(Throwable $e){}
+  out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>$msgn,'on'=>$on]);
 case 'msg_users':
   $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
   $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];

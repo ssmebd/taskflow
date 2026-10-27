@@ -362,6 +362,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  .hm{padding:12px 10px 30px}
  select,input,button{min-height:36px}
 }
+.pres-w{display:inline-flex;align-items:center;padding-left:8px;margin-right:6px}#pres{display:inline-flex;align-items:center}#pres .pb{position:relative;margin-left:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--nv,#0f2a5c);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;cursor:default;animation:pbIn .3s ease both}#pres .pb:first-child{margin-left:0}#pres .pb:hover{z-index:3;transform:translateY(-2px)}#pres .pb i{position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--nv,#0f2a5c);box-sizing:content-box}#pres .pb.mo{background:rgba(255,255,255,.22)}@keyframes pbIn{from{opacity:0;transform:scale(.6)}}@media(max-width:700px){#pres{display:none}}
 .asw2{display:flex;gap:6px;align-items:center}.asw2 .av{width:26px;height:26px;font-size:10px}.card .meta .av{width:20px;height:20px;font-size:8px;vertical-align:middle}.asw2 select{flex:1;min-width:0}
 .coadd{padding:2px 8px;border-radius:999px;border:1px dashed var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:600;white-space:nowrap}.coadd.has{border-style:solid;background:var(--accbg,#dcf3ea);color:#0b8f6a}
 .coN{font-size:12px;font-weight:600;color:var(--mut)}
@@ -459,7 +460,7 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
  <input id="q" placeholder="Search tasks" style="min-width:140px">
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
  <span class="sp"></span>
- <span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button>
+ <span id="pres" title="Online now"></span><span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button>
  <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
  <button class="p" id="add">+ New task</button>
 </header>
@@ -1894,7 +1895,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=171;
+const BUILD=172;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
@@ -1940,10 +1941,11 @@ $("#mgs").onclick=mgSend;$("#mgi").addEventListener("input",e=>{const t=e.target
   document.addEventListener("pointermove",e=>{if(!d)return;s.style.left=Math.min(Math.max(-s.offsetWidth+120,e.clientX-d.x),innerWidth-120)+"px";s.style.top=Math.min(Math.max(0,e.clientY-d.y),innerHeight-50)+"px"});
   document.addEventListener("pointerup",()=>{if(d){d=null;save()}});new ResizeObserver(()=>{if(!s.hidden)save()}).observe(s)})();
 function busy(){return document.querySelector("dialog[open]")||draft||rp||rowDrag||dragId||dragCol||rz||gdrag}
+let presK="";function presUpd(l){const k=l.map(u=>u.id).join(",");if(k===presK)return;presK=k;const me0=me&&+me.id,a=l.slice().sort((x,y)=>(y.id===me0)-(x.id===me0)),sh=a.slice(0,5),more=a.length-sh.length;$("#pres").innerHTML=sh.map(u=>`<span class="pb" style="background:${avC(u.name)}" title="${ea(u.name)}${u.id===me0?" (you)":""} \u2022 online">${esc(avI(u.name))}<i></i></span>`).join("")+(more>0?`<span class="pb mo" title="${ea(a.slice(5).map(u=>u.name).join(", "))}">+${more}</span>`:"")}
 async function poll(){
   if(document.hidden)return;
   try{
-    const r=await api("ping");setLive(true);mgBadge(+r.msgn||0);
+    const r=await api("ping");setLive(true);mgBadge(+r.msgn||0);presUpd(r.on||[]);
     if(($("#dlg").open||$("#mdlg").open)&&thrId&&r.v!==thrVer){thrVer=r.v;thrLoad(false)}
     if(r.v!==lastVer||dirty){if(busy()){dirty=true;return}dirty=false;await load()}
   }catch(e){if(e.message!=="auth")setLive(false)}
