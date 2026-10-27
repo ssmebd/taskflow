@@ -109,10 +109,13 @@ body.leaving .bar{filter:brightness(1.12);transition:filter .4s}
  </div>
 </section>
 </main>
+<script>(function(){var f=document.querySelector("form"),u=document.getElementById("un"),p=document.getElementById("pw");if(!f||!window.tfCred)return;
+ window.tfCred.get().then(function(c){if(c&&c.u&&!u.value){u.value=c.u;p.value=c.p;var k=f.querySelector("[name=keep]");if(k)k.checked=true}}).catch(function(){});
+ f.addEventListener("submit",function(){var k=f.querySelector("[name=keep]");window.__tfp=[u.value,p.value,!!(k&&k.checked)]},true)})();</script>
 <script>document.getElementById("pwt").onclick=function(){var p=document.getElementById("pw"),h=p.type==="password";p.type=h?"text":"password";this.textContent=h?"Hide":"Show"}</script>
 <script>
 (function(){var f=document.querySelector("form"),btn=f&&f.querySelector(".go");if(!f||!btn||!window.fetch||!window.URLSearchParams)return;
-function enter(u){try{sessionStorage.setItem("tf_enter","1")}catch(e){}
+function enter(u){try{sessionStorage.setItem("tf_enter","1")}catch(e){}try{var q=window.__tfp;if(window.tfCred&&q){if(q[2]&&q[0]&&q[1])window.tfCred.save(q[0],q[1]);else window.tfCred.clear()}}catch(e){}
  var b=btn.getBoundingClientRect(),o=document.createElement("div");o.className="curt";o.style.setProperty("--cx",(b.left+b.width/2)+"px");o.style.setProperty("--cy",(b.top+b.height/2)+"px");
  o.innerHTML='<div class="cl">TaskFlow<i>&raquo;</i></div>';document.body.classList.add("leaving");document.body.appendChild(o);
  requestAnimationFrame(function(){requestAnimationFrame(function(){o.classList.add("on")})});setTimeout(function(){location.href=u},950)}

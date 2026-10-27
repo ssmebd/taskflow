@@ -1,6 +1,6 @@
 // TaskFlow desktop shell: a thin menu ribbon + tab strip around the live TaskFlow site.
 // Each tab is its own web view (shared sign-in), so several company spaces can be open side by side.
-const { app, BrowserWindow, WebContentsView, Menu, shell, Tray, nativeImage, session, ipcMain, clipboard, dialog } = require('electron');
+const { app, BrowserWindow, WebContentsView, Menu, shell, Tray, nativeImage, session, ipcMain, clipboard, dialog, safeStorage } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -72,7 +72,7 @@ function loadSaved() {
 
 // ---- tabs ----
 function newTab(url, opts = {}) {
-  const view = new WebContentsView({ webPreferences: { backgroundThrottling: false } });
+  const view = new WebContentsView({ webPreferences: { backgroundThrottling: false, preload: path.join(__dirname, 'tabpre.js'), contextIsolation: true, sandbox: true } });
   view.setBackgroundColor('#0f2a5c');
   const wc = view.webContents;
   const t = { id: nextId++, view, home: !!opts.home, pinned: !!opts.pinned, title: opts.home ? 'Home' : 'Loading…', url };
@@ -278,6 +278,18 @@ app.on('before-quit', (e) => {
   Promise.race([session.defaultSession.cookies.flushStore(), new Promise((r) => setTimeout(r, 1500))]).catch(() => {}).then(() => app.quit());
 });
 // Keep the sign-in: write cookies to disk right away, and make session-only cookies persistent.
+// ---- saved login (encrypted with the OS keychain; only the TaskFlow sign-in page may use it) ----
+const credFile = () => path.join(app.getPath('userData'), 'cred.bin');
+const fromTF = (e) => { try { return new URL(e.senderFrame.url).origin === ORIGIN; } catch (x) { return false; } };
+ipcMain.handle('cred-get', (e) => {
+  if (!fromTF(e) || !safeStorage.isEncryptionAvailable()) return null;
+  try { return JSON.parse(safeStorage.decryptString(fs.readFileSync(credFile()))); } catch (x) { return null; }
+});
+ipcMain.on('cred-save', (e, u, p) => {
+  if (!fromTF(e) || !u || !p || !safeStorage.isEncryptionAvailable()) return;
+  try { fs.writeFileSync(credFile(), safeStorage.encryptString(JSON.stringify({ u, p }))); } catch (x) {}
+});
+ipcMain.on('cred-clear', (e) => { if (fromTF(e)) { try { fs.unlinkSync(credFile()); } catch (x) {} } });
 function keepCookies() {
   const ck = session.defaultSession.cookies; let t = null;
   ck.on('changed', (e, c, cause, removed) => {
