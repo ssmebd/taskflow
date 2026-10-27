@@ -1,7 +1,7 @@
 <?php require 'config.php';require 'remember.php'; if(empty($_SESSION['uid'])){header('Location: login.php');exit;} ?>
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a5c"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><link rel="icon" type="image/svg+xml" href="login.php?logo=1"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a5c"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes">
 <title>TaskFlow</title>
 <style>
 :root{--bg:#f4f5f9;--card:#fff;--ink:#1d2433;--mut:#6b7385;--line:#e2e5ee;--pri:#4f46e5;--priInk:#fff;--col:#eceef5;--hi:#dc2626;--lo:#16a34a;color-scheme:light}
@@ -492,9 +492,12 @@ header{view-transition-name:tfhead}#side{view-transition-name:tfside}
 
 .colgrip{position:absolute;right:-3px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2;touch-action:none}.colgrip:hover,.colgrip:active{background:linear-gradient(90deg,transparent 3px,var(--pri,#4f46e5) 3px,var(--pri,#4f46e5) 5px,transparent 5px)}table.mhcol td,table.mhcol th{overflow-wrap:anywhere}
 body.lsc #gtabs,body.lsc #strow{display:none!important}
-</style><script>try{sessionStorage.removeItem("tf_enter")}catch(e){}</script></head><body>
+#side .rlogo{width:auto!important;height:auto!important;margin:4px 0 10px!important}#side .rlogo svg.tfm{width:42px;height:42px;display:block;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3))}
+header .tfh{width:40px;height:40px;flex:none;margin-right:2px;transition:width .24s cubic-bezier(.4,0,.2,1),height .24s cubic-bezier(.4,0,.2,1)}body.hs header .tfh{width:28px;height:28px}
+@media(max-width:700px){header .tfh{display:none}}
+</style><script>try{sessionStorage.removeItem("tf_enter")}catch(e){}</script></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="tfbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2557b5"/><stop offset=".55" stop-color="#12337a"/><stop offset="1" stop-color="#081a40"/></linearGradient><radialGradient id="tfhl" cx=".2" cy=".08" r=".75"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient><linearGradient id="tfflow" gradientUnits="userSpaceOnUse" x1="256" y1="250" x2="392" y2="392"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#d9fbe6"/><stop offset="1" stop-color="#4ade80"/></linearGradient><linearGradient id="tfgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ee7a0"/><stop offset="1" stop-color="#16a34a"/></linearGradient><filter id="tfsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#020b22" flood-opacity=".38"/></filter></defs></svg>
 <header>
- <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
+ <svg class="tfm tfh" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(10.24,10.48) scale(0.96)"><g filter="url(#tfsh)"><rect x="88" y="104" width="336" height="66" rx="33" fill="#fff"/><path d="M256 150 V292 Q256 384 346 384 H384" fill="none" stroke="url(#tfflow)" stroke-width="66" stroke-linecap="round"/><path d="M350 322 L414 384 L350 446" fill="none" stroke="url(#tfgr)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg><span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
  <button id="mfb" class="mobonly" type="button" title="Search and filters">⌕ Filter</button><span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
  <button id="dv" title="Choose which view opens first"></button>
  <input id="q" placeholder="Search tasks" style="min-width:140px">
@@ -507,7 +510,7 @@ body.lsc #gtabs,body.lsc #strow{display:none!important}
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
 <div id="strow" style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
-<aside id="side"><span class="rpill"></span><span class="dkg" title="Drag up or down to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
+<aside id="side"><span class="rpill"></span><span class="dkg" title="Drag up or down to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><svg class="tfm" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(10.24,10.48) scale(0.96)"><g filter="url(#tfsh)"><rect x="88" y="104" width="336" height="66" rx="33" fill="#fff"/><path d="M256 150 V292 Q256 384 346 384 H384" fill="none" stroke="url(#tfflow)" stroke-width="66" stroke-linecap="round"/><path d="M350 322 L414 384 L350 446" fill="none" stroke="url(#tfgr)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg></a>
 <a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
 <div style="display:none"><div id="vname"></div><nav id="wlinks"></nav></div>
@@ -2050,7 +2053,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=197;
+const BUILD=198;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
