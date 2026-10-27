@@ -39,7 +39,8 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .tag{border:1px solid var(--line);border-radius:999px;padding:1px 8px}
 .late{color:var(--hi);font-weight:600}
 .listwrap{padding:0 16px 16px;overflow-x:auto}
-@media(min-width:701px){.listwrap{overflow:auto;overscroll-behavior:contain;max-height:calc(100dvh - 200px)}
+@media(min-width:701px){body.lst{display:flex;flex-direction:column;height:100dvh;overflow:hidden}body.lst>*{flex:none}body.lst>#main{flex:1 1 0;min-height:0;display:flex;flex-direction:column}body.lst .listwrap{flex:1 1 0;min-height:0;max-height:none}
+.listwrap{overflow:auto;overscroll-behavior:contain;max-height:calc(100dvh - 200px)}
 .listwrap thead th{position:sticky;top:0;z-index:7;background:var(--card);border-bottom:0;box-shadow:inset 0 -1px 0 var(--line)}
 .listwrap #hrow th{border-right:0;box-shadow:inset 0 -1px 0 var(--line),inset -1px 0 0 color-mix(in srgb,var(--line) 70%,var(--mut))}.listwrap #hrow th:last-child{box-shadow:inset 0 -1px 0 var(--line)}}
 table{table-layout:fixed;border-collapse:collapse;background:var(--card);border:1px solid var(--line)}
@@ -498,8 +499,7 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
 @keyframes tfLift{0%{transform:none}30%{transform:translateY(2%)}100%{transform:translateY(-102%)}}
 @keyframes tfSettle{from{opacity:.0;transform:translateY(-10px)}to{opacity:1;transform:none}}
 .colgrip{position:absolute;right:-3px;top:0;bottom:0;width:8px;cursor:col-resize;z-index:2;touch-action:none}.colgrip:hover,.colgrip:active{background:linear-gradient(90deg,transparent 3px,var(--pri,#4f46e5) 3px,var(--pri,#4f46e5) 5px,transparent 5px)}table.mhcol td,table.mhcol th{overflow-wrap:anywhere}
-@media(min-width:701px){#gtabs,#stats{max-height:320px;transition:max-height .28s cubic-bezier(.4,0,.2,1),opacity .2s ease,margin .28s ease,padding .28s ease}
-body.lsc #gcb{display:none!important}body.lsc #gtabs,body.lsc #stats{max-height:0;opacity:0;overflow:hidden;margin-top:0;margin-bottom:0;padding-top:0;padding-bottom:0;border-width:0;pointer-events:none}}
+body.lsc #gtabs,body.lsc #strow{display:none!important}
 </style><script>try{if(sessionStorage.getItem("tf_enter")==="1"){sessionStorage.removeItem("tf_enter");document.documentElement.classList.add("tfc")}}catch(e){}</script></head><body>
 <header>
  <span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -514,7 +514,7 @@ body.lsc #gcb{display:none!important}body.lsc #gtabs,body.lsc #stats{max-height:
 </header>
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
 <nav class="gtabs" id="gtabs" hidden></nav>
-<div style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
+<div id="strow" style="display:flex;align-items:center;flex-wrap:wrap"><div class="stats" id="stats"></div><div class="gcw" id="gcb" hidden><button type="button" class="gcm">Collapse ▾</button><div class="gcl"><button data-gc="c">Collapse all</button><button data-gc="e" title="Open groups, keep Completed folders closed">Expand</button><button data-gc="a" title="Open groups and Completed folders">Expand all</button></div></div></div>
 <aside id="side"><span class="rpill"></span><span class="dkg" title="Drag up or down to move. Double-click to reset."><i></i></span><a class="rlogo" href="index.php?home=1" title="TaskFlow"><span>TF</span><span class="fl">»</span></a>
 <a class="rb" id="rhome" data-l="Home" href="index.php?home=1" title="Home: my tasks"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></a>
 <button class="rb" id="rco" data-l="Companies" title="Companies"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/><path d="M3 13h18"/></svg></button>
@@ -957,7 +957,7 @@ document.addEventListener("click",e=>{const tb=e.target.closest(".htabs [data-ht
 function render(){
   const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f&&$("#main").contains(ae)){pend=true;return}
   pend=false;for(const id of [...sel])if(!tasks.some(t=>t.id==id))sel.delete(id);
-  updBar();syncFilters();
+  updBar();syncFilters();document.body.classList.toggle("lst",view==="list"&&!HOME);
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#wm").hidden=me.role!=="admin";
   $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
@@ -1777,7 +1777,7 @@ function rhSet(v){document.body.classList.toggle("rh",v);document.body.classList
 function rhChk(){const b=document.body;if(!b.classList.contains("ro"))return;if($("#side").matches(":hover")||$("#cpanel").matches(":hover")||$("#cpanel").classList.contains("open")||!$("#umenu").hidden||!$("#smenu").hidden)return;b.classList.remove("ro")}
 try{if(localStorage.getItem("tf_rh")==="1"&&!document.documentElement.classList.contains("lk-d"))document.body.classList.add("rh")}catch(e){}
 $("#rco").addEventListener("click",()=>{if(document.body.classList.contains("rh"))document.body.classList.add("ro")});
-function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");(()=>{const lw=document.querySelector(".listwrap");if(lw&&innerWidth>700&&!window.scrollY){const t=lw.getBoundingClientRect().top;lw.style.maxHeight=Math.max(240,Math.round(innerHeight-t-4))+"px"}})();document.documentElement.style.setProperty("--hb",Math.round(h.getBoundingClientRect().bottom)+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
+function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h||!t)return;const y=Math.max(58,Math.round(h.getBoundingClientRect().bottom+14));t.style.top=y+"px";document.documentElement.style.setProperty("--tt",y+"px");document.documentElement.style.setProperty("--hb",Math.round(h.getBoundingClientRect().bottom)+"px");document.documentElement.style.setProperty("--dk",(y-2)+"px")}
 (()=>{const g=document.querySelector("#side .dkg");if(!g)return;const R=document.documentElement,sd=$("#side");
  const clamp=(x,y)=>{const w=sd.offsetWidth||58,h=sd.offsetHeight||300;return[Math.max(4,Math.min(innerWidth-w-4,x)),Math.max(4,Math.min(innerHeight-h-4,y))]};
  const put=(x,y)=>{R.style.setProperty("--dkx",x+"px");R.style.setProperty("--dky",y+"px")};
@@ -1791,9 +1791,19 @@ function stPos(){const h=document.querySelector("header"),t=$("#sidetabs");if(!h
  addEventListener("resize",load);load()})();
 (()=>{const m=$("#main"),R=document.documentElement,lift=()=>{if(!R.classList.contains("tfc"))return;R.classList.add("tfco");setTimeout(()=>R.classList.remove("tfc","tfco"),1000)},go=()=>{if(document.body.classList.contains("rdy"))return;if(R.classList.contains("tfc")){setTimeout(()=>{document.body.classList.add("rdy");lift()},450)}else document.body.classList.add("rdy")};setTimeout(go,2500);
  new MutationObserver(()=>{if(m.firstElementChild&&!/^Loading/.test(m.textContent.trim()))go()}).observe(m,{childList:true,subtree:true})})();
-(()=>{let on=false;addEventListener("scroll",e=>{const lw=e.target;if(!lw||!lw.classList||!lw.classList.contains("listwrap")||innerWidth<=700)return;const y=lw.scrollTop,room=lw.scrollHeight-lw.clientHeight;
- if(!on&&y>40&&room>260){on=true;document.body.classList.add("lsc")}else if(on&&(y<4)){on=false;document.body.classList.remove("lsc")}else return;
- const t0=performance.now(),tick=()=>{stPos();if(performance.now()-t0<420)requestAnimationFrame(tick)};tick()},true)})();
+window.lsBusy=false;
+(()=>{let on=false;const D=".3s",E="cubic-bezier(.4,0,.2,1)",PR=["height","marginTop","marginBottom","paddingTop","paddingBottom"],
+ run=(lw,collapse)=>{window.lsBusy=true;const b=document.body,B=[$("#gtabs"),$("#strow")].filter(x=>x&&!x.hidden),S=B.map(()=>({}));
+  if(!collapse)b.classList.remove("lsc");
+  B.forEach((x,i)=>{const c=getComputedStyle(x);PR.forEach(p=>S[i][p]=c[p])});
+  const zero={height:"0px",marginTop:"0px",marginBottom:"0px",paddingTop:"0px",paddingBottom:"0px"};
+  B.forEach((x,i)=>{x.style.transition="none";x.style.overflow="hidden";x.style.boxSizing="border-box";Object.assign(x.style,collapse?S[i]:zero);x.style.opacity=collapse?"1":"0"});
+  void document.body.offsetHeight;
+  B.forEach(x=>x.style.transition="height "+D+" "+E+",margin "+D+" "+E+",padding "+D+" "+E+",opacity .22s ease");
+  B.forEach((x,i)=>{Object.assign(x.style,collapse?zero:S[i]);x.style.opacity=collapse?"0":"1"});
+  setTimeout(()=>{B.forEach(x=>{["transition","overflow","boxSizing","height","marginTop","marginBottom","paddingTop","paddingBottom","opacity"].forEach(p=>x.style[p]="")});if(collapse)b.classList.add("lsc");window.lsBusy=false},340)};
+ addEventListener("scroll",e=>{const lw=e.target;if(window.lsBusy||!lw||!lw.classList||!lw.classList.contains("listwrap")||innerWidth<=700)return;const y=lw.scrollTop,room=lw.scrollHeight-lw.clientHeight;
+  if(!on&&y>40&&room>260){on=true;run(lw,true)}else if(on&&y<4){on=false;run(lw,false)}},true)})();
 let stR=0;const stQ=()=>{cancelAnimationFrame(stR);stR=requestAnimationFrame(stPos)};
 addEventListener("scroll",stQ,{passive:true});addEventListener("resize",stQ);if(window.ResizeObserver)new ResizeObserver(stQ).observe(document.querySelector("header"));setTimeout(stPos,50);setTimeout(stPos,400);addEventListener("load",stQ);document.querySelector("header").addEventListener("transitionend",stQ);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stQ);setInterval(stPos,1500);
 $("#rhide").onclick=e=>{e.stopPropagation();rhSet(!document.body.classList.contains("rh"))};
@@ -2045,7 +2055,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=192;
+const BUILD=193;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
