@@ -588,6 +588,10 @@ html.tfc.tfco #side,html.tfc.tfco header{animation:tfSettle .9s cubic-bezier(.22
  <div id="bks" style="font-size:13px;margin-bottom:8px"></div>
  <div class="acts" style="flex-wrap:wrap"><button class="p" id="bkn">Back up now</button><button id="bkm">Back up and email me a copy</button></div>
  <div id="bkl" style="max-height:30vh;overflow:auto;margin-top:8px"></div>
+ <div style="border-top:1px solid var(--line);margin-top:10px;padding-top:8px"><b>⏰ Hours reminders (8am &amp; 3pm Dhaka)</b>
+  <div style="font-size:12px;color:var(--mut);margin:4px 0">In cPanel → Cron Jobs, set the time to <b>Every 30 minutes</b> (<code>*/30</code>), then paste this as the Command. Nothing to edit:</div>
+  <textarea id="remc" readonly rows="2" style="width:100%;font:12px monospace" onclick="this.select()"></textarea>
+  <div class="acts" style="flex-wrap:wrap;margin-top:4px"><button id="remcp">Copy command</button><button id="remam">Send test: morning</button><button id="rempm">Send test: afternoon</button></div></div>
  <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:8px"><b>📊 Worklog (last 15 days, all companies)</b><div id="wls" style="font-size:13px;margin:4px 0"></div>
  <div class="acts" style="flex-wrap:wrap"><button class="p" id="wln">Create worklog now</button><button id="wlm">Create and email me</button></div>
  <div id="wll" style="max-height:24vh;overflow:auto;margin-top:6px"></div></div>
@@ -1979,11 +1983,13 @@ const LGA={login:"Signed in",auto_login:"Signed in (kept)",logout:"Signed out",l
 const lgUA=u=>{u=u||"";const b=/Edg\//.test(u)?"Edge":/Chrome\//.test(u)?"Chrome":/Firefox\//.test(u)?"Firefox":/Safari\//.test(u)?"Safari":"Browser",o=/Android/.test(u)?"Android":/iPhone|iPad/.test(u)?"iOS":/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"";return b+(o?" · "+o:"")};
 const fmtKB=n=>n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
 async function bkLoad(){try{const r=await api("bk_list",{});
-  const l=r.last,when=t=>new Date(t*1000).toLocaleString();
+  $("#remc").value=(r.remcmd||"").replace(/^\*\/30 \* \* \* \* /,"");const l=r.last,when=t=>new Date(t*1000).toLocaleString();
   $("#bks").innerHTML=!r.dir_ok?'<span style="color:#dc2626">The server has no writable folder for backups. Ask your host, or tell me and I will change the location.</span>':l?`Last backup: <b style="color:${l.ok?"#16a34a":"#dc2626"}">${l.ok?"OK":"FAILED"}</b> ${esc(when(l.time))}${l.ok?" · "+fmtKB(l.size)+(l.emailed?" · emailed to "+esc(r.email):""):""}${l.err?`<br><span style="color:#dc2626">${esc(l.err)}</span>`:""}`:`No backup has run yet. Daily emails go to <b>${esc(r.email)}</b>.`;
   const w=r.wlast;$("#wls").innerHTML=w?`Last worklog: <b style="color:${w.ok?"#16a34a":"#dc2626"}">${w.ok?"OK":"FAILED"}</b> ${esc(when(w.time))}${w.ok?" · "+w.rows+" entries, "+(+w.hours).toFixed(2)+" h"+(w.emailed?" · emailed":""):""}${w.err?`<br><span style="color:#dc2626">${esc(w.err)}</span>`:""}`:"No worklog has been created yet.";
   $("#wll").innerHTML=(r.wfiles||[]).length?`<table class="tlt">${r.wfiles.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:"";
   $("#bkl").innerHTML=r.files.length?`<table class="tlt"><tr><th>When</th><th class="n">Size</th><th></th></tr>${r.files.map(f=>`<tr><td>${esc(when(f.time))}</td><td class="n">${fmtKB(f.size)}</td><td><button data-bkd="${ea(f.name)}">Download</button></td></tr>`).join("")}</table>`:'<div class="empty">No copies yet</div>'}catch(e){$("#bks").textContent=e.message}}
+$("#remcp").onclick=()=>{const t=$("#remc");t.select();try{navigator.clipboard.writeText(t.value)}catch(e){document.execCommand("copy")}$("#remcp").textContent="Copied ✓";setTimeout(()=>$("#remcp").textContent="Copy command",1500)};
+for(const k of["am","pm"])$("#rem"+k).onclick=async()=>{if(!confirm("This sends the real reminder messages to everyone now. Continue?"))return;try{const r=await api("rem_test",{slot:k});alert(r.res)}catch(e){alert(e.message)}};
 async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#bkn"));b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api(wl?"wl_run":"bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
 $("#abk").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#bkdlg").showModal();bkLoad()};
 $("#bkx").onclick=()=>$("#bkdlg").close();$("#wln").onclick=()=>bkRun(false,true);$("#wlm").onclick=()=>bkRun(true,true);$("#bkn").onclick=()=>bkRun(false);$("#bkm").onclick=()=>bkRun(true);
@@ -2018,7 +2024,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=183;
+const BUILD=184;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

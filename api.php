@@ -1,5 +1,5 @@
 <?php
-const BUILD=183;
+const BUILD=184;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -18,6 +18,8 @@ $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add'
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
 // Daily reminders (cron): php api.php remind  -> run every 30 min; sends at ~8am (am) and ~3pm (pm) Dhaka time, once per day each, Mon-Fri.
 // Sends in-app chat messages: log-hours reminder (+ "set a task In Progress" when nothing is ongoing); admins get an alert for people with no assigned task.
+function rem_key(){return substr(hash_hmac('sha256','taskflow-remind',DB_PASS.DB_NAME),0,24);}
+function rem_url(){$h=$_SERVER['HTTP_HOST']??'taskflow.gurucadd.com';return 'https://'.$h.rtrim(dirname($_SERVER['SCRIPT_NAME']??'/api.php'),'/').'/api.php?a=remind&key='.rem_key();}
 function rem_run($db,$slot='',$force=false){
   $tz=new DateTimeZone('Asia/Dhaka');$now=new DateTime('now',$tz);$h=(int)$now->format('G');$today=$now->format('Y-m-d');$dow=(int)$now->format('N');
   if($slot!=='am'&&$slot!=='pm'){$slot=($h>=8&&$h<10)?'am':(($h>=15&&$h<17)?'pm':'');}
@@ -204,6 +206,9 @@ function out($d){
   if(isset($a,$db,$me)&&in_array($a,$WRITEA,true)&&empty($d['error'])){aud_log($db,$uid,(string)($me['username']??$me['name']),'activity',$a,aud_detail(),$W?:null,(int)($in['id']??$in['task_id']??0)?:null);}
   echo json_encode($d);exit;
 }
+if(($_GET['a']??'')==='remind'){header('Content-Type: text/plain');
+  if(!hash_equals(rem_key(),(string)($_GET['key']??''))){http_response_code(403);exit("bad key\n");}
+  echo rem_run($db,'',false)."\n";exit;}
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_GET['a']??'')==='wiki_img'){
   try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
@@ -454,7 +459,9 @@ case 'notif_poll':
 case 'bk_list':
   admin();$d=bk_dir();$last=($d&&is_file($d.'/last.json'))?json_decode((string)file_get_contents($d.'/last.json'),true):null;
   $wl=($d&&is_file($d.'/worklog_last.json'))?json_decode((string)file_get_contents($d.'/worklog_last.json'),true):null;
-  out(['files'=>$d?bk_files($d):[],'last'=>$last,'wfiles'=>$d?wl_files($d):[],'wlast'=>$wl,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='']);
+  out(['files'=>$d?bk_files($d):[],'last'=>$last,'wfiles'=>$d?wl_files($d):[],'wlast'=>$wl,'email'=>BACKUP_EMAIL,'dir_ok'=>$d!=='','remcmd'=>'*/30 * * * * curl -s "'.rem_url().'" >/dev/null 2>&1']);
+case 'rem_test':
+  admin();$sl=($in['slot']??'am')==='pm'?'pm':'am';out(['res'=>rem_run($db,$sl,true)]);
 case 'wl_run':
   admin();$r=wl_run($db,!empty($in['mail']));out(['res'=>$r]);
 case 'bk_run':
