@@ -233,9 +233,25 @@ function create() {
 }
 function show() { if (!win) return; win.show(); if (win.isMinimized()) win.restore(); win.focus(); }
 app.on('second-instance', show);
-app.on('before-quit', () => { quitting = true; });
+let flushing = false;
+app.on('before-quit', (e) => {
+  quitting = true;
+  if (flushing) return;
+  flushing = true; e.preventDefault();
+  Promise.race([session.defaultSession.cookies.flushStore(), new Promise((r) => setTimeout(r, 1500))]).catch(() => {}).then(() => app.quit());
+});
+// Keep the sign-in: write cookies to disk right away, and make session-only cookies persistent.
+function keepCookies() {
+  const ck = session.defaultSession.cookies; let t = null;
+  ck.on('changed', (e, c, cause, removed) => {
+    clearTimeout(t); t = setTimeout(() => ck.flushStore().catch(() => {}), 1500);
+    if (removed || c.session !== true || !String(c.domain || '').replace(/^\./, '').endsWith(HOST.split(':')[0])) return;
+    ck.set({ url: ORIGIN + (c.path || '/'), name: c.name, value: c.value, path: c.path || '/', secure: c.secure, httpOnly: c.httpOnly, sameSite: c.sameSite, expirationDate: Math.floor(Date.now() / 1000) + 60 * 86400 }).catch(() => {});
+  });
+}
 app.whenReady().then(() => {
   session.defaultSession.setPermissionRequestHandler((wc, permission, cb) => cb(permission === 'notifications' || permission === 'clipboard-sanitized-write' || permission === 'fullscreen'));
+  keepCookies();
   create();
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 16, height: 16 }));
   tray.setToolTip('TaskFlow');
