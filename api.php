@@ -1,8 +1,8 @@
 <?php
-const BUILD=182;
+const BUILD=183;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
+if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
 $TASKA=['save','field','delete','dup','co_set','task_move','task_order','tl_add','tl_rev','cm_add'];
 $AUD_T='';
 function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
@@ -16,6 +16,46 @@ $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add'
 
 // ---- Backups: database dump to a private folder, daily copy by email ----
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
+// Daily reminders (cron): php api.php remind  -> run every 30 min; sends at ~8am (am) and ~3pm (pm) Dhaka time, once per day each, Mon-Fri.
+// Sends in-app chat messages: log-hours reminder (+ "set a task In Progress" when nothing is ongoing); admins get an alert for people with no assigned task.
+function rem_run($db,$slot='',$force=false){
+  $tz=new DateTimeZone('Asia/Dhaka');$now=new DateTime('now',$tz);$h=(int)$now->format('G');$today=$now->format('Y-m-d');$dow=(int)$now->format('N');
+  if($slot!=='am'&&$slot!=='pm'){$slot=($h>=8&&$h<10)?'am':(($h>=15&&$h<17)?'pm':'');}
+  if($slot==='')return 'Not a reminder time (Dhaka '.$now->format('H:i').')';
+  if(!$force&&$dow>=6)return 'Weekend - no reminders';
+  $db->exec("CREATE TABLE IF NOT EXISTS meta(k VARCHAR(20) PRIMARY KEY,v BIGINT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $key='rem_'.$slot;$dn=(int)str_replace('-','',$today);
+  $q=$db->prepare("SELECT v FROM meta WHERE k=?");$q->execute([$key]);
+  if(!$force&&(int)$q->fetchColumn()===$dn)return 'Already sent today ('.$slot.')';
+  $db->prepare("INSERT INTO meta(k,v) VALUES(?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$key,$dn]);
+  $users=$db->query("SELECT id,name,role FROM users WHERE role<>'guest' ORDER BY id")->fetchAll();
+  if(!$users)return 'No users';
+  $admins=array_values(array_filter($users,fn($u)=>$u['role']==='admin'));
+  $sender=function($to)use($users,$admins){foreach($admins as $a)if((int)$a['id']!==(int)$to)return (int)$a['id'];foreach($users as $u)if((int)$u['id']!==(int)$to)return (int)$u['id'];return 0;};
+  $ins=$db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())");
+  $send=function($from,$to,$b)use($ins){if(!$from||!$to)return;try{$ins->execute([$from,$to,mb_substr($b,0,1900)]);}catch(Throwable $e){}};
+  $prog=[];foreach($db->query("SELECT ws_id,skey,name FROM statuses")->fetchAll() as $r)if($r['skey']==='progress'||preg_match('/progress|ongoing|working/i',(string)$r['name']))$prog[$r['ws_id'].'|'.$r['skey']]=1;
+  $open=$db->query("SELECT t.id,t.ws_id,t.status,t.assigned_to FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.status<>'done'")->fetchAll();
+  $asg=[];foreach($db->query("SELECT task_id,user_id FROM task_assignees")->fetchAll() as $r)$asg[(int)$r['task_id']][]=(int)$r['user_id'];
+  $mine=[];$going=[];
+  foreach($open as $t){$us=$asg[(int)$t['id']]??[];if($t['assigned_to'])$us[]=(int)$t['assigned_to'];
+    foreach(array_unique($us) as $u){$mine[$u]=($mine[$u]??0)+1;if(isset($prog[$t['ws_id'].'|'.$t['status']]))$going[$u]=($going[$u]??0)+1;}}
+  $prev=$now->modify('-1 day')->format('Y-m-d');$now=new DateTime('now',$tz);
+  $lb=$dow===1?date('Y-m-d',strtotime($today.' -3 day')):$prev;
+  $hq=$db->prepare("SELECT COALESCE(SUM(hours),0) FROM time_logs WHERE user_id=? AND work_date=?");
+  $nUsers=0;$unas=[];
+  foreach($users as $u){$id=(int)$u['id'];$fn=explode(' ',trim((string)$u['name']))[0];
+    if($slot==='am'){$hq->execute([$id,$lb]);$hh=(float)$hq->fetchColumn();
+      $b="☀️ Good morning ".$fn."! Reminder to log your hours. ".($hh<7.99?"Last working day you logged ".rtrim(rtrim(number_format($hh,2),'0'),'.')."h of 8h - please complete it in Home → My hours check.":"Keep your hours up to date today.");}
+    else{$hq->execute([$id,$today]);$hh=(float)$hq->fetchColumn();
+      $b="🕒 Hi ".$fn.", time to log today's hours (".rtrim(rtrim(number_format($hh,2),'0'),'.')."h of 8h so far).";}
+    if(($mine[$id]??0)>0&&empty($going[$id]))$b.="\n⚠️ You have ".$mine[$id]." assigned task".($mine[$id]>1?"s":"")." but none is In Progress. Please open your assigned task and set it to In Progress.";
+    $send($sender($id),$id,$b);$nUsers++;
+    if(!($mine[$id]??0)&&$u['role']!=='admin')$unas[]=$u;}
+  foreach($unas as $u)foreach($admins as $a){$aid=(int)$a['id'];if($aid===(int)$u['id'])continue;
+    $send((int)$u['id'],$aid,"🔔 TaskFlow alert: ".$u['name']." is not assigned to any open task, so nothing is ongoing for them. Please assign work.");}
+  return 'Sent '.$slot.' reminders to '.$nUsers.' users; '.count($unas).' unassigned alert(s)';
+}
 function bk_dir(){
   $c=[];$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-backups';$c[]=dirname(__DIR__,2).'/taskflow-backups';$c[]=__DIR__.'/backups';
   foreach($c as $d){
