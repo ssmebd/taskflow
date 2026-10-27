@@ -1,4 +1,5 @@
 <?php
+if(isset($_GET['logo'])){header('Content-Type: image/svg+xml');header('Cache-Control: public, max-age=86400');echo '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="tfbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2557b5"/><stop offset=".55" stop-color="#12337a"/><stop offset="1" stop-color="#081a40"/></linearGradient><radialGradient id="tfhl" cx=".2" cy=".08" r=".75"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient><linearGradient id="tfflow" gradientUnits="userSpaceOnUse" x1="256" y1="250" x2="392" y2="392"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#d9fbe6"/><stop offset="1" stop-color="#4ade80"/></linearGradient><linearGradient id="tfgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ee7a0"/><stop offset="1" stop-color="#16a34a"/></linearGradient><filter id="tfsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#020b22" flood-opacity=".38"/></filter></defs><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(10.24,10.48) scale(0.96)"><g filter="url(#tfsh)"><rect x="88" y="104" width="336" height="66" rx="33" fill="#fff"/><path d="M256 150 V292 Q256 384 346 384 H384" fill="none" stroke="url(#tfflow)" stroke-width="66" stroke-linecap="round"/><path d="M350 322 L414 384 L350 446" fill="none" stroke="url(#tfgr)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>';exit;}
 require 'config.php';require 'remember.php';
 if(isset($_GET['logout'])){if(!empty($_SESSION['uid'])){$lq=$db->prepare("SELECT username FROM users WHERE id=?");$lq->execute([(int)$_SESSION['uid']]);aud_log($db,(int)$_SESSION['uid'],(string)$lq->fetchColumn(),'login','logout','Signed out');}rm_forget($db);session_destroy();header('Location: login.php');exit;}
 $err='';
@@ -8,7 +9,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   aud_log($db,$u?(int)$u['id']:0,trim($_POST['username']??''),'fail','login_failed',$u?'Wrong password':'Unknown username');
   sleep(1);$err='Wrong username or password.';
 }
-?><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a5c"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes"><title>TaskFlow login</title>
+?><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/svg+xml" href="login.php?logo=1"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#0f2a5c"><link rel="icon" type="image/png" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="mobile-web-app-capable" content="yes"><title>TaskFlow login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--navy:#0f2a5c;--navy2:#0a1d44;--green:#22c55e;--bg:#f3f6f5;--card:#ffffff;--ink:#0d1b2e;--mut:#5d6b7c;--line:#d8e0e4;--field:#f8fafb;--acc:#0f2a5c;--accfg:#ffffff;--err:#b91c1c;--errbg:#fdecec}
@@ -22,7 +23,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",syst
 .art::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at 40% 45%,#000 20%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at 40% 45%,#000 20%,transparent 75%)}
 .art>*{position:relative}
 .logo{display:flex;align-items:baseline;gap:2px;font:800 clamp(34px,4vw,48px)/1 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.02em}
-.logo i{font-style:normal;color:var(--green);margin-left:1px}
+.logo i{font-style:normal;color:var(--green);margin-left:1px}.logo svg.tfm{width:1.25em;height:1.25em;align-self:center;margin-right:12px;flex:none;filter:drop-shadow(0 6px 14px rgba(8,26,64,.35))}
 .logo small{font:600 11px/1 "DM Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;opacity:.65;margin-left:14px;align-self:center}
 .hero h1{margin:0 0 14px;font:800 clamp(34px,4.6vw,64px)/1.02 "Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.03em;text-wrap:balance;max-width:14ch}
 .hero h1 em{font-style:normal;color:var(--green)}
@@ -75,10 +76,10 @@ body.leaving .card{opacity:0;transform:translateY(-16px) scale(.98);filter:blur(
 body.leaving .bar{filter:brightness(1.12);transition:filter .4s}
 .go[disabled]{opacity:.85;cursor:progress}
 @media(prefers-reduced-motion:reduce){.curt,.cl{transition:none}}
-</style></head><body>
+</style></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="tfbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2557b5"/><stop offset=".55" stop-color="#12337a"/><stop offset="1" stop-color="#081a40"/></linearGradient><radialGradient id="tfhl" cx=".2" cy=".08" r=".75"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient><linearGradient id="tfflow" gradientUnits="userSpaceOnUse" x1="256" y1="250" x2="392" y2="392"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#d9fbe6"/><stop offset="1" stop-color="#4ade80"/></linearGradient><linearGradient id="tfgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ee7a0"/><stop offset="1" stop-color="#16a34a"/></linearGradient><filter id="tfsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#020b22" flood-opacity=".38"/></filter></defs></svg>
 <main class="wrap">
 <section class="art" aria-hidden="false">
- <div class="logo">TaskFlow<small>Powered by GURUCADD</small></div>
+ <div class="logo"><svg class="tfm" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(10.24,10.48) scale(0.96)"><g filter="url(#tfsh)"><rect x="88" y="104" width="336" height="66" rx="33" fill="#fff"/><path d="M256 150 V292 Q256 384 346 384 H384" fill="none" stroke="url(#tfflow)" stroke-width="66" stroke-linecap="round"/><path d="M350 322 L414 384 L350 446" fill="none" stroke="url(#tfgr)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/></g></g></svg>TaskFlow<small>Powered by GURUCADD</small></div>
  <div class="hero">
   <h1>Drawings in. <em>Deadlines</em> met.</h1>
   <p>Plan, assign and track every job across all your companies, from the first sketch to the final revision.</p>
