@@ -1,5 +1,5 @@
 <?php
-const BUILD=186;
+const BUILD=187;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -117,7 +117,7 @@ function bk_run($db,$force=false){
     if(is_file(__DIR__.'/config.php')&&!is_file($dir.'/config.php.bak')){@copy(__DIR__.'/config.php',$dir.'/config.php.bak');@chmod($dir.'/config.php.bak',0600);}
     $res['ok']=true;$res['file']=$name;$res['size']=filesize($path);
     $day=substr($name,9,10);$n=0;foreach(bk_files($dir) as $f)if(substr($f['name'],9,10)===$day)$n++;
-    if($force||$n<=1){$e=bk_mail($path,$name,$force?'Sent on request.':'Daily copy.');$res['emailed']=($e==='');if($e!=='')$res['err']='Saved, but email failed: '.$e;}
+    {$e=bk_mail($path,$name,$force?'Sent on request.':'Scheduled copy.');$res['emailed']=($e==='');if($e!=='')$res['err']='Saved, but email failed: '.$e;}
     bk_prune($dir);
   }catch(Throwable $e){
     $res['err']=$e->getMessage();
