@@ -261,6 +261,10 @@ body.hs header,body.hs html.glass header{padding:6px 12px;gap:6px}
 body.hs header input,body.hs header select,body.hs header button{padding:4px 8px;font-size:12.5px;min-height:0}
 body.hs header .brand{padding-right:10px;margin-right:2px}body.hs header .brand b{font-size:19px}body.hs header .brand small{font-size:7px;margin-top:1px}
 body.hs header h1{font-size:15px;margin-right:4px}body.hs #wlogo{height:30px;margin-right:2px}body.hs #wlogo .ini{font-size:12px}body.hs header #bell b{font-size:10px;padding:0 5px}
+/* smooth header shrink/grow on scroll (every size that changes is animated together) */
+header,header h1,header .brand,header .brand b,header .brand small,#wlogo,#wlogo img,header input,header select,header button,header #bell b{transition:padding .24s cubic-bezier(.4,0,.2,1),margin .24s cubic-bezier(.4,0,.2,1),gap .24s cubic-bezier(.4,0,.2,1),font-size .24s cubic-bezier(.4,0,.2,1),height .24s cubic-bezier(.4,0,.2,1),max-width .24s cubic-bezier(.4,0,.2,1),background-color .15s,color .15s,border-color .15s}
+header{backface-visibility:hidden}
+@media(prefers-reduced-motion:reduce){header,header *{transition:none!important}}
 #wlogo{width:auto;min-width:36px;max-width:90px;height:34px;display:flex;align-items:center;justify-content:center;align-self:center;margin-right:6px}#wlogo img{height:100%;width:auto;max-width:90px;object-fit:contain}header h1{display:flex;align-items:center;align-self:center;line-height:1}
 
 body,body.sc{padding-left:56px}
@@ -914,7 +918,7 @@ document.addEventListener("dragover",e=>{if(!dragCol)return;const th=e.target.cl
 document.addEventListener("drop",e=>{if(!dragCol)return;const th=e.target.closest&&e.target.closest("th.ch");if(th){e.preventDefault();const from=dragCol;dragCol=null;moveCol(from,th.dataset.col)}});
 document.addEventListener("dragend",()=>{dragCol=null;document.querySelectorAll("th.ch.over").forEach(x=>x.classList.remove("over"))});
 $("#cr").onclick=()=>{try{localStorage.removeItem(coKey());localStorage.removeItem(cwKey())}catch(e){}render()};
-(()=>{let on=false,tk=0;const f=()=>{tk=0;const y=window.scrollY;if(!on&&y>60){on=true;document.body.classList.add("hs")}else if(on&&y<8){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true})})();
+(()=>{let on=false,tk=0;const f=()=>{tk=0;const y=window.scrollY;if(!on&&y>70){on=true;document.body.classList.add("hs")}else if(on&&y<6){on=false;document.body.classList.remove("hs")}};addEventListener("scroll",()=>{if(!tk)tk=requestAnimationFrame(f)},{passive:true})})();
 let homeData=null,homeAt=0,homeBusy=false;
 async function renderHome(){
   const m=$("#main");
@@ -2024,7 +2028,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=185;
+const BUILD=186;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
