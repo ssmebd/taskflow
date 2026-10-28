@@ -4,7 +4,10 @@ require 'config.php';require 'remember.php';
 if(isset($_GET['logout'])){if(!empty($_SESSION['uid'])){$lq=$db->prepare("SELECT username FROM users WHERE id=?");$lq->execute([(int)$_SESSION['uid']]);aud_log($db,(int)$_SESSION['uid'],(string)$lq->fetchColumn(),'login','logout','Signed out');}rm_forget($db);session_destroy();header('Location: login.php');exit;}
 $err='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
-  $s=$db->prepare("SELECT id,pass_hash FROM users WHERE username=?");$s->execute([trim($_POST['username']??'')]);$u=$s->fetch();
+  $lid=trim($_POST['username']??'');
+  // Sign in with the username or the email address saved in the user's details.
+  $s=$db->prepare("SELECT id,pass_hash,(username=?) AS exact FROM users WHERE username=? OR (email<>'' AND LOWER(email)=LOWER(?)) ORDER BY (username=?) DESC LIMIT 2");$s->execute([$lid,$lid,$lid,$lid]);$rows=$s->fetchAll();
+  $u=$rows?$rows[0]:false;if($u&&count($rows)>1&&!(int)$u['exact'])$u=false;
   if($u&&password_verify($_POST['password']??'',$u['pass_hash'])){session_regenerate_id(true);$_SESSION['uid']=$u['id'];if(!empty($_POST['keep']))rm_issue($db,(int)$u['id']);aud_log($db,(int)$u['id'],trim($_POST['username']??''),'login','login','Signed in');header('Location: index.php');exit;}
   aud_log($db,$u?(int)$u['id']:0,trim($_POST['username']??''),'fail','login_failed',$u?'Wrong password':'Unknown username');
   sleep(1);$err='Wrong username or password.';
@@ -99,7 +102,7 @@ body.leaving .bar{filter:brightness(1.12);transition:filter .4s}
   <h2>Welcome back</h2><p class="sub">Log in to continue to your tasks.</p>
   <?php if($err)echo "<div class='err' role='alert'>".htmlspecialchars($err)."</div>"; ?>
   <form method="post">
-   <label class="f" for="un">Username</label>
+   <label class="f" for="un">Username or email</label>
    <div class="in"><input id="un" name="username" autocomplete="username" autofocus autocapitalize="none" spellcheck="false"></div>
    <label class="f" for="pw">Password</label>
    <div class="in"><input id="pw" class="pw" name="password" type="password" autocomplete="current-password"><button type="button" class="show" id="pwt">Show</button></div>
