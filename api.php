@@ -1,5 +1,5 @@
 <?php
-const BUILD=202;
+const BUILD=203;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -775,21 +775,29 @@ case 'tl_add':
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
-  $who=(int)$tr['assigned_to'];
-  if($who!==$uid){$q=$db->prepare("SELECT COUNT(*) FROM task_assignees WHERE task_id=? AND user_id=?");$q->execute([$tid,$uid]);if((int)$q->fetchColumn())$who=$uid;}
-  if(!$who){$as=(int)($in['assign_to']??0);if(!$as)out(['error'=>'This task is unassigned. Choose who it is assigned to.','need_assign'=>1]);
-    $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$as]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);
-    $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
+  // Rule: hours always belong to the person logging them. Only an admin can add hours for someone else.
+  if($me['role']!=='admin'){$who=(int)$uid;}
+  else{
+    $who=(int)($in['for_user']??0);
+    if($who){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$who]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);}
+    else{
+      $who=(int)$tr['assigned_to'];
+      if($who!==$uid){$q=$db->prepare("SELECT COUNT(*) FROM task_assignees WHERE task_id=? AND user_id=?");$q->execute([$tid,$uid]);if((int)$q->fetchColumn())$who=$uid;}
+      if(!$who){$as=(int)($in['assign_to']??0);if(!$as)out(['error'=>'This task is unassigned. Choose who it is assigned to.','need_assign'=>1]);
+        $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$as]);if(!(int)$q->fetchColumn())out(['error'=>'Unknown person']);
+        $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
+    }
+  }
   $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,created_at) VALUES(?,?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n,$rv]);ot_rebalance($db,$who,$d);out(['ok'=>1]);
 case 'tl_rev':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
-  if((int)$o['user_id']!==(int)$uid&&(int)$o['logged_by']!==(int)$uid&&$LV!=='full')out(['error'=>'You can only edit your own entries']);
+  if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
   $db->prepare("UPDATE time_logs SET rev=? WHERE id=?")->execute([mb_substr(trim((string)($in['rev']??'')),0,60),$id]);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
-  if((int)$o['user_id']!==(int)$uid&&(int)$o['logged_by']!==(int)$uid&&$LV!=='full')out(['error'=>'You can only delete your own entries']);
+  if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only delete your own hours. Only an admin can delete someone else\'s.']);
   $db->prepare("DELETE FROM time_logs WHERE id=?")->execute([$id]);ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_report':
   admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
