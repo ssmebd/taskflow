@@ -1,5 +1,5 @@
 <?php
-const BUILD=219;
+const BUILD=220;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -244,18 +244,34 @@ function sr_data($db,$ws=[],$exg=[],$ext=[]){
 function sr_site(){if(PHP_SAPI==='cli')return 'https://taskflow.gurucadd.com';$h=$_SERVER['HTTP_HOST']??'taskflow.gurucadd.com';$d=rtrim(str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/api.php')),'/');return 'https://'.$h.$d;}
 function sr_types($rows){$m=[];foreach($rows as $r){$k=strtoupper(trim((string)$r['drawing_type']));if($k==='')$k='OTHER';$m[$k][]=$r;}
   uksort($m,function($a,$b)use($m){if($a==='OTHER')return 1;if($b==='OTHER')return -1;$c=count($m[$b])<=>count($m[$a]);return $c?:strcmp($a,$b);});return $m;}
+function sr_whiten($b64){
+  // Turns a transparent logo into a white silhouette so it reads on the dark header in light and dark mode. Returns '' if it can't (no GD, or the logo has no transparency).
+  if(!function_exists('imagecreatefromstring'))return '';
+  $im=@imagecreatefromstring((string)base64_decode($b64));if(!$im)return '';
+  $w=imagesx($im);$h=imagesy($im);if($w<2||$h<2)return '';
+  $sc=min(1,160/$h);$nw=max(1,(int)round($w*$sc));$nh=max(1,(int)round($h*$sc));
+  $o=imagecreatetruecolor($nw,$nh);imagealphablending($o,false);imagesavealpha($o,true);imagefill($o,0,0,imagecolorallocatealpha($o,255,255,255,127));
+  imagecopyresampled($o,$im,0,0,0,0,$nw,$nh,$w,$h);
+  $t=0;$n=$nw*$nh;
+  for($y=0;$y<$nh;$y++)for($x=0;$x<$nw;$x++){$a=(imagecolorat($o,$x,$y)>>24)&127;if($a>100)$t++;}
+  if($t<$n*0.05)return '';
+  $wc=[];for($a=0;$a<=127;$a++)$wc[$a]=imagecolorallocatealpha($o,255,255,255,$a);
+  for($y=0;$y<$nh;$y++)for($x=0;$x<$nw;$x++){$a=(imagecolorat($o,$x,$y)>>24)&127;imagesetpixel($o,$x,$y,$wc[$a]);}
+  ob_start();imagepng($o);$png=ob_get_clean();return $png?base64_encode($png):'';}
 function sr_assets($db,$ws,$mode){
   // mode 'cid': images are attached to the email and referenced by cid. mode 'data': inline data URIs (for the on-screen preview).
-  $o=['tf'=>'','co'=>[],'names'=>[],'att'=>[]];
+  $o=['tf'=>'','co'=>[],'names'=>[],'att'=>[],'white'=>false];
   $f=__DIR__.'/icon-192.png';
   if(is_file($f)&&filesize($f)<400000){$b=file_get_contents($f);if($mode==='cid'){$o['tf']='cid:tflogo';$o['att'][]=['tflogo.png','image/png',base64_encode($b)];}else $o['tf']='data:image/png;base64,'.base64_encode($b);}
   $ws=array_values(array_filter(array_map('intval',(array)$ws)));
-  $q=$db->query("SELECT id,name,COALESCE(logo,'') AS logo FROM workspaces ".($ws?"WHERE id IN(".implode(',',$ws).") ":"")."ORDER BY sort_no,name");$i=0;
+  $q=$db->query("SELECT id,name,COALESCE(logo,'') AS logo FROM workspaces ".($ws?"WHERE id IN(".implode(',',$ws).") ":"")."ORDER BY sort_no,name");$L=[];
   foreach($q->fetchAll() as $w){$o['names'][]=$w['name'];
-    if(preg_match('#^data:(image/(?:png|jpeg));base64,(.+)$#',$w['logo'],$m)&&strlen($m[2])<500000&&count($o['co'])<3){$i++;
-      if($mode==='cid'){$id='cologo'.$i;$o['co'][]=['cid:'.$id,$w['name']];$o['att'][]=[$id.'.'.($m[1]==='image/png'?'png':'jpg'),$m[1],$m[2],$id];}
-      else $o['co'][]=[$w['logo'],$w['name']];}}
-  if(count($o['names'])>3)$o['co']=[];
+    if(preg_match('#^data:(image/(?:png|jpeg));base64,(.+)$#',$w['logo'],$m)&&strlen($m[2])<500000&&count($L)<3)$L[]=[$w['name'],$m[1],$m[2],sr_whiten($m[2])];}
+  if(count($o['names'])>3)$L=[];
+  $o['white']=$L&&!array_filter($L,fn($l)=>$l[3]==='');
+  foreach($L as $i=>$l){$n=$i+1;$mime=$o['white']?'image/png':$l[1];$b64=$o['white']?$l[3]:$l[2];
+    if($mode==='cid'){$id='cologo'.$n;$o['co'][]=['cid:'.$id,$l[0]];$o['att'][]=[$id.'.'.($mime==='image/png'?'png':'jpg'),$mime,$b64,$id];}
+    else $o['co'][]=['data:'.$mime.';base64,'.$b64,$l[0]];}
   return $o;}
 function sr_html($d,$title='Task status report',$as=null){
   $e=fn($s)=>htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8');$fd=fn($s)=>($s&&$s!=='0000-00-00')?date('D j M',strtotime($s)):'';
@@ -274,7 +290,7 @@ function sr_html($d,$title='Task status report',$as=null){
   // header
   $o.='<tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;padding:20px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
     .'<td width="56" valign="middle">'.$tfimg.'</td><td valign="middle" style="'.$F.'padding-left:'.($tfimg?'12':'0').'px"><div style="font-size:23px;font-weight:800;color:#ffffff;letter-spacing:.2px">TaskFlow</div><div style="font-size:10px;letter-spacing:1.6px;color:#93c5fd;font-weight:700">POWERED BY GURUCADD</div></td>'
-    .'<td align="right" valign="middle"><span style="display:inline-block;background:#ffffff;border-radius:10px;padding:8px 12px;line-height:0">'.$logos.'</span></td></tr></table></td></tr>';
+    .'<td align="right" valign="middle">'.(!empty($as['white'])?'<span style="display:inline-block;line-height:0">'.$logos.'</span>':'<span style="display:inline-block;background:#ffffff;border-radius:10px;padding:8px 12px;line-height:0">'.$logos.'</span>').'</td></tr></table></td></tr>';
   $o.='<tr><td style="font-size:0;line-height:0;height:4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td width="34%" height="4" bgcolor="#e2e8f0" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#38bdf8" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#22c55e" style="height:4px;line-height:4px;font-size:0">&nbsp;</td></tr></table></td></tr>';
   // title
   $o.='<tr><td style="'.$F.'padding:24px 26px 6px"><div style="font-size:11px;letter-spacing:1.4px;color:#64748b;font-weight:700">WEEKLY PROGRESS REPORT</div><div style="font-size:25px;font-weight:800;color:#0f172a;margin-top:4px">'.$e($title).'</div><div style="font-size:13px;color:#475569;margin-top:6px">Week of <b>'.$e($fd($d['from'])).'</b> to <b>'.$e($fd($d['to'])).'</b> &nbsp;·&nbsp; prepared '.$e($fd($d['today'])).'</div></td></tr>';
