@@ -688,7 +688,7 @@ header .tfh{width:40px;height:40px;flex:none;margin-right:2px;transition:width .
  <div class="hrk" id="hrs"></div><div id="hrout"></div></dialog>
 <dialog id="srdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">📋 Task status report</b><button id="srx">Close</button></div>
  <small style="color:var(--mut)">Shows tasks completed this week, tasks ongoing now, and tasks starting in the next 3 days. Set up a weekly email to guests below. It is sent by the server at the chosen Dhaka time (needs the reminder cron job from Backups).</small>
- <div class="srl" id="srl"></div>
+ <div id="srms" style="font-size:12px;color:var(--mut);margin-top:4px"></div><div class="srl" id="srl"></div>
  <div class="srf" id="srf" hidden><div class="row"><input id="srn" placeholder="Name, e.g. Weekly update for Bechtel" maxlength="80" style="flex:1;min-width:220px"></div>
   <div><small style="color:var(--mut)">Companies to include (none ticked = all)</small><div class="row" id="srw"></div></div>
   <details id="srtd"><summary style="cursor:pointer;font-size:13px">Choose groups and tasks <span id="srtc" style="color:var(--mut)"></span></summary><div class="row" style="margin:6px 0"><button id="srta" type="button">Include all</button><small style="color:var(--mut)">Untick a group or a task to leave it out of the report. New tasks are included automatically.</small></div><div id="srtree" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px"></div></details>
@@ -2200,7 +2200,7 @@ function srTreeDraw(){const m=new Map();for(const t of srTree){const k=t.ws_id+"
  $("#srtree").innerHTML=[...m.values()].map(g=>{const gx=srEG.has(String(g.gid));return `<div><label style="font-weight:700;display:flex;gap:6px;align-items:center"><input type="checkbox" data-xg="${g.gid}" ${gx?"":"checked"}> ${esc(g.g)}${multi?` <small style="color:var(--mut);font-weight:400">${esc(g.c)}</small>`:""} <small style="color:var(--mut);font-weight:400">${g.r.length}</small></label>`+g.r.map(t=>{const x=gx||srET.has(String(t.id));if(x)off++;return `<label style="display:flex;gap:6px;align-items:center;padding-left:22px;${gx?"opacity:.5":""}"><input type="checkbox" data-xt="${t.id}" ${gx?"disabled":""} ${x?"":"checked"}> <span>${esc((t.order_no?t.order_no+" · ":"")+t.title)}</span> <small style="color:var(--mut)">${SRL[t.sec]}</small></label>`}).join("")+`</div>`}).join("")||"<small>No tasks in this report right now.</small>";
  $("#srtc").textContent=off?"("+off+" left out)":""}
 async function srPrev(){$("#srprev").innerHTML="<p>Loading…</p>";try{const r=await api("sr_preview",{ws:srWs(),exg:[...srEG],ext:[...srET]});srTree=r.tree||[];srTreeDraw();$("#srprev").innerHTML=r.html;$("#srpn").textContent=r.n[0]+" completed · "+r.n[1]+" ongoing · "+r.n[2]+" starting soon"}catch(e){$("#srprev").innerHTML="";alert(e.message)}}
-async function srLoad(keep){try{const r=await api("sr_list",{});srItems=r.items;srCo=r.companies;srUs=r.users||[];if(keep===undefined)keep=srItems[0]?srItems[0].id:0;srList();srForm(keep)}catch(e){alert(e.message)}}
+async function srLoad(keep){try{const r=await api("sr_list",{});srItems=r.items;srCo=r.companies;srUs=r.users||[];$("#srms").textContent=r.ms_from?"✉ Sending through Microsoft 365 as "+r.ms_from:"✉ Sending through the web server's mail (not Microsoft 365)";if(keep===undefined)keep=srItems[0]?srItems[0].id:0;srList();srForm(keep)}catch(e){alert(e.message)}}
 $("#srt").innerHTML=Array.from({length:48},(_,i)=>`<option value="${i*30}">${srTm(i*30)}</option>`).join("");
 $("#srm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#srdg").showModal();srLoad()};
 $("#srx").onclick=()=>$("#srdg").close();$("#srpr").onclick=srPrev;
@@ -2295,7 +2295,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=212;
+const BUILD=213;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

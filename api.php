@@ -1,5 +1,5 @@
 <?php
-const BUILD=212;
+const BUILD=213;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -261,6 +261,28 @@ function sr_html($d,$title='Task status report'){
   return $o.'<p style="margin-top:22px;font-size:11px;color:#94a3b8">Sent automatically by TaskFlow, powered by GURUCADD.</p></div></div>';
 }
 function sr_valid_emails($s){$o=[];foreach(preg_split('/[\s,;]+/',(string)$s,-1,PREG_SPLIT_NO_EMPTY) as $m){$m=strtolower(trim($m));if(filter_var($m,FILTER_VALIDATE_EMAIL)&&!in_array($m,$o,true))$o[]=$m;}return array_slice($o,0,30);}
+// ---- Microsoft 365 mail (Graph API, app-only). Put taskflow-mail.json in your home folder (or define('MS_MAIL_FILE','/path') in config.php):
+// {"tenant_id":"...","client_id":"...","client_secret":"...","from":"taskflow@gurucadd.com"}
+function ms_cfg(){
+  $c=[];if(defined('MS_MAIL_FILE'))$c[]=MS_MAIL_FILE;$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-mail.json';$c[]=dirname(__DIR__,2).'/taskflow-mail.json';$c[]=__DIR__.'/../taskflow-mail.json';
+  foreach($c as $f)if($f&&is_file($f)){$j=json_decode((string)file_get_contents($f),true);if(is_array($j)&&!empty($j['tenant_id'])&&!empty($j['client_id'])&&!empty($j['client_secret'])&&!empty($j['from']))return $j;}
+  return null;}
+function ms_http($url,$post,$hdr,&$code){
+  $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_POSTFIELDS=>$post,CURLOPT_HTTPHEADER=>$hdr,CURLOPT_RETURNTRANSFER=>1,CURLOPT_TIMEOUT=>25,CURLOPT_CONNECTTIMEOUT=>8]);
+  $o=(string)curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$er=curl_error($ch);curl_close($ch);return $er!==''?'curl: '.$er:$o;}
+function ms_token($c,&$err){
+  $cf=sys_get_temp_dir().'/tf_ms_'.md5($c['tenant_id'].$c['client_id']).'.json';
+  if(is_file($cf)){$t=json_decode((string)file_get_contents($cf),true);if(is_array($t)&&($t['exp']??0)>time()+120)return $t['tok'];}
+  $o=ms_http('https://login.microsoftonline.com/'.rawurlencode($c['tenant_id']).'/oauth2/v2.0/token',http_build_query(['client_id'=>$c['client_id'],'client_secret'=>$c['client_secret'],'scope'=>'https://graph.microsoft.com/.default','grant_type'=>'client_credentials']),['Content-Type: application/x-www-form-urlencoded'],$code);
+  $r=json_decode($o,true);if(empty($r['access_token'])){$err='Microsoft sign-in failed: '.mb_substr((string)($r['error_description']??$o),0,220);return '';}
+  @file_put_contents($cf,json_encode(['tok'=>$r['access_token'],'exp'=>time()+(int)($r['expires_in']??3000)]));@chmod($cf,0600);return $r['access_token'];}
+function ms_send($to,$subject,$html){
+  if(!function_exists('curl_init'))return 'PHP curl is not available';
+  $c=ms_cfg();if(!$c)return 'Microsoft 365 mail is not set up';
+  $tok=ms_token($c,$err);if($tok==='')return $err;
+  $o=ms_http('https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/sendMail',json_encode(['message'=>['subject'=>$subject,'body'=>['contentType'=>'HTML','content'=>$html],'toRecipients'=>[['emailAddress'=>['address'=>$to]]]],'saveToSentItems'=>false]),['Authorization: Bearer '.$tok,'Content-Type: application/json'],$code);
+  if($code===202||$code===200)return '';
+  $r=json_decode($o,true);return 'Microsoft refused it ('.$code.'): '.mb_substr((string)($r['error']['message']??$o),0,220);}
 function sr_send($db,$s){
   $to=sr_valid_emails($s['emails']);if(!$to)return ['ok'=>false,'sent'=>0,'err'=>'No valid email addresses'];
   $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'');
@@ -268,11 +290,14 @@ function sr_send($db,$s){
   $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
   foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN THE NEXT 3 DAYS','soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
-  foreach($to as $m){$b='tf'.bin2hex(random_bytes(8));
+  $viaMs=ms_cfg()!==null;
+  foreach($to as $m){
+    $subj='TaskFlow status report '.date('j M',strtotime($d['from'])).' - '.date('j M',strtotime($d['to']));
+    if($viaMs){$e=ms_send($m,$subj,$html);if($e===''){$sent++;continue;}$err=$e;}
+    $b='tf'.bin2hex(random_bytes(8));
     $h="From: TaskFlow <backup@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
     $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n".$txt."\r\nThe full formatted report is attached (open the .html file in a browser).\r\n"
       ."--$b\r\nContent-Type: text/html; name=\"status-report.html\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"status-report.html\"\r\n\r\n".chunk_split(base64_encode($html))."\r\n--$b--";
-    $subj='TaskFlow status report '.date('j M',strtotime($d['from'])).' - '.date('j M',strtotime($d['to']));
     if(@mail($m,$subj,$body,$h))$sent++;else{$le=error_get_last();$err='The server could not send to '.$m.($le?' ('.$le['message'].')':'');}}
   return ['ok'=>$sent>0,'sent'=>$sent,'err'=>$err];
 }
@@ -921,7 +946,7 @@ case 'hrs_report':
     'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
 case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t FROM status_reports ORDER BY id");
-  out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll()]);
+  out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
   admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]));out(['html'=>sr_html($d),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree']]);
 case 'sr_save':
