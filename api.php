@@ -1,5 +1,5 @@
 <?php
-const BUILD=216;
+const BUILD=217;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -241,24 +241,68 @@ function sr_data($db,$ws=[],$exg=[],$ext=[]){
   usort($d['soon'],fn($a,$b)=>strcmp($a['start_date'],$b['start_date']));
   return $d;
 }
-function sr_html($d,$title='Task status report'){
-  $e=fn($s)=>htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8');$fd=fn($s)=>$s?date('D j M',strtotime($s)):'';
-  $th='style="text-align:left;padding:6px 8px;background:#f1f5f9;color:#475569;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0"';$td='style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;vertical-align:top"';
-  $sec=function($name,$col,$rows,$cols,$empty)use($e,$th,$td){
-    $h='<h3 style="margin:22px 0 6px;font-size:16px;color:'.$col.'">'.$e($name).' <span style="color:#64748b;font-weight:400">('.count($rows).')</span></h3>';
-    if(!$rows)return $h.'<p style="margin:4px 0;color:#64748b;font-size:13px">'.$e($empty).'</p>';
-    $h.='<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse"><tr>';foreach($cols as $c)$h.='<th '.$th.'>'.$e($c[0]).'</th>';$h.='</tr>';
-    foreach($rows as $r){$h.='<tr>';foreach($cols as $c)$h.='<td '.$td.'>'.$e($c[1]($r)).'</td>';$h.='</tr>';}
-    return $h.'</table>';};
-  $fd2=$fd;$base=[['Company',fn($r)=>$r['company']],['Order No.',fn($r)=>$r['order_no']],['Task',fn($r)=>$r['title']],['Customer',fn($r)=>$r['customer']],['Type',fn($r)=>$r['drawing_type']],['Assigned to',fn($r)=>$r['person']?:'Unassigned']];
-  $o='<div style="font-family:Segoe UI,Arial,sans-serif;max-width:900px;margin:0 auto;color:#0f172a"><div style="background:#0f2a5c;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0"><div style="font-size:20px;font-weight:700">'.$e($title).'</div><div style="font-size:13px;opacity:.8">Week '.$e($fd($d['from'])).' to '.$e($fd($d['to'])).' &middot; prepared '.$e($fd($d['today'])).'</div></div><div style="border:1px solid #e2e8f0;border-top:0;padding:4px 20px 20px;border-radius:0 0 10px 10px">';
-  $o.='<table cellspacing="8" style="margin:10px -8px 0"><tr>';
-  foreach([['Completed this week',count($d['done']),'#16a34a'],['Ongoing',count($d['going']),'#2563eb'],['Starting in 3 days',count($d['soon']),'#f59e0b']] as $k)$o.='<td style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;text-align:center"><div style="font-size:24px;font-weight:800;color:'.$k[2].'">'.$k[1].'</div><div style="font-size:11px;color:#64748b">'.$k[0].'</div></td>';
-  $o.='</tr></table>';
-  $o.=$sec('Completed this week','#16a34a',$d['done'],array_merge($base,[['Completed',fn($r)=>$fd2($r['when'])]]),'Nothing completed yet this week.');
-  $o.=$sec('Ongoing','#2563eb',$d['going'],array_merge($base,[['Status',fn($r)=>$r['sname']],['Start',fn($r)=>$fd2($r['start_date'])],['End',fn($r)=>$fd2($r['end_date'])]]),'No ongoing tasks.');
-  $o.=$sec('Starting in the next 3 days','#d97706',$d['soon'],array_merge($base,[['Starts',fn($r)=>$fd2($r['start_date'])],['End',fn($r)=>$fd2($r['end_date'])]]),'No tasks are scheduled to start in the next 3 days.');
-  return $o.'<p style="margin-top:22px;font-size:11px;color:#94a3b8">Sent automatically by TaskFlow, powered by GURUCADD.</p></div></div>';
+function sr_assets($db,$ws,$mode){
+  // mode 'cid': images are attached to the email and referenced by cid. mode 'data': inline data URIs (for the on-screen preview).
+  $o=['tf'=>'','co'=>[],'names'=>[],'att'=>[]];
+  $f=__DIR__.'/icon-192.png';
+  if(is_file($f)&&filesize($f)<400000){$b=file_get_contents($f);if($mode==='cid'){$o['tf']='cid:tflogo';$o['att'][]=['tflogo.png','image/png',base64_encode($b)];}else $o['tf']='data:image/png;base64,'.base64_encode($b);}
+  $ws=array_values(array_filter(array_map('intval',(array)$ws)));
+  $q=$db->query("SELECT id,name,COALESCE(logo,'') AS logo FROM workspaces ".($ws?"WHERE id IN(".implode(',',$ws).") ":"")."ORDER BY sort_no,name");$i=0;
+  foreach($q->fetchAll() as $w){$o['names'][]=$w['name'];
+    if(preg_match('#^data:(image/(?:png|jpeg));base64,(.+)$#',$w['logo'],$m)&&strlen($m[2])<500000&&count($o['co'])<3){$i++;
+      if($mode==='cid'){$id='cologo'.$i;$o['co'][]=['cid:'.$id,$w['name']];$o['att'][]=[$id.'.'.($m[1]==='image/png'?'png':'jpg'),$m[1],$m[2],$id];}
+      else $o['co'][]=[$w['logo'],$w['name']];}}
+  if(count($o['names'])>3)$o['co']=[];
+  return $o;}
+function sr_html($d,$title='Task status report',$as=null){
+  $e=fn($s)=>htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8');$fd=fn($s)=>($s&&$s!=='0000-00-00')?date('D j M',strtotime($s)):'';
+  $as=$as?:['tf'=>'','co'=>[],'names'=>[]];$F="font-family:'Segoe UI',Arial,Helvetica,sans-serif;";
+  $nd=count($d['done']);$ng=count($d['going']);$ns=count($d['soon']);$tot=$nd+$ng+$ns;
+  $pal=['#2563eb','#0891b2','#16a34a','#d97706','#9333ea','#dc2626','#0d9488','#db2777'];
+  $av=function($n)use($e,$pal){$n=trim((string)$n);if($n==='')return '<span style="color:#94a3b8">Unassigned</span>';$w=preg_split('/\s+/',$n);$in=strtoupper(mb_substr($w[0],0,1).(isset($w[1])?mb_substr($w[count($w)-1],0,1):''));$c=$pal[crc32($n)%count($pal)];
+    return '<span style="display:inline-block;width:22px;height:22px;line-height:22px;border-radius:11px;background:'.$c.';color:#fff;font-size:10px;font-weight:700;text-align:center;vertical-align:middle;margin-right:6px">'.$e($in).'</span><span style="vertical-align:middle">'.$e($n).'</span>';};
+  $multi=count(array_unique(array_map(fn($r)=>$r['company'],array_merge($d['done'],$d['going'],$d['soon']))))>1;
+  $logos='';foreach($as['co'] as $c)$logos.='<img src="'.$e($c[0]).'" alt="'.$e($c[1]).'" height="38" style="height:38px;max-width:150px;display:inline-block;vertical-align:middle;margin-left:10px;border:0">';
+  if($logos==='')$logos='<span style="'.$F.'font-size:14px;font-weight:700;color:#0f2a5c">'.$e(implode('  ·  ',array_slice($as['names'],0,3))).(count($as['names'])>3?' +'.(count($as['names'])-3):'').'</span>';
+  $tfimg=$as['tf']?'<img src="'.$e($as['tf']).'" alt="TaskFlow" width="46" height="46" style="width:46px;height:46px;border-radius:11px;display:block;border:0">':'';
+  $o='<div style="margin:0;padding:0;background:#eef2f7"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7">'.$nd.' completed, '.$ng.' ongoing, '.$ns.' starting in the next 3 days.</div>';
+  $o.='<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f7"><tr><td align="center" style="padding:22px 10px">';
+  $o.='<table role="presentation" width="680" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(15,42,92,.12)">';
+  // header
+  $o.='<tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;padding:20px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
+    .'<td width="56" valign="middle">'.$tfimg.'</td><td valign="middle" style="'.$F.'padding-left:'.($tfimg?'12':'0').'px"><div style="font-size:23px;font-weight:800;color:#ffffff;letter-spacing:.2px">TaskFlow</div><div style="font-size:10px;letter-spacing:1.6px;color:#93c5fd;font-weight:700">POWERED BY GURUCADD</div></td>'
+    .'<td align="right" valign="middle"><span style="display:inline-block;background:#ffffff;border-radius:10px;padding:8px 12px;line-height:0">'.$logos.'</span></td></tr></table></td></tr>';
+  $o.='<tr><td style="font-size:0;line-height:0;height:4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td width="34%" height="4" bgcolor="#e2e8f0" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#38bdf8" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#22c55e" style="height:4px;line-height:4px;font-size:0">&nbsp;</td></tr></table></td></tr>';
+  // title
+  $o.='<tr><td style="'.$F.'padding:24px 26px 6px"><div style="font-size:11px;letter-spacing:1.4px;color:#64748b;font-weight:700">WEEKLY PROGRESS REPORT</div><div style="font-size:25px;font-weight:800;color:#0f172a;margin-top:4px">'.$e($title).'</div><div style="font-size:13px;color:#475569;margin-top:6px">Week of <b>'.$e($fd($d['from'])).'</b> to <b>'.$e($fd($d['to'])).'</b> &nbsp;·&nbsp; prepared '.$e($fd($d['today'])).'</div></td></tr>';
+  // KPI
+  $k=function($n,$l,$c,$bg)use($F){return '<td width="33%" valign="top" style="padding:0 5px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:'.$bg.';border-radius:10px;border-top:3px solid '.$c.'"><tr><td align="center" style="'.$F.'padding:12px 4px"><div style="font-size:34px;font-weight:800;color:'.$c.';line-height:1">'.$n.'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:600">'.$l.'</div></td></tr></table></td>';};
+  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4').$k($ng,'Ongoing now','#2563eb','#eff6ff').$k($ns,'Starting in 3 days','#d97706','#fffbeb').'</tr></table></td></tr>';
+  if($tot>0){$p=fn($n)=>max(0,(int)round($n*100/$tot));
+    $o.='<tr><td style="padding:10px 26px 2px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:6px;overflow:hidden"><tr>'.($nd?'<td width="'.$p($nd).'%" height="8" bgcolor="#22c55e" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ng?'<td width="'.$p($ng).'%" height="8" bgcolor="#3b82f6" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ns?'<td width="'.$p($ns).'%" height="8" bgcolor="#f59e0b" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').'</tr></table></td></tr>';}
+  // sections
+  $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi){
+    $h='<tr><td style="'.$F.'padding:22px 26px 6px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-size:17px;font-weight:800;color:#0f172a"><span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:'.$col.';margin-right:8px"></span>'.$e($name).' <span style="display:inline-block;background:'.$col.';color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 9px;vertical-align:middle">'.count($rows).'</span></td></tr><tr><td style="font-size:12px;color:#64748b;padding-top:2px">'.$e($sub).'</td></tr></table></td></tr>';
+    if(!$rows)return $h.'<tr><td style="'.$F.'padding:6px 26px 4px;font-size:13px;color:#94a3b8">Nothing to show here right now.</td></tr>';
+    $h.='<tr><td style="padding:4px 20px 0"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">';
+    $i=0;foreach($rows as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
+      $dt=$mode==='done'?'<span style="color:#16a34a;font-weight:700">&#10003; '.$e($fd($r['when'])).'</span>':($mode==='soon'?'Starts <b>'.$e($fd($r['start_date'])).'</b>'.($r['end_date']?'<br>Ends '.$e($fd($r['end_date'])):''):($r['end_date']?'Ends <b>'.$e($fd($r['end_date'])).'</b>':'<span style="color:#94a3b8">No end date</span>'));
+      $chip=$mode==='going'?'<span style="display:inline-block;margin-top:4px;font-size:10px;font-weight:700;color:#1d4ed8;background:#dbeafe;border-radius:8px;padding:1px 8px">'.$e(strtoupper($r['sname'])).'</span>':'';
+      $sub=array_filter([$r['customer'],$r['drawing_type'],$multi?$r['company']:'']);
+      $h.='<tr><td bgcolor="'.$bg.'" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a" valign="top"><div><b style="color:#0f2a5c">'.$e($r['order_no']).'</b>'.($r['order_no']?' &nbsp;':'').$e($r['title']).'</div>'.($sub?'<div style="font-size:11px;color:#64748b;margin-top:2px">'.$e(implode('  ·  ',$sub)).'</div>':'').$chip.'</td>'
+        .'<td bgcolor="'.$bg.'" width="150" style="'.$F.'background:'.$bg.';padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$av($r['person']).'</td>'
+        .'<td bgcolor="'.$bg.'" width="105" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}
+    return $h.'</table></td></tr>';};
+  $o.=$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done');
+  $o.=$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going');
+  $o.=$sec('Starting in the next 3 days','Scheduled to kick off by '.$fd($d['next']),'#d97706',$d['soon'],'soon');
+  // footer
+  $o.='<tr><td style="height:26px;font-size:0;line-height:0">&nbsp;</td></tr><tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;'.$F.'padding:18px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
+    .($tfimg?'<td width="40" valign="middle"><img src="'.$e($as['tf']).'" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:8px;display:block;border:0"></td>':'')
+    .'<td valign="middle" style="font-size:12px;color:#cbd5e1;line-height:1.5"><b style="color:#ffffff">Sent automatically by TaskFlow</b><br>Live task tracking, hours and reporting for engineering and drafting teams.</td>'
+    .'<td align="right" valign="middle"><a href="https://gurucadd.com" style="display:inline-block;background:#38bdf8;color:#0f2a5c;font-weight:800;font-size:12px;text-decoration:none;border-radius:8px;padding:9px 14px;white-space:nowrap">Discover TaskFlow &rarr;</a></td></tr></table></td></tr>';
+  $o.='</table><div style="'.$F.'font-size:11px;color:#94a3b8;margin-top:12px">TaskFlow &middot; powered by GURUCADD</div></td></tr></table></div>';
+  return $o;
 }
 function sr_valid_emails($s){$o=[];foreach(preg_split('/[\s,;]+/',(string)$s,-1,PREG_SPLIT_NO_EMPTY) as $m){$m=strtolower(trim($m));if(filter_var($m,FILTER_VALIDATE_EMAIL)&&!in_array($m,$o,true))$o[]=$m;}return array_slice($o,0,30);}
 // ---- Microsoft 365 mail (Graph API, app-only). Put taskflow-mail.json in your home folder (or define('MS_MAIL_FILE','/path') in config.php):
@@ -279,28 +323,28 @@ function ms_token($c,&$err){
   $o=ms_http('https://login.microsoftonline.com/'.rawurlencode(trim($c['tenant_id'])).'/oauth2/v2.0/token',http_build_query(['client_id'=>trim($c['client_id']),'client_secret'=>trim($c['client_secret']),'scope'=>'https://graph.microsoft.com/.default','grant_type'=>'client_credentials']),['Content-Type: application/x-www-form-urlencoded'],$code);
   $r=json_decode($o,true);if(empty($r['access_token'])){$err='Microsoft sign-in failed: '.(is_array($r)?mb_substr((string)($r['error_description']??$o),0,220):'Microsoft did not recognise these details. Check tenant_id, client_id and client_secret.');return '';}
   @file_put_contents($cf,json_encode(['tok'=>$r['access_token'],'exp'=>time()+(int)($r['expires_in']??3000)]));@chmod($cf,0600);return $r['access_token'];}
-function ms_send($to,$subject,$html){
+function ms_send($to,$subject,$html,$att=[]){
   if(!function_exists('curl_init'))return 'PHP curl is not available';
   $c=ms_cfg();if(!$c)return 'Microsoft 365 mail is not set up';
   $tok=ms_token($c,$err);if($tok==='')return $err;
-  $o=ms_http('https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/sendMail',json_encode(['message'=>['subject'=>$subject,'body'=>['contentType'=>'HTML','content'=>$html],'toRecipients'=>[['emailAddress'=>['address'=>$to]]]],'saveToSentItems'=>false]),['Authorization: Bearer '.$tok,'Content-Type: application/json'],$code);
+  $o=ms_http('https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/sendMail',json_encode(['message'=>['subject'=>$subject,'body'=>['contentType'=>'HTML','content'=>$html],'toRecipients'=>[['emailAddress'=>['address'=>$to]]],'attachments'=>array_map(fn($a)=>['@odata.type'=>'#microsoft.graph.fileAttachment','name'=>$a[0],'contentType'=>$a[1],'contentBytes'=>$a[2],'isInline'=>true,'contentId'=>$a[3]??pathinfo($a[0],PATHINFO_FILENAME)],$att)],'saveToSentItems'=>false]),['Authorization: Bearer '.$tok,'Content-Type: application/json'],$code);
   if($code===202||$code===200)return '';
   $r=json_decode($o,true);return 'Microsoft refused it ('.$code.'): '.mb_substr((string)($r['error']['message']??$o),0,220);}
 function sr_send($db,$s){
   $to=sr_valid_emails($s['emails']);if(!$to)return ['ok'=>false,'sent'=>0,'err'=>'No valid email addresses'];
   $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'');
-  $title=($s['name']!==''?$s['name']:'Task status report');$html='<!doctype html><html><body style="margin:0;padding:12px;background:#f8fafc">'.sr_html($d,$title).'</body></html>';
+  $title=($s['name']!==''?$s['name']:'Task status report');$as=sr_assets($db,$ws,'cid');$html='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,$as).'</body></html>';$htmlPlain='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,['tf'=>'','co'=>[],'names'=>$as['names']]).'</body></html>';
   $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
   foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN THE NEXT 3 DAYS','soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
   $viaMs=ms_cfg()!==null;
   foreach($to as $m){
     $subj='TaskFlow status report '.date('j M',strtotime($d['from'])).' - '.date('j M',strtotime($d['to']));
-    if($viaMs){$e=ms_send($m,$subj,$html);if($e===''){$sent++;continue;}$err=$e;}
+    if($viaMs){$e=ms_send($m,$subj,$html,$as['att']);if($e===''){$sent++;continue;}$err=$e;}
     $b='tf'.bin2hex(random_bytes(8));
     $h="From: TaskFlow <backup@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
     $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n".$txt."\r\nThe full formatted report is attached (open the .html file in a browser).\r\n"
-      ."--$b\r\nContent-Type: text/html; name=\"status-report.html\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"status-report.html\"\r\n\r\n".chunk_split(base64_encode($html))."\r\n--$b--";
+      ."--$b\r\nContent-Type: text/html; name=\"status-report.html\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"status-report.html\"\r\n\r\n".chunk_split(base64_encode($htmlPlain))."\r\n--$b--";
     if(@mail($m,$subj,$body,$h))$sent++;else{$le=error_get_last();$err='The server could not send to '.$m.($le?' ('.$le['message'].')':'');}}
   return ['ok'=>$sent>0,'sent'=>$sent,'err'=>$err];
 }
@@ -951,7 +995,7 @@ case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
-  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]));out(['html'=>sr_html($d),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree']]);
+  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree']]);
 case 'sr_save':
   admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
