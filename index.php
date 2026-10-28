@@ -246,6 +246,8 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .gh-r .d{display:flex;flex-direction:column;align-items:flex-end;font-size:14px!important;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;color:var(--ink)}.gh-r .d small{font-size:9px;letter-spacing:.08em;font-weight:800;color:inherit;grid-column:auto}
 .gh-r .d.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-r .d.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}.gh-r .d.dn{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.gh-r .d.sn{color:#b45309;background:#fffbeb;border-color:#fde68a}
 @media (prefers-color-scheme:dark){.gh-due.du,.gh-r .d.du{color:#93c5fd;background:#172554;border-color:#1e3a8a}.gh-due.od,.gh-r .d.od{color:#fca5a5;background:#450a0a;border-color:#7f1d1d}.gh-r .d.dn{color:#86efac;background:#052e16;border-color:#14532d}.gh-r .d.sn{color:#fcd34d;background:#422006;border-color:#78350f}}
+.gh-gp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:10px 0}.gh-gp summary{cursor:pointer;font-weight:800;font-size:13px}.gh-gp summary small{color:var(--mut);font-weight:600;margin-left:8px}
+.gh-gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}.gh-gb{display:grid;gap:4px;align-content:start;background:var(--col);border-radius:10px;padding:8px 10px}.gh-gb b{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}.gh-gb label{display:flex;gap:6px;align-items:center;font-size:13px}.gh-gb input{width:auto;margin:0}
 @media (max-width:640px){.gh-k{grid-template-columns:1fr}.gh{padding:8px}}
 #ghdg{width:min(1180px,98vw);max-height:94vh;overflow:auto}
 #srdg{width:min(980px,98vw);max-height:94vh}#srdg input:not([type=checkbox]),#srdg select,#srdg textarea,#srdg button{width:auto;margin:0}#srdg textarea{width:100%;min-height:56px}.srl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.src{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;min-width:200px}.src.on{border-color:var(--pri);box-shadow:0 0 0 2px rgba(37,99,235,.15)}.src small{display:block;color:var(--mut)}.srf{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;display:grid;gap:8px}.srf .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.srf label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer}#srprev{border:1px solid var(--line);border-radius:10px;padding:10px;max-height:48vh;overflow:auto;background:#f8fafc;color:#0f172a}
@@ -2242,7 +2244,15 @@ async function renderGuestHome(){
   try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gh"><div class="empty">'+esc(e.message)+'</div></div>'}}
 let ghInit=false;
 async function ghLoad(){const as=+$("#ghas").value||0;$("#ghb").innerHTML='<div class="empty">Loading…</div>';
-  try{const r=await api("guest_home",{as});if(!ghInit){ghInit=true;$("#ghas").innerHTML='<option value="0">Admin (all companies)</option>'+(r.guests||[]).map(g=>`<option value="${g.id}">${esc(g.name)} (guest)</option>`).join("")}$("#ghb").innerHTML=ghHtml(r)}catch(e){$("#ghb").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+  try{const r=await api("guest_home",{as});if(!ghInit){ghInit=true;$("#ghas").innerHTML='<option value="0">Admin (all companies)</option>'+(r.guests||[]).map(g=>`<option value="${g.id}">${esc(g.name)} (guest)</option>`).join("")}$("#ghb").innerHTML=ghPanel(r,as)+ghHtml(r)}catch(e){$("#ghb").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+function ghPanel(r,as){
+  if(!as||!r.gtree)return"";
+  const hide=new Set((r.hide||[]).map(String)),cn={};(r.companies||[]).forEach(w=>cn[w.id]=w.name);
+  const by={};r.gtree.forEach(g=>{(by[g.ws_id]=by[g.ws_id]||[]).push(g)});
+  const blocks=Object.keys(by).map(k=>`<div class="gh-gb"><b>${esc(+k?cn[k]||"Company":"Tasks without a group")}</b>${by[k].map(g=>`<label><input type="checkbox" data-gh="${g.gid}"${hide.has(String(g.gid))?"":" checked"}> ${esc(g.name)}</label>`).join("")}</div>`).join("");
+  return `<details class="gh-gp" open><summary>Groups ${esc(r.asName||"this guest")} can see <small>${hide.size?hide.size+" hidden":"all visible"}</small></summary><div class="gh-gg">${blocks}</div><div class="acts" style="margin:8px 0 0"><button id="ghsv" class="p" style="width:auto;margin:0">Save for ${esc(r.asName||"this guest")}</button><small style="color:var(--mut)">Unticked groups are hidden from this guest's overview. New groups are visible by default.</small></div></details>`}
+document.addEventListener("click",async e=>{if(e.target.id!=="ghsv")return;const as=+$("#ghas").value||0;if(!as)return;const hide=[...document.querySelectorAll("#ghb [data-gh]")].filter(c=>!c.checked).map(c=>+c.dataset.gh);
+  e.target.disabled=true;try{await api("guest_hide_save",{user_id:as,hide});await ghLoad()}catch(x){alert(x.message)}});
 $("#ghm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#ghdg").showModal();ghLoad()};
 $("#ghx").onclick=()=>$("#ghdg").close();$("#ghrf").onclick=ghLoad;$("#ghas").onchange=ghLoad;
 // ---- Status report (admin) ----
@@ -2356,7 +2366,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=225;
+const BUILD=226;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

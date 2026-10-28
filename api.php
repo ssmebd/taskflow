@@ -1,5 +1,5 @@
 <?php
-const BUILD=225;
+const BUILD=226;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -214,6 +214,7 @@ function wl_build($db,$path,$days=15){
 function wl_files($dir){$o=[];foreach(glob($dir.'/worklog-????-??-??_??-??.xlsx')?:[] as $f)$o[]=['name'=>basename($f),'size'=>filesize($f),'time'=>filemtime($f)];usort($o,fn($x,$y)=>$y['time']<=>$x['time']);return $o;}
 // ---- Task status report: completed this week, ongoing, starting in the next 3 days; emailed to guests on a weekly schedule ----
 function sr_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS status_reports(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL DEFAULT '',ws_ids VARCHAR(200) NOT NULL DEFAULT '',emails TEXT NOT NULL,dow TINYINT NOT NULL DEFAULT 4,hhmm INT NOT NULL DEFAULT 900,active TINYINT NOT NULL DEFAULT 1,last_sent VARCHAR(10) NOT NULL DEFAULT '',created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");if(!$db->query("SHOW COLUMNS FROM status_reports LIKE 'excl_g'")->fetch())$db->exec("ALTER TABLE status_reports ADD excl_g TEXT NULL, ADD excl_t TEXT NULL");}
+function gh_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS guest_hide(user_id INT NOT NULL,gid INT NOT NULL,PRIMARY KEY(user_id,gid)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
 function sr_now(){$tz=new DateTimeZone('Asia/Dhaka');return new DateTime('now',$tz);}
 function sr_ids($v){return array_values(array_unique(array_filter(array_map('intval',is_array($v)?$v:explode(',',(string)$v)))));}
 function sr_gid($r){return (int)$r['top_id']?:-1;}
@@ -1025,7 +1026,10 @@ case 'guest_home':
   $res=['companies'=>$wn,'as'=>$as,'asName'=>$asName,'from'=>'','to'=>'','done'=>[],'going'=>[],'soon'=>[],'people'=>[]];
   if($me['role']==='admin'){$res['guests']=$db->query("SELECT id,name FROM users WHERE role='guest' ORDER BY name")->fetchAll();}
   if(!$ids)out($res);
-  $d=sr_data($db,$ids);
+  gh_ddl($db);$hu=$me['role']==='guest'?(int)$me['id']:($as>0?$as:0);$hide=[];
+  if($hu){$q=$db->prepare("SELECT gid FROM guest_hide WHERE user_id=?");$q->execute([$hu]);$hide=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
+  if($me['role']==='admin'&&$as>0){$gt=[];$q=$db->query("SELECT g.id,g.ws_id,g.name FROM task_groups g WHERE g.ws_id IN(".implode(',',$ids).") AND (g.parent_id IS NULL OR g.parent_id=0) ORDER BY g.ws_id,g.sort_no,g.id");foreach($q->fetchAll() as $g)$gt[]=['gid'=>(int)$g['id'],'ws_id'=>(int)$g['ws_id'],'name'=>$g['name']];$gt[]=['gid'=>-1,'ws_id'=>0,'name'=>'(No group)'];$res['gtree']=$gt;$res['hide']=$hide;}
+  $d=sr_data($db,$ids,$hide);
   $keep=['id','ws_id','company','title','order_no','customer','drawing_type','start_date','end_date','sname','person','when'];
   $strip=function($r)use($keep){$o=[];foreach($keep as $k)$o[$k]=$r[$k]??'';return $o;};
   foreach(['done','going','soon'] as $k)$res[$k]=array_map($strip,$d[$k]);
@@ -1042,6 +1046,12 @@ case 'guest_home':
   uasort($ppl,fn($a,$b)=>($a['name']==='Unassigned')<=>($b['name']==='Unassigned')?:strcmp($a['name'],$b['name']));
   $res['people']=array_values($ppl);
   out($res);
+case 'guest_hide_save':
+  admin();gh_ddl($db);$u=(int)($in['user_id']??0);$g=sr_ids($in['hide']??[]);
+  if(!$u)out(['error'=>'Pick a guest first']);
+  $db->prepare("DELETE FROM guest_hide WHERE user_id=?")->execute([$u]);
+  foreach(array_unique(array_merge($g,array_map('intval',(array)($in['hide_none']??[])))) as $x){if($x===0)continue;$db->prepare("INSERT IGNORE INTO guest_hide(user_id,gid) VALUES(?,?)")->execute([$u,$x]);}
+  out(['ok'=>1]);
 case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
