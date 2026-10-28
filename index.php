@@ -237,6 +237,15 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .gh-r{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:9px 14px;border-top:1px solid var(--line);font-size:13px}.gh-r:first-child{border-top:0}
 .gh-r b{font-weight:700}.gh-r small{color:var(--mut);font-size:11.5px;grid-column:1}.gh-r .d{grid-row:1/3;grid-column:2;text-align:right;font-size:12px;color:var(--mut);align-self:center;white-space:nowrap}
 .gh-e{padding:14px;color:var(--mut);font-size:13px}
+.gh-tw{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+.gh-tb{width:100%;border-collapse:collapse;font-size:13px}.gh-tb th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);padding:10px 12px;background:var(--col);border-bottom:1px solid var(--line);white-space:nowrap}
+.gh-tb td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:middle}.gh-tb tbody tr:first-child td{border-top:0}
+.gh-pn{background:color-mix(in srgb,var(--col) 60%,var(--card));border-right:1px solid var(--line);min-width:170px;vertical-align:top!important}.gh-pn .gh-av{display:inline-grid;margin-right:8px;vertical-align:middle}.gh-pn b{vertical-align:middle}.gh-pn small{display:block;color:var(--mut);font-size:11px;margin:2px 0 0 42px}
+.gh-due{display:inline-flex;flex-direction:column;align-items:flex-start;font-size:14px;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;white-space:nowrap}.gh-due small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}
+.gh-due.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-due.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
+.gh-r .d{display:flex;flex-direction:column;align-items:flex-end;font-size:14px!important;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;color:var(--ink)}.gh-r .d small{font-size:9px;letter-spacing:.08em;font-weight:800;color:inherit;grid-column:auto}
+.gh-r .d.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-r .d.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}.gh-r .d.dn{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.gh-r .d.sn{color:#b45309;background:#fffbeb;border-color:#fde68a}
+@media (prefers-color-scheme:dark){.gh-due.du,.gh-r .d.du{color:#93c5fd;background:#172554;border-color:#1e3a8a}.gh-due.od,.gh-r .d.od{color:#fca5a5;background:#450a0a;border-color:#7f1d1d}.gh-r .d.dn{color:#86efac;background:#052e16;border-color:#14532d}.gh-r .d.sn{color:#fcd34d;background:#422006;border-color:#78350f}}
 @media (max-width:640px){.gh-k{grid-template-columns:1fr}.gh{padding:8px}}
 #ghdg{width:min(1180px,98vw);max-height:94vh;overflow:auto}
 #srdg{width:min(980px,98vw);max-height:94vh}#srdg input:not([type=checkbox]),#srdg select,#srdg textarea,#srdg button{width:auto;margin:0}#srdg textarea{width:100%;min-height:56px}.srl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.src{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;min-width:200px}.src.on{border-color:var(--pri);box-shadow:0 0 0 2px rgba(37,99,235,.15)}.src small{display:block;color:var(--mut)}.srf{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;display:grid;gap:8px}.srf .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.srf label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer}#srprev{border:1px solid var(--line);border-radius:10px;padding:10px;max-height:48vh;overflow:auto;background:#f8fafc;color:#0f172a}
@@ -2212,14 +2221,21 @@ function ghHtml(r){
   const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   const fd=d=>{if(!d||d==="0000-00-00")return"";const x=new Date(d+"T00:00:00");return x.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
   const meta=t=>[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ");
-  const row=(t,mode)=>`<div class="gh-r"><b>${esc(t.title)}</b><small>${meta(t)}${(t.person?" · "+esc(t.person):"")}</small><span class="d">${mode==="done"?"Done "+esc(fd(t.when)):mode==="soon"?"Starts "+esc(fd(t.start_date)):(t.end_date&&t.end_date!=="0000-00-00"?"Due "+esc(fd(t.end_date)):esc(t.sname||""))}</span></div>`;
+  const dueTag=(t,mode,td)=>{const ed=t.end_date&&t.end_date!=="0000-00-00"?t.end_date:"";
+    if(mode==="done")return `<span class="d dn"><small>COMPLETED</small>${esc(fd(t.when))}</span>`;
+    if(mode==="soon")return `<span class="d sn"><small>STARTS</small>${esc(fd(t.start_date))}</span>`;
+    if(!ed)return `<span class="d" style="font-weight:600">${esc(t.sname||"")}</span>`;
+    return ed<td?`<span class="d od"><small>OVERDUE</small>${esc(fd(ed))}</span>`:`<span class="d du"><small>DUE</small>${esc(fd(ed))}</span>`};
+  const row=(t,mode)=>`<div class="gh-r"><b>${esc(t.title)}</b><small>${meta(t)}${(t.person?" · "+esc(t.person):"")}</small>${dueTag(t,mode,r.today)}</div>`;
   const box=(title,c,arr,mode)=>`<section><h3 style="color:${c}"><i style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block"></i>${title} <em>${arr.length}</em></h3><div class="gh-l">${arr.length?arr.map(t=>row(t,mode)).join(""):'<div class="gh-e">Nothing here right now.</div>'}</div></section>`;
   const cos=(r.companies||[]).map(w=>`<a href="index.php?w=${w.id}">${esc(w.name)}</a>`).join("");
-  const ppl=(r.people||[]).map(p=>`<div class="gh-p"><div class="gh-ph"><span class="gh-av">${esc(ini(p.name))}</span><div><b>${esc(p.name)}</b><small>${p.tasks.length} ongoing task${p.tasks.length===1?"":"s"}</small></div></div>${p.tasks.map(t=>`<div class="gh-t"><b>${esc(t.title)}</b><small>${meta(t)}${t.end_date&&t.end_date!=="0000-00-00"?" · due "+esc(fd(t.end_date)):""}</small></div>`).join("")}</div>`).join("");
+  const dueCell=t=>{const ed=t.end_date&&t.end_date!=="0000-00-00"?t.end_date:"";return ed?(ed<r.today?`<span class="gh-due od">${esc(fd(ed))}<small>Overdue</small></span>`:`<span class="gh-due du">${esc(fd(ed))}</span>`):'<span style="color:var(--mut)">–</span>'};
+  const trs=(r.people||[]).map(p=>p.tasks.length?p.tasks.map((t,i)=>`<tr>${i?"":`<td rowspan="${p.tasks.length}" class="gh-pn"><div style="display:flex;align-items:center;gap:8px"><span class="gh-av">${esc(ini(p.name))}</span><b>${esc(p.name)}</b></div><small>${p.tasks.length} task${p.tasks.length===1?"":"s"}</small></td>`}<td><b>${esc(t.title)}</b></td><td>${esc(t.order_no||"")}</td><td>${esc(t.customer||"")}</td><td>${esc(t.drawing_type||"")}</td><td>${dueCell(t)}</td></tr>`).join(""):"").join("");
+  const ppl=trs?`<div class="gh-tw"><table class="gh-tb"><thead><tr><th>Person</th><th>Working on</th><th>Order No.</th><th>Customer</th><th>Drawing type</th><th>Due</th></tr></thead><tbody>${trs}</tbody></table></div>`:"";
   const wk=fd(r.from)+" – "+fd(r.to);
   return `<div class="gh"><div class="gh-hero"><h2>${r.asName?"Guest view: "+esc(r.asName):"Project overview"}</h2><p>Week of ${esc(wk)}. Updated live from TaskFlow.</p><div class="gh-cos">${cos||"No companies shared with you yet."}</div></div>
   <div class="gh-k"><div style="--c:#16a34a"><b>${r.done.length}</b><span>Completed this week</span></div><div style="--c:#2563eb"><b>${r.going.length}</b><span>Ongoing now</span></div><div style="--c:#f59e0b"><b>${r.soon.length}</b><span>Starting in the next 3 days</span></div></div>
-  <section><h3>Who is working on what <em>${(r.people||[]).length}</em></h3>${ppl?`<div class="gh-pp">${ppl}</div>`:'<div class="gh-l"><div class="gh-e">No one has an ongoing task right now.</div></div>'}</section>
+  <section><h3>Who is working on what <em>${(r.people||[]).filter(p=>p.tasks.length).length}</em></h3>${ppl?ppl:'<div class="gh-l"><div class="gh-e">No one has an ongoing task right now.</div></div>'}</section>
   ${box("Completed this week","#16a34a",r.done,"done")}${box("Ongoing","#2563eb",r.going,"going")}${box("Starting in the next 3 days","#f59e0b",r.soon,"soon")}</div>`}
 async function renderGuestHome(){
   const m=$("#main");m.innerHTML='<div class="gh"><div class="empty">Loading overview…</div></div>';
@@ -2340,7 +2356,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=224;
+const BUILD=225;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

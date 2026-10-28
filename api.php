@@ -1,5 +1,5 @@
 <?php
-const BUILD=224;
+const BUILD=225;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -308,12 +308,15 @@ function sr_html($d,$title='Task status report',$as=null){
     $i=0;foreach(sr_types($rows) as $tn=>$trs){
      $h.='<tr><td colspan="3" bgcolor="#eaf1fb" style="'.$F.'background:#eaf1fb;padding:7px 12px;border-bottom:1px solid #dbe5f3;font-size:11px;font-weight:800;letter-spacing:1px;color:#0f2a5c">'.$e($tn).' <span style="font-weight:600;color:#64748b;letter-spacing:0">&nbsp;'.count($trs).' task'.(count($trs)>1?'s':'').'</span></td></tr>';
      foreach($trs as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
-      $dt=$mode==='done'?'<span style="color:#16a34a;font-weight:700">&#10003; '.$e($fd($r['when'])).'</span>':($mode==='soon'?'Starts <b>'.$e($fd($r['start_date'])).'</b>'.($r['end_date']?'<br>Ends '.$e($fd($r['end_date'])):''):($r['end_date']?'Ends <b>'.$e($fd($r['end_date'])).'</b>':'<span style="color:#94a3b8">No end date</span>'));
+      $td=$d['today']??date('Y-m-d');$pill=function($lab,$dtx,$col,$bgc,$bdc)use($e){return '<div style="font-size:9px;font-weight:800;letter-spacing:1px;color:'.$col.'">'.$lab.'</div><div style="display:inline-block;margin-top:2px;background:'.$bgc.';border:1px solid '.$bdc.';border-radius:8px;padding:3px 8px;font-size:14px;font-weight:900;color:'.$col.';white-space:nowrap">'.$e($dtx).'</div>';};
+      if($mode==='done')$dt=$pill('COMPLETED',$fd($r['when']),'#15803d','#f0fdf4','#bbf7d0');
+      elseif($mode==='soon')$dt=$pill('STARTS',$fd($r['start_date']),'#b45309','#fffbeb','#fde68a').($r['end_date']&&$r['end_date']!=='0000-00-00'?'<div style="font-size:11px;color:#64748b;margin-top:4px">Due <b style="color:#0f172a">'.$e($fd($r['end_date'])).'</b></div>':'');
+      else{$ed=($r['end_date']&&$r['end_date']!=='0000-00-00')?$r['end_date']:'';$dt=$ed?($ed<$td?$pill('OVERDUE',$fd($ed),'#b91c1c','#fef2f2','#fecaca'):$pill('DUE',$fd($ed),'#1d4ed8','#eff6ff','#bfdbfe')):'<span style="color:#94a3b8">No due date</span>';}
       $chip=$mode==='going'?'<span style="display:inline-block;margin-top:4px;font-size:10px;font-weight:700;color:#1d4ed8;background:#dbeafe;border-radius:8px;padding:1px 8px">'.$e(strtoupper($r['sname'])).'</span>':'';
       $sub=array_filter([$r['customer'],$multi?$r['company']:'']);
       $h.='<tr><td bgcolor="'.$bg.'" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a" valign="top"><div><b style="color:#0f2a5c">'.$e($r['order_no']).'</b>'.($r['order_no']?' &nbsp;':'').$e($r['title']).'</div>'.($sub?'<div style="font-size:11px;color:#64748b;margin-top:2px">'.$e(implode('  ·  ',$sub)).'</div>':'').$chip.'</td>'
         .'<td bgcolor="'.$bg.'" width="150" style="'.$F.'background:'.$bg.';padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$av($r['person']).'</td>'
-        .'<td bgcolor="'.$bg.'" width="105" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}}
+        .'<td bgcolor="'.$bg.'" width="120" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}}
     return $h.'</table></td></tr>';};
   $o.=$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done');
   $o.=$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going');
