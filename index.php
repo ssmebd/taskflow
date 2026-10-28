@@ -808,7 +808,8 @@ function bellUpd(){const b=$("#bn");b.hidden=!inboxN;b.textContent=inboxN;const 
 const dtCol=n=>{const i=dtypes.findIndex(d=>d.name===n);if(i<0)return"#94a3b8";return dtypes[i].color||GPAL[i%GPAL.length]};
 const dtOpts=cur=>{cur=cur||"";const names=dtypes.map(d=>d.name);if(cur&&!names.includes(cur))names.push(cur);
   return `<option value="">—</option>`+names.map(n=>`<option value="${ea(n)}"${n===cur?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`)};
-async function addDtype(){const n=prompt("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
+function ask(msg,def){return new Promise(res=>{const d=document.createElement("dialog");d.style.cssText="border:0;border-radius:16px;padding:22px;width:min(420px,92vw);box-shadow:0 24px 70px rgba(8,26,61,.35);font:14px system-ui,sans-serif;color:#0f172a";d.innerHTML='<form method="dialog" style="display:grid;gap:14px"><b style="font-size:15px"></b><input style="padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;font:inherit"><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" data-x style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;font:inherit">Cancel</button><button style="padding:9px 18px;border:0;background:#0f2a5c;color:#fff;border-radius:10px;cursor:pointer;font:inherit;font-weight:700">OK</button></div></form>';d.querySelector("b").textContent=msg;const i=d.querySelector("input");i.value=def||"";let v=null;d.querySelector("[data-x]").onclick=()=>d.close();d.querySelector("form").onsubmit=()=>{v=i.value};d.addEventListener("close",()=>{d.remove();res(v)});document.body.appendChild(d);d.showModal();i.focus();i.select()})}
+async function addDtype(){const n=await ask("New drawing type:");if(!n||!n.trim())return null;const r=await api("dt_add",{name:n});await load(true);return r.name}
 const THEMES=[["#0f2a5c","#ffffff","Navy"],["#312e81","#ffffff","Indigo"],["#0f766e","#ffffff","Teal"],["#166534","#ffffff","Green"],["#7f1d1d","#ffffff","Maroon"],["#1f2937","#ffffff","Charcoal"],["#ffffff","#1d2433","White"],["#dbeafe","#1e3a8a","Sky"]];
 function applyTheme(v){const m=/^(#[0-9a-f]{6})\|(#[0-9a-f]{6})$/i.exec(v||""),bg=m?m[1]:"#0f2a5c",fg=m?m[2]:"#ffffff",st=document.documentElement.style;
   st.setProperty("--nv",bg);st.setProperty("--hfg",fg);
@@ -835,7 +836,7 @@ const inGroup=t=>G===""||(G==="none"?!t.group_id:String(t.group_id)===G||gParent
 const gname=id=>(groups.find(g=>g.id==id)||{}).full||"";
 const scol=k=>{const c=(SL.find(x=>x.k===k)||{}).color||"";return /^#[0-9a-f]{6}$/i.test(c)?c:""};
 const stOpts=s=>ST.map(([k,n])=>`<option value="${k}"${(s||ST[0][0])===k?" selected":""}>${esc(n)}</option>`).join("")+(LV==="view"?"":`<option value="__new">＋ Add new…</option>`);
-async function addStatus(){const n=prompt("New status name:");if(!n||!n.trim())return null;const r=await api("st_add",{name:n});await load(true);return r.k}
+async function addStatus(){const n=await ask("New status name:");if(!n||!n.trim())return null;const r=await api("st_add",{name:n});await load(true);return r.k}
 const asOpts=c=>`<option value="">Unassigned</option>`+users.map(u=>`<option value="${u.id}"${u.id==c?" selected":""}>${esc(u.name)}</option>`).join("");
 const uname=id=>names[id]||"";
 const uniq=k=>[...new Set(tasks.map(t=>t[k]).filter(Boolean))].sort();
@@ -1291,7 +1292,7 @@ $("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[d
   try{if(k==="pay"){await api("inv_pay",{id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
   else if(k==="open"){const j=await api("inv_get",{id});$("#pbox").innerHTML=j.inv.html;window.print()}
   else if(k==="approve"){if(confirm("Approve invoice "+x.inv_no+"?\n\nIt becomes final (awaiting payment) and the next invoice number moves on by one."))await api("inv_step",{id,op:"approve"}).then(ivLoad)}
-  else if(k==="amend"){const n=prompt("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
+  else if(k==="amend"){const n=await ask("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
   else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
   else if(k==="edit"){if(String(x.ws_id)!==String(W))return alert("This invoice belongs to "+x.company+". Switch to that company first, then press Edit.");
     const j=await api("inv_get",{id});rEdit={id,no:j.inv.inv_no,seq:j.inv.seq,note:x.amend_note||""};rPend=j.inv.slot;$("#ivl").close();$("#rf").value=j.inv.from_date;$("#rt").value=j.inv.to_date;$("#rdlg").showModal();rEditBar();await runReport()}}catch(er){alert(er.message)}});
@@ -1489,7 +1490,7 @@ wkd.addEventListener("click",async e=>{const t=e.target;
   if(t.closest("#wke_s")){try{const r=await api("wiki_save",{id:wkEd.id,title:$("#wke_t").value,cat:$("#wke_c").value,tags:$("#wke_g").value,body:$("#wke_b").value});await wkLoad();wkSetCur(r.id)}catch(er){alert(er.message)}return}
   if(t.closest("#wke_d")){if(!confirm("Delete this page?"))return;try{await api("wiki_del",{id:wkEd.id});await wkLoad();wkCur=0;wkEd=null;wkDraw()}catch(er){alert(er.message)}return}
   if(t.matches("img[data-wz]")){const z=$("#wkzoom");z.innerHTML=`<img src="${ea(t.src)}">`;z.hidden=false}});
-wkd.addEventListener("change",async e=>{if(e.target.id!=="wke_f")return;const f=e.target.files[0];e.target.value="";if(!f)return;try{const id=await wkImgUp(f),ta=$("#wke_b"),cap=prompt("Caption for this image (optional)","")||"";ta.setRangeText("\n!["+cap.trim()+"](wimg:"+id+")\n",ta.selectionStart,ta.selectionEnd,"end")}catch(er){alert(er.message)}});
+wkd.addEventListener("change",async e=>{if(e.target.id!=="wke_f")return;const f=e.target.files[0];e.target.value="";if(!f)return;try{const id=await wkImgUp(f),ta=$("#wke_b"),cap=await ask("Caption for this image (optional)","")||"";ta.setRangeText("\n!["+cap.trim()+"](wimg:"+id+")\n",ta.selectionStart,ta.selectionEnd,"end")}catch(er){alert(er.message)}});
 wkd.addEventListener("toggle",()=>{});wkd.addEventListener("close",()=>{wkEd=null});
 document.addEventListener("click",e=>{const z=$("#wkzoom");if(z&&!z.hidden&&z.contains(e.target))z.hidden=true});
 document.addEventListener("toggle",e=>{const d=e.target;if(d.matches&&d.matches("#wkside details")){try{const o=[...document.querySelectorAll("#wkside details[open]")].map(x=>x.dataset.c);localStorage.setItem("tf_wkc",JSON.stringify(o))}catch(x){}}},true);
@@ -1596,8 +1597,8 @@ $("#main").addEventListener("click",e=>{
   const ga=e.target.closest(".addrow [data-gadd]");if(ga){startDraft(ga.dataset.gadd);return}
   if(e.target.closest("[data-dsave]")){draftSave();return}
   if(e.target.closest("[data-dcancel]")){draft=null;render();return}
-  const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=prompt("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
-  if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=prompt("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
+  const gs=e.target.closest(".addrow [data-gsub]");if(gs){(async()=>{const n=await ask("New sub-group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n,parent_id:gs.dataset.gsub});await load(true)}catch(err){alert(err.message)}})();return}
+  if(e.target.closest(".addrow [data-gnew]")){(async()=>{const n=await ask("New group name:");if(!n||!n.trim())return;try{await api("gr_add",{name:n});await load(true)}catch(err){alert(err.message)}})();return}
   const tt=e.target.closest("input.tt");if(tt){const tr=tt.closest("[data-id]"),t0=tr&&tasks.find(x=>x.id==tr.dataset.id);if(t0){openDlg(t0);return}}
   const hb=e.target.closest("[data-hrs]");if(hb){openTL(+hb.dataset.hrs);return}
   const cb=e.target.closest(".cmb");if(cb){const ce=cb.closest("[data-id]");if(ce){openMsg(+ce.dataset.id);return}}
@@ -1986,7 +1987,7 @@ $("#wa").onclick=async()=>{try{const r=await api("ws_add",{name:$("#wn").value})
 $("#wlist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
     if(d.cod){await coOpen(d.cod);return}
-    if(d.wr){const w=wss.find(x=>x.id==d.wr),n=prompt("New name for this company:",w.name);if(n&&n.trim()){await api("ws_rename",{id:d.wr,name:n});await load(true);renderWs()}}
+    if(d.wr){const w=wss.find(x=>x.id==d.wr),n=await ask("New name for this company:",w.name);if(n&&n.trim()){await api("ws_rename",{id:d.wr,name:n});await load(true);renderWs()}}
     if(d.wlg){logoFor=d.wlg;$("#wf").value="";$("#wf").click()}
     if(d.wlx){await api("ws_logo",{id:d.wlx,data:""});await load(true);renderWs()}
     if(d.wacc){openWp=openWp==d.wacc?null:d.wacc;renderWs()}
@@ -2007,7 +2008,7 @@ $("#slist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
     if(d.scx){await api("st_color",{id:d.scx,color:""});await load(true);renderSt()}
     if(d.sm){await api("st_move",{id:d.sm,dir:d.d});await load(true);renderSt()}
-    if(d.sr){const cur=SL.find(x=>x.id==d.sr),n=prompt("New name for this status:",cur.name);if(n&&n.trim()){await api("st_ren",{id:d.sr,name:n});await load(true);renderSt()}}
+    if(d.sr){const cur=SL.find(x=>x.id==d.sr),n=await ask("New name for this status:",cur.name);if(n&&n.trim()){await api("st_ren",{id:d.sr,name:n});await load(true);renderSt()}}
     if(d.sd){const cur=SL.find(x=>x.id==d.sd);if(confirm("Remove the status \""+cur.name+"\"? Its tasks move to the first remaining status.")){delNote(await api("st_del",{id:d.sd}));await load(true);renderSt()}}
   }catch(err){alert(err.message)}
 });
@@ -2025,7 +2026,7 @@ $("#dc").onclick=()=>$("#ddlg").close();
 $("#dlist").addEventListener("change",async e=>{const i=e.target.dataset&&e.target.dataset.dcol;if(!i)return;try{await api("dt_color",{id:+i,color:e.target.value});await load(true)}catch(er){alert(er.message)}});
 $("#da").onclick=async()=>{try{await api("dt_add",{name:$("#dn").value});$("#dn").value="";await load(true);renderDt()}catch(e){alert(e.message)}};
 $("#dlist").addEventListener("click",async e=>{try{
-  if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=prompt("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
+  if(e.target.dataset.dr){const d=dtypes.find(x=>x.id==e.target.dataset.dr),n=await ask("Rename drawing type:",d.name);if(n&&n.trim()){await api("dt_ren",{id:d.id,name:n});await load(true);renderDt()}}
   if(e.target.dataset.dd&&confirm("Delete this drawing type? Tasks that already use it keep their value."))await api("dt_del",{id:e.target.dataset.dd}).then(async r=>{delNote(r);await load(true);renderDt()})
 }catch(err){alert(err.message)}});
 function pPrev(){const bg=$("#pbg").value,fg=$("#pfg").value,p=$("#pprev");p.style.background=bg;p.style.color=fg;applyTheme(bg+"|"+fg)}
@@ -2055,7 +2056,7 @@ $("#gc").onclick=()=>$("#gdlg").close();
 $("#ga").onclick=async()=>{try{const r=await api("gr_add",{name:$("#gn").value});$("#gn").value="";await load(true);G=String(r.id);try{localStorage.setItem("tf_g_"+W,G)}catch(x){}render();renderGr()}catch(e){alert(e.message)}};
 $("#glist").addEventListener("click",async e=>{
   const d=e.target.dataset;try{
-    if(d.gs){const n=prompt("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
+    if(d.gs){const n=await ask("New sub-group name:");if(n&&n.trim()){await api("gr_add",{name:n,parent_id:d.gs});await load(true);renderGr()}}
     if(d.gr){const cur=groups.find(g=>g.id==d.gr),hasSub=groups.some(x=>String(x.parent_id)===String(cur.id));geId=cur.id;geCol=cur.color||"";gcsDraw();$("#gen").value=cur.name;
       $("#gep").innerHTML='<option value="">— None (top level) —</option>'+groups.filter(x=>!x.level&&x.id!=cur.id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#gep").value=cur.parent_id?String(cur.parent_id):"";
       $("#gep").disabled=hasSub;const oth=wss.filter(w=>w.id!=W&&["edit","full"].includes(w.level));$("#gemw").hidden=!oth.length;$("#gemt").innerHTML=oth.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join("");$("#genote").textContent=hasSub?"This group has sub-groups, so it must stay at the top level.":"";$("#gedlg").showModal()}
@@ -2295,7 +2296,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=221;
+const BUILD=222;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
