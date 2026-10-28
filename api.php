@@ -1,5 +1,5 @@
 <?php
-const BUILD=214;
+const BUILD=215;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -271,10 +271,13 @@ function ms_http($url,$post,$hdr,&$code){
   $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_POST=>1,CURLOPT_POSTFIELDS=>$post,CURLOPT_HTTPHEADER=>$hdr,CURLOPT_RETURNTRANSFER=>1,CURLOPT_TIMEOUT=>25,CURLOPT_CONNECTTIMEOUT=>8]);
   $o=(string)curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);$er=curl_error($ch);curl_close($ch);return $er!==''?'curl: '.$er:$o;}
 function ms_token($c,&$err){
+  $guid='/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
+  if(!preg_match($guid,trim((string)$c['tenant_id']))){$err='The tenant_id in taskflow-mail.json is not a full ID (it has '.strlen(trim((string)$c['tenant_id'])).' characters, it should be 36 like ab45c236-6119-4912-a6a2-xxxxxxxxxxxx). Copy it again from the app Overview page.';return '';}
+  if(!preg_match($guid,trim((string)$c['client_id']))){$err='The client_id in taskflow-mail.json is not a full ID (it has '.strlen(trim((string)$c['client_id'])).' characters, it should be 36).';return '';}
   $cf=sys_get_temp_dir().'/tf_ms_'.md5($c['tenant_id'].$c['client_id']).'.json';
   if(is_file($cf)){$t=json_decode((string)file_get_contents($cf),true);if(is_array($t)&&($t['exp']??0)>time()+120)return $t['tok'];}
-  $o=ms_http('https://login.microsoftonline.com/'.rawurlencode($c['tenant_id']).'/oauth2/v2.0/token',http_build_query(['client_id'=>$c['client_id'],'client_secret'=>$c['client_secret'],'scope'=>'https://graph.microsoft.com/.default','grant_type'=>'client_credentials']),['Content-Type: application/x-www-form-urlencoded'],$code);
-  $r=json_decode($o,true);if(empty($r['access_token'])){$err='Microsoft sign-in failed: '.mb_substr((string)($r['error_description']??$o),0,220);return '';}
+  $o=ms_http('https://login.microsoftonline.com/'.rawurlencode(trim($c['tenant_id'])).'/oauth2/v2.0/token',http_build_query(['client_id'=>trim($c['client_id']),'client_secret'=>trim($c['client_secret']),'scope'=>'https://graph.microsoft.com/.default','grant_type'=>'client_credentials']),['Content-Type: application/x-www-form-urlencoded'],$code);
+  $r=json_decode($o,true);if(empty($r['access_token'])){$err='Microsoft sign-in failed: '.(is_array($r)?mb_substr((string)($r['error_description']??$o),0,220):'Microsoft did not recognise these details. Check tenant_id, client_id and client_secret.');return '';}
   @file_put_contents($cf,json_encode(['tok'=>$r['access_token'],'exp'=>time()+(int)($r['expires_in']??3000)]));@chmod($cf,0600);return $r['access_token'];}
 function ms_send($to,$subject,$html){
   if(!function_exists('curl_init'))return 'PHP curl is not available';
