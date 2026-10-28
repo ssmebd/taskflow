@@ -2226,10 +2226,10 @@ async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#b
 // ---- Guest home (guests land here; admins can preview it from the account menu) ----
 let ghSel=0,ghR=null;try{ghSel=+localStorage.getItem("tf_ghsel")||0}catch(e){}
 function ghHtml(r0){
-  ghR=r0;const allC=r0.companies||[];if(ghSel&&!allC.some(w=>w.id==ghSel))ghSel=0;
+  ghR=r0;const allC=r0.companies||[];if(allC.length&&!allC.some(w=>w.id==ghSel))ghSel=allC[0].id;
   const f=a=>ghSel?a.filter(t=>t.ws_id==ghSel):a;
   const r=Object.assign({},r0,{done:f(r0.done),going:f(r0.going),soon:f(r0.soon),companies:ghSel?allC.filter(w=>w.id==ghSel):allC,people:(r0.people||[]).map(p=>Object.assign({},p,{tasks:f(p.tasks)}))});
-  const pick=allC.length>1?`<div class="htabs" style="margin:0 0 4px"><button type="button" data-ghc="0" class="${ghSel?"":"on"}">All companies</button>${allC.map(w=>`<button type="button" data-ghc="${w.id}" class="${ghSel==w.id?"on":""}">${esc(w.name)}</button>`).join("")}</div>`:"";
+  const pick=allC.length>1?`<div class="htabs" style="margin:0 0 4px">${allC.map(w=>`<button type="button" data-ghc="${w.id}" class="${ghSel==w.id?"on":""}">${esc(w.name)}</button>`).join("")}</div>`:"";
   const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   const fd=d=>{if(!d||d==="0000-00-00")return"";const x=new Date(d+"T00:00:00");return x.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
   const meta=t=>[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ");
@@ -2386,7 +2386,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=231;
+const BUILD=232;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
