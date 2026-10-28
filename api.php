@@ -1,5 +1,5 @@
 <?php
-const BUILD=204;
+const BUILD=205;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -828,6 +828,23 @@ case 'inv_step':
         $db->prepare("INSERT INTO invoice_profiles(ws_id,slot,data) VALUES(?,?,?) ON DUPLICATE KEY UPDATE data=VALUES(data)")->execute([$Wx,$slot,json_encode($d,JSON_UNESCAPED_UNICODE)]);}}
     out(['ok'=>1]);}
   out(['error'=>'Unknown step']);
+case 'hrs_report':
+  admin();$f=(string)($in['from']??'');$t=(string)($in['to']??'');
+  if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t)||$f>$t)out(['error'=>'Choose a valid date range']);
+  $wh=["l.work_date BETWEEN ? AND ?"];$pr=[$f,$t];
+  foreach(['users'=>'l.user_id','ws'=>'l.ws_id','groups'=>'COALESCE(pg.id,g.id)'] as $k2=>$col){
+    $ids=array_values(array_unique(array_filter(array_map('intval',(array)($in[$k2]??[])))));
+    if($ids){$wh[]="$col IN (".implode(',',array_fill(0,count($ids),'?')).")";foreach($ids as $x)$pr[]=$x;}
+  }
+  $kd=(string)($in['kind']??'');if($kd==='R'||$kd==='OT'){$wh[]="l.kind=?";$pr[]=$kd;}
+  $tx=trim((string)($in['text']??''));if($tx!==''){$lk='%'.str_replace(['%','_'],['\\%','\\_'],mb_substr($tx,0,80)).'%';$wh[]="(t.title LIKE ? OR t.order_no LIKE ? OR t.customer LIKE ? OR l.note LIKE ?)";array_push($pr,$lk,$lk,$lk,$lk);}
+  $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS person,l.ws_id,COALESCE(w.name,'(deleted company)') AS company,l.work_date,l.hours,l.kind,l.note,l.rev,t.id AS task_id,t.order_no,t.title,t.customer,t.drawing_type,COALESCE(pg.name,g.name,'(No group)') AS grp,IF(pg.id IS NULL,'',COALESCE(g.name,'')) AS sub FROM time_logs l LEFT JOIN tasks t ON t.id=l.task_id LEFT JOIN users u ON u.id=l.user_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE ".implode(' AND ',$wh)." ORDER BY l.work_date,w.name,u.name,l.id LIMIT 20001");$q->execute($pr);
+  $rows=$q->fetchAll();$cut=count($rows)>20000;if($cut)array_pop($rows);
+  foreach($rows as &$r){$r['hours']=(float)$r['hours'];}unset($r);
+  out(['rows'=>$rows,'cut'=>$cut,
+    'users'=>$db->query("SELECT id,name FROM users ORDER BY name")->fetchAll(),
+    'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),
+    'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
 case 'inv_list':
   admin();$q=$db->query("SELECT i.id,i.ws_id,COALESCE(w.name,'(deleted company)') AS company,i.inv_no,i.inv_date,i.from_date,i.to_date,i.client,i.currency,i.amount,i.hours,i.status,i.paid_date,i.created_at,i.amend_note,i.slot,i.seq,COALESCE(u.name,'') AS by_name FROM invoices i LEFT JOIN workspaces w ON w.id=i.ws_id LEFT JOIN users u ON u.id=i.approved_by ORDER BY i.inv_date DESC,i.id DESC");out(['invoices'=>$q->fetchAll()]);
 case 'inv_get':
