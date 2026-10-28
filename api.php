@@ -1,5 +1,5 @@
 <?php
-const BUILD=217;
+const BUILD=218;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -241,6 +241,9 @@ function sr_data($db,$ws=[],$exg=[],$ext=[]){
   usort($d['soon'],fn($a,$b)=>strcmp($a['start_date'],$b['start_date']));
   return $d;
 }
+function sr_site(){if(PHP_SAPI==='cli')return 'https://taskflow.gurucadd.com';$h=$_SERVER['HTTP_HOST']??'taskflow.gurucadd.com';$d=rtrim(str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/api.php')),'/');return 'https://'.$h.$d;}
+function sr_types($rows){$m=[];foreach($rows as $r){$k=strtoupper(trim((string)$r['drawing_type']));if($k==='')$k='OTHER';$m[$k][]=$r;}
+  uksort($m,function($a,$b)use($m){if($a==='OTHER')return 1;if($b==='OTHER')return -1;$c=count($m[$b])<=>count($m[$a]);return $c?:strcmp($a,$b);});return $m;}
 function sr_assets($db,$ws,$mode){
   // mode 'cid': images are attached to the email and referenced by cid. mode 'data': inline data URIs (for the on-screen preview).
   $o=['tf'=>'','co'=>[],'names'=>[],'att'=>[]];
@@ -276,22 +279,25 @@ function sr_html($d,$title='Task status report',$as=null){
   // title
   $o.='<tr><td style="'.$F.'padding:24px 26px 6px"><div style="font-size:11px;letter-spacing:1.4px;color:#64748b;font-weight:700">WEEKLY PROGRESS REPORT</div><div style="font-size:25px;font-weight:800;color:#0f172a;margin-top:4px">'.$e($title).'</div><div style="font-size:13px;color:#475569;margin-top:6px">Week of <b>'.$e($fd($d['from'])).'</b> to <b>'.$e($fd($d['to'])).'</b> &nbsp;·&nbsp; prepared '.$e($fd($d['today'])).'</div></td></tr>';
   // KPI
-  $k=function($n,$l,$c,$bg)use($F){return '<td width="33%" valign="top" style="padding:0 5px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:'.$bg.';border-radius:10px;border-top:3px solid '.$c.'"><tr><td align="center" style="'.$F.'padding:12px 4px"><div style="font-size:34px;font-weight:800;color:'.$c.';line-height:1">'.$n.'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:600">'.$l.'</div></td></tr></table></td>';};
-  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4').$k($ng,'Ongoing now','#2563eb','#eff6ff').$k($ns,'Starting in 3 days','#d97706','#fffbeb').'</tr></table></td></tr>';
+  $bk=function($rows)use($e){$t=[];foreach(sr_types($rows) as $k=>$v)$t[]=$e($k).' <b>'.count($v).'</b>';return $t?implode(' &nbsp;·&nbsp; ',$t):'&nbsp;';};
+  $k=function($n,$l,$c,$bg,$rows)use($F,$bk){return '<td width="33%" valign="top" style="padding:0 5px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:'.$bg.';border-radius:10px;border-top:3px solid '.$c.'"><tr><td align="center" style="'.$F.'padding:12px 4px"><div style="font-size:34px;font-weight:800;color:'.$c.';line-height:1">'.$n.'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:600">'.$l.'</div><div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.4">'.$bk($rows).'</div></td></tr></table></td>';};
+  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4',$d['done']).$k($ng,'Ongoing now','#2563eb','#eff6ff',$d['going']).$k($ns,'Starting in 3 days','#d97706','#fffbeb',$d['soon']).'</tr></table></td></tr>';
   if($tot>0){$p=fn($n)=>max(0,(int)round($n*100/$tot));
     $o.='<tr><td style="padding:10px 26px 2px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:6px;overflow:hidden"><tr>'.($nd?'<td width="'.$p($nd).'%" height="8" bgcolor="#22c55e" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ng?'<td width="'.$p($ng).'%" height="8" bgcolor="#3b82f6" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ns?'<td width="'.$p($ns).'%" height="8" bgcolor="#f59e0b" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').'</tr></table></td></tr>';}
   // sections
   $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi){
-    $h='<tr><td style="'.$F.'padding:22px 26px 6px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-size:17px;font-weight:800;color:#0f172a"><span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:'.$col.';margin-right:8px"></span>'.$e($name).' <span style="display:inline-block;background:'.$col.';color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 9px;vertical-align:middle">'.count($rows).'</span></td></tr><tr><td style="font-size:12px;color:#64748b;padding-top:2px">'.$e($sub).'</td></tr></table></td></tr>';
+    $h='<tr><td style="'.$F.'padding:22px 26px 6px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="font-size:17px;font-weight:800;color:#0f172a"><span style="display:inline-block;width:10px;height:10px;border-radius:5px;background:'.$col.';margin-right:8px"></span>'.$e($name).' <span style="display:inline-block;background:'.$col.';color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 9px;vertical-align:middle">'.count($rows).'</span></td></tr><tr><td style="font-size:12px;color:#64748b;padding-top:2px">'.$e($sub).'</td></tr>'.($rows?'<tr><td style="padding-top:8px">'.implode('',array_map(fn($t,$v)=>'<span style="display:inline-block;background:#f1f5f9;border:1px solid #e2e8f0;color:#0f172a;font-size:11px;font-weight:700;border-radius:8px;padding:2px 9px;margin:0 6px 4px 0">'.$e($t).' <span style="color:'.$col.'">'.count($v).'</span></span>',array_keys(sr_types($rows)),sr_types($rows))).'</td></tr>':'').'</table></td></tr>';
     if(!$rows)return $h.'<tr><td style="'.$F.'padding:6px 26px 4px;font-size:13px;color:#94a3b8">Nothing to show here right now.</td></tr>';
     $h.='<tr><td style="padding:4px 20px 0"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">';
-    $i=0;foreach($rows as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
+    $i=0;foreach(sr_types($rows) as $tn=>$trs){
+     $h.='<tr><td colspan="3" bgcolor="#eaf1fb" style="'.$F.'background:#eaf1fb;padding:7px 12px;border-bottom:1px solid #dbe5f3;font-size:11px;font-weight:800;letter-spacing:1px;color:#0f2a5c">'.$e($tn).' <span style="font-weight:600;color:#64748b;letter-spacing:0">&nbsp;'.count($trs).' task'.(count($trs)>1?'s':'').'</span></td></tr>';
+     foreach($trs as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
       $dt=$mode==='done'?'<span style="color:#16a34a;font-weight:700">&#10003; '.$e($fd($r['when'])).'</span>':($mode==='soon'?'Starts <b>'.$e($fd($r['start_date'])).'</b>'.($r['end_date']?'<br>Ends '.$e($fd($r['end_date'])):''):($r['end_date']?'Ends <b>'.$e($fd($r['end_date'])).'</b>':'<span style="color:#94a3b8">No end date</span>'));
       $chip=$mode==='going'?'<span style="display:inline-block;margin-top:4px;font-size:10px;font-weight:700;color:#1d4ed8;background:#dbeafe;border-radius:8px;padding:1px 8px">'.$e(strtoupper($r['sname'])).'</span>':'';
-      $sub=array_filter([$r['customer'],$r['drawing_type'],$multi?$r['company']:'']);
+      $sub=array_filter([$r['customer'],$multi?$r['company']:'']);
       $h.='<tr><td bgcolor="'.$bg.'" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:13px;color:#0f172a" valign="top"><div><b style="color:#0f2a5c">'.$e($r['order_no']).'</b>'.($r['order_no']?' &nbsp;':'').$e($r['title']).'</div>'.($sub?'<div style="font-size:11px;color:#64748b;margin-top:2px">'.$e(implode('  ·  ',$sub)).'</div>':'').$chip.'</td>'
         .'<td bgcolor="'.$bg.'" width="150" style="'.$F.'background:'.$bg.';padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$av($r['person']).'</td>'
-        .'<td bgcolor="'.$bg.'" width="105" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}
+        .'<td bgcolor="'.$bg.'" width="105" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}}
     return $h.'</table></td></tr>';};
   $o.=$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done');
   $o.=$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going');
@@ -300,7 +306,7 @@ function sr_html($d,$title='Task status report',$as=null){
   $o.='<tr><td style="height:26px;font-size:0;line-height:0">&nbsp;</td></tr><tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;'.$F.'padding:18px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
     .($tfimg?'<td width="40" valign="middle"><img src="'.$e($as['tf']).'" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:8px;display:block;border:0"></td>':'')
     .'<td valign="middle" style="font-size:12px;color:#cbd5e1;line-height:1.5"><b style="color:#ffffff">Sent automatically by TaskFlow</b><br>Live task tracking, hours and reporting for engineering and drafting teams.</td>'
-    .'<td align="right" valign="middle"><a href="https://gurucadd.com" style="display:inline-block;background:#38bdf8;color:#0f2a5c;font-weight:800;font-size:12px;text-decoration:none;border-radius:8px;padding:9px 14px;white-space:nowrap">Discover TaskFlow &rarr;</a></td></tr></table></td></tr>';
+    .'<td align="right" valign="middle"><a href="'.$e(sr_site()).'/login.php?discover=1" style="display:inline-block;background:#38bdf8;color:#0f2a5c;font-weight:800;font-size:12px;text-decoration:none;border-radius:8px;padding:9px 14px;white-space:nowrap">Discover TaskFlow &rarr;</a></td></tr></table></td></tr>';
   $o.='</table><div style="'.$F.'font-size:11px;color:#94a3b8;margin-top:12px">TaskFlow &middot; powered by GURUCADD</div></td></tr></table></div>';
   return $o;
 }
