@@ -2224,7 +2224,12 @@ $("#pshtst").onclick=async()=>{try{await api("push_test",{});alert("Sent. It sho
 for(const k of["am","pm"])$("#rem"+k).onclick=async()=>{if(!confirm("This sends the real reminder messages to everyone now. Continue?"))return;try{const r=await api("rem_test",{slot:k});alert(r.res)}catch(e){alert(e.message)}};
 async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#bkn"));b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api(wl?"wl_run":"bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
 // ---- Guest home (guests land here; admins can preview it from the account menu) ----
-function ghHtml(r){
+let ghSel=0,ghR=null;try{ghSel=+localStorage.getItem("tf_ghsel")||0}catch(e){}
+function ghHtml(r0){
+  ghR=r0;const allC=r0.companies||[];if(ghSel&&!allC.some(w=>w.id==ghSel))ghSel=0;
+  const f=a=>ghSel?a.filter(t=>t.ws_id==ghSel):a;
+  const r=Object.assign({},r0,{done:f(r0.done),going:f(r0.going),soon:f(r0.soon),companies:ghSel?allC.filter(w=>w.id==ghSel):allC,people:(r0.people||[]).map(p=>Object.assign({},p,{tasks:f(p.tasks)}))});
+  const pick=allC.length>1?`<div class="htabs" style="margin:0 0 4px"><button type="button" data-ghc="0" class="${ghSel?"":"on"}">All companies</button>${allC.map(w=>`<button type="button" data-ghc="${w.id}" class="${ghSel==w.id?"on":""}">${esc(w.name)}</button>`).join("")}</div>`:"";
   const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
   const fd=d=>{if(!d||d==="0000-00-00")return"";const x=new Date(d+"T00:00:00");return x.toLocaleDateString(undefined,{day:"numeric",month:"short"})};
   const meta=t=>[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ");
@@ -2250,11 +2255,13 @@ function ghHtml(r){
   return `<div class="hw"><aside class="hl"><div class="hlt"><div class="hgr">${gem} ${greet}</div><h2>${esc(String(who).split(" ")[0])} <span class="wv">\u{1F44B}</span></h2><p>Week of ${esc(wk)}: <b>${r.going.length}</b> ongoing task${r.going.length===1?"":"s"} across <b>${(r.companies||[]).length}</b> compan${(r.companies||[]).length===1?"y":"ies"}.</p>
   <div class="hch"><span class="gn"><b>${r.done.length}</b>Completed</span><span><b>${r.going.length}</b>Ongoing</span><span><b>${r.soon.length}</b>Starting soon</span><span class="${late?"rd":""}"><b>${late}</b>Overdue</span></div></div>
   <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div><div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
-  <section class="hrr">${sec("Completed this week","#16a34a",r.done,"done")}${sec("Ongoing now","#2563eb",r.going,"going")}${sec("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
+  <section class="hrr">${pick}${sec("Completed this week","#16a34a",r.done,"done")}${sec("Ongoing now","#2563eb",r.going,"going")}${sec("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
   <div class="hsec" style="--c:#7c3aed"><h3><i></i>Who is working on what <em>${np}</em></h3>${ppl||'<div class="hrow" style="color:var(--mut)">No one has an ongoing task right now.</div>'}</div></section></div>`}
 async function renderGuestHome(){
   const m=$("#main");m.innerHTML='<div class="hm"><div class="empty">Loading overview…</div></div>';
   try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gho"><div class="empty">'+esc(e.message)+'</div></div>'}}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-ghc]");if(!b||!ghR)return;ghSel=+b.dataset.ghc;try{localStorage.setItem("tf_ghsel",ghSel)}catch(x){}
+  const gb=b.closest("#ghb");if(gb){const p=ghPanel(ghR,+$("#ghas").value||0);gb.innerHTML=p+ghHtml(ghR)}else $("#main").innerHTML=ghHtml(ghR)});
 let ghInit=false;
 async function ghLoad(){const as=+$("#ghas").value||0;$("#ghb").innerHTML='<div class="empty">Loading…</div>';
   try{const r=await api("guest_home",{as});if(!ghInit){ghInit=true;$("#ghas").innerHTML='<option value="0">Admin (all companies)</option>'+(r.guests||[]).map(g=>`<option value="${g.id}">${esc(g.name)} (guest)</option>`).join("")}$("#ghb").innerHTML=ghPanel(r,as)+ghHtml(r)}catch(e){$("#ghb").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
@@ -2379,7 +2386,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=230;
+const BUILD=231;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
