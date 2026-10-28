@@ -221,13 +221,13 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .hbtn{width:100%;background:transparent;border:1px solid transparent;padding:5px 6px;white-space:nowrap;color:var(--ink)}.hbtn:hover{border-color:var(--line);background:var(--card)}
 #hrdg{width:min(1100px,98vw);max-height:94vh}#hrdg .rctl,#hrdg .hrf{display:flex;flex-wrap:wrap;gap:8px;align-items:center}#hrdg input:not([type=checkbox]),#hrdg select,#hrdg button{width:auto;margin:0}#hrdg input[type=checkbox]{width:auto}#hrdg #hrq{flex:1;min-width:200px}.hrf{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin:6px 0}.hrf details{position:relative}.hrf summary{cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;background:var(--card,#fff);list-style:none;white-space:nowrap}.hrf summary::-webkit-details-marker{display:none}.hrf details[open] summary{border-color:var(--pri)}.hrf .hrp{position:absolute;z-index:30;top:100%;left:0;margin-top:4px;min-width:230px;max-height:300px;overflow:auto;background:var(--card,#fff);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:6px}.hrp label{display:flex;gap:7px;align-items:center;padding:3px 6px;font-size:13px;cursor:pointer;border-radius:6px}.hrp label:hover{background:rgba(0,0,0,.05)}.hrp .hrg{font-size:11px;color:var(--mut);text-transform:uppercase;padding:6px 6px 2px}.hrk{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}.hrk div{border:1px solid var(--line);border-radius:10px;padding:6px 14px;font-size:12px;color:var(--mut)}.hrk b{display:block;font-size:20px;color:var(--fg,#111)}#hrout{overflow:auto;max-height:56vh}#hrout table{width:100%;border-collapse:collapse;font-size:13px}#hrout th{position:sticky;top:0;background:var(--card,#fff);font-size:11px;color:var(--mut);text-transform:uppercase;text-align:left;padding:6px;border-bottom:2px solid var(--line)}#hrout td{padding:5px 6px;border-bottom:1px solid var(--line)}#hrout td.n,#hrout th.n{text-align:right;font-variant-numeric:tabular-nums}#hrout tr.l1 td{background:rgba(37,99,235,.07);font-weight:700}#hrout tr.l2 td:first-child{padding-left:26px}#hrout tr.ld td{color:var(--mut);font-size:12px}#hrout tr.ld td:first-child{padding-left:46px}#hrout tr.tt td{font-weight:800;border-top:2px solid var(--line)}
 /* Guest home + test window */
-.gh{display:grid;gap:16px;width:100%;max-width:1180px;margin:0 auto;padding:14px;box-sizing:border-box}
+.gho{display:grid;gap:16px;width:100%;max-width:1180px;margin:0 auto;padding:14px;box-sizing:border-box}
 .gh-hero{background:linear-gradient(135deg,#0f2a5c,#123577);color:#fff;border-radius:18px;padding:20px 22px;display:grid;gap:6px}
 .gh-hero h2{margin:0;font-size:22px;letter-spacing:-.02em}.gh-hero p{margin:0;color:#b6c5e6;font-size:13px}
 .gh-cos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.gh-cos a{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);color:#fff;border-radius:999px;padding:5px 12px;text-decoration:none;font-weight:700;font-size:12.5px}.gh-cos a:hover{background:rgba(255,255,255,.22)}
 .gh-k{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .gh-k div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;border-top:4px solid var(--c)}.gh-k b{display:block;font-size:28px;font-weight:900;line-height:1;color:var(--c)}.gh-k span{font-size:12px;color:var(--mut);font-weight:700}
-.gh h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}.gh h3 em{font-style:normal;font-size:11px;background:var(--col);border-radius:999px;padding:1px 8px;color:var(--mut)}
+.gho h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}.gho h3 em{font-style:normal;font-size:11px;background:var(--col);border-radius:999px;padding:1px 8px;color:var(--mut)}
 .gh-pp{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px}
 .gh-p{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:grid;gap:8px}
 .gh-ph{display:flex;align-items:center;gap:10px}.gh-ph b{font-size:14px}.gh-ph small{color:var(--mut);display:block;font-size:11.5px}
@@ -251,7 +251,7 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .gh-tchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.gh-tchips span{font-size:11.5px;font-weight:700;background:var(--col);border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink)}
 .gh-tg{margin-bottom:10px}.gh-th{padding:8px 14px;background:var(--col);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--line)}.gh-th small{font-weight:600;letter-spacing:0;color:var(--mut);margin-left:6px;text-transform:none}
 .gh-tg .gh-r:first-of-type{border-top:0}
-@media (max-width:640px){.gh-k{grid-template-columns:1fr}.gh{padding:8px}}
+@media (max-width:640px){.gh-k{grid-template-columns:1fr}.gho{padding:8px}}
 #ghdg{width:min(1180px,98vw);max-height:94vh;overflow:auto}
 #srdg{width:min(980px,98vw);max-height:94vh}#srdg input:not([type=checkbox]),#srdg select,#srdg textarea,#srdg button{width:auto;margin:0}#srdg textarea{width:100%;min-height:56px}.srl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.src{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;min-width:200px}.src.on{border-color:var(--pri);box-shadow:0 0 0 2px rgba(37,99,235,.15)}.src small{display:block;color:var(--mut)}.srf{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;display:grid;gap:8px}.srf .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.srf label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer}#srprev{border:1px solid var(--line);border-radius:10px;padding:10px;max-height:48vh;overflow:auto;background:#f8fafc;color:#0f172a}
 #tldg{width:min(620px,94vw)}.tlt{width:100%;border-collapse:collapse;font-size:13px}.tlt td,.tlt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}.tlt td.n{text-align:right}.tlt th{font-size:11px;color:var(--mut);text-transform:uppercase}
@@ -2239,14 +2239,14 @@ function ghHtml(r){
   const trs=(r.people||[]).map(p=>p.tasks.length?p.tasks.map((t,i)=>`<tr>${i?"":`<td rowspan="${p.tasks.length}" class="gh-pn"><div style="display:flex;align-items:center;gap:8px"><span class="gh-av">${esc(ini(p.name))}</span><b>${esc(p.name)}</b></div><small>${p.tasks.length} task${p.tasks.length===1?"":"s"}</small></td>`}<td><b>${esc(t.title)}</b></td><td>${esc(t.order_no||"")}</td><td>${esc(t.customer||"")}</td><td>${esc(t.drawing_type||"")}</td><td>${dueCell(t)}</td></tr>`).join(""):"").join("");
   const ppl=trs?`<div class="gh-tw"><table class="gh-tb"><thead><tr><th>Person</th><th>Working on</th><th>Order No.</th><th>Customer</th><th>Drawing type</th><th>Due</th></tr></thead><tbody>${trs}</tbody></table></div>`:"";
   const wk=fd(r.from)+" – "+fd(r.to);
-  return `<div class="gh"><div class="gh-hero"><h2>${r.asName?"Guest view: "+esc(r.asName):"Project overview"}</h2><p>Week of ${esc(wk)}. Updated live from TaskFlow.</p><div class="gh-cos">${cos||"No companies shared with you yet."}</div></div>
+  return `<div class="gho"><div class="gh-hero"><h2>${r.asName?"Guest view: "+esc(r.asName):"Project overview"}</h2><p>Week of ${esc(wk)}. Updated live from TaskFlow.</p><div class="gh-cos">${cos||"No companies shared with you yet."}</div></div>
   <div class="gh-k"><div style="--c:#16a34a"><b>${r.done.length}</b><span>Completed this week</span></div><div style="--c:#2563eb"><b>${r.going.length}</b><span>Ongoing now</span></div><div style="--c:#f59e0b"><b>${r.soon.length}</b><span>Starting in the next 3 days</span></div></div>
 
   ${box("Completed this week","#16a34a",r.done,"done")}${box("Ongoing","#2563eb",r.going,"going")}${box("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
 <section><h3>Who is working on what <em>${(r.people||[]).filter(p=>p.tasks.length).length}</em></h3>${ppl?ppl:'<div class="gh-l"><div class="gh-e">No one has an ongoing task right now.</div></div>'}</section></div>`}
 async function renderGuestHome(){
-  const m=$("#main");m.innerHTML='<div class="gh"><div class="empty">Loading overview…</div></div>';
-  try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gh"><div class="empty">'+esc(e.message)+'</div></div>'}}
+  const m=$("#main");m.innerHTML='<div class="gho"><div class="empty">Loading overview…</div></div>';
+  try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gho"><div class="empty">'+esc(e.message)+'</div></div>'}}
 let ghInit=false;
 async function ghLoad(){const as=+$("#ghas").value||0;$("#ghb").innerHTML='<div class="empty">Loading…</div>';
   try{const r=await api("guest_home",{as});if(!ghInit){ghInit=true;$("#ghas").innerHTML='<option value="0">Admin (all companies)</option>'+(r.guests||[]).map(g=>`<option value="${g.id}">${esc(g.name)} (guest)</option>`).join("")}$("#ghb").innerHTML=ghPanel(r,as)+ghHtml(r)}catch(e){$("#ghb").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
@@ -2254,9 +2254,9 @@ function ghPanel(r,as){
   if(!as||!r.gtree)return"";
   const hide=new Set((r.hide||[]).map(String)),cn={};(r.companies||[]).forEach(w=>cn[w.id]=w.name);
   const by={};r.gtree.forEach(g=>{(by[g.ws_id]=by[g.ws_id]||[]).push(g)});
-  const blocks=Object.keys(by).map(k=>`<div class="gh-gb"><b>${esc(+k?cn[k]||"Company":"Tasks without a group")}</b>${by[k].map(g=>`<label><input type="checkbox" data-gh="${g.gid}"${hide.has(String(g.gid))?"":" checked"}> ${esc(g.name)}</label>`).join("")}</div>`).join("");
+  const blocks=Object.keys(by).map(k=>`<div class="gh-gb"><b>${esc(+k?cn[k]||"Company":"Tasks without a group")}</b>${by[k].map(g=>`<label><input type="checkbox" data-ghx="${g.gid}"${hide.has(String(g.gid))?"":" checked"}> ${esc(g.name)}</label>`).join("")}</div>`).join("");
   return `<details class="gh-gp" open><summary>Groups ${esc(r.asName||"this guest")} can see <small>${hide.size?hide.size+" hidden":"all visible"}</small></summary><div class="gh-gg">${blocks}</div><div class="acts" style="margin:8px 0 0"><button id="ghsv" class="p" style="width:auto;margin:0">Save for ${esc(r.asName||"this guest")}</button><small style="color:var(--mut)">Unticked groups are hidden from this guest's overview. New groups are visible by default.</small></div></details>`}
-document.addEventListener("click",async e=>{if(e.target.id!=="ghsv")return;const as=+$("#ghas").value||0;if(!as)return;const hide=[...document.querySelectorAll("#ghb [data-gh]")].filter(c=>!c.checked).map(c=>+c.dataset.gh);
+document.addEventListener("click",async e=>{if(e.target.id!=="ghsv")return;const as=+$("#ghas").value||0;if(!as)return;const hide=[...document.querySelectorAll("#ghb [data-ghx]")].filter(c=>!c.checked).map(c=>+c.dataset.ghx);
   e.target.disabled=true;try{await api("guest_hide_save",{user_id:as,hide});await ghLoad()}catch(x){alert(x.message)}});
 $("#ghm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#ghdg").showModal();ghLoad()};
 $("#ghx").onclick=()=>$("#ghdg").close();$("#ghrf").onclick=ghLoad;$("#ghas").onchange=ghLoad;
@@ -2371,7 +2371,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=228;
+const BUILD=229;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
