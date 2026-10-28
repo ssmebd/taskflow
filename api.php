@@ -1,5 +1,5 @@
 <?php
-const BUILD=206;
+const BUILD=207;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -913,12 +913,12 @@ case 'hrs_report':
     'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),
     'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
 case 'sr_list':
-  admin();$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent FROM status_reports ORDER BY id");
+  admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll()]);
 case 'sr_preview':
   admin();$d=sr_data($db,(array)($in['ws']??[]));out(['html'=>sr_html($d),'n'=>[count($d['done']),count($d['going']),count($d['soon'])]]);
 case 'sr_save':
-  admin();$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
+  admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
   $ws=implode(',',array_values(array_unique(array_filter(array_map('intval',(array)($in['ws']??[]))))));
   $dw=max(1,min(7,(int)($in['dow']??4)));$hm=max(0,min(1439,(int)($in['hhmm']??900)));$ac=empty($in['active'])?0:1;
@@ -926,9 +926,9 @@ case 'sr_save':
   else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac]);}
   out(['ok'=>1]);
 case 'sr_del':
-  admin();$db->prepare("DELETE FROM status_reports WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
+  admin();sr_ddl($db);$db->prepare("DELETE FROM status_reports WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'sr_send':
-  admin();$q=$db->prepare("SELECT * FROM status_reports WHERE id=?");$q->execute([(int)($in['id']??0)]);$s=$q->fetch();if(!$s)out(['error'=>'Not found']);
+  admin();sr_ddl($db);$q=$db->prepare("SELECT * FROM status_reports WHERE id=?");$q->execute([(int)($in['id']??0)]);$s=$q->fetch();if(!$s)out(['error'=>'Not found']);
   $r=sr_send($db,$s);if(!$r['ok'])out(['error'=>$r['err']?:'Could not send']);out(['ok'=>1,'sent'=>$r['sent'],'err'=>$r['err']]);
 case 'inv_list':
   admin();$q=$db->query("SELECT i.id,i.ws_id,COALESCE(w.name,'(deleted company)') AS company,i.inv_no,i.inv_date,i.from_date,i.to_date,i.client,i.currency,i.amount,i.hours,i.status,i.paid_date,i.created_at,i.amend_note,i.slot,i.seq,COALESCE(u.name,'') AS by_name FROM invoices i LEFT JOIN workspaces w ON w.id=i.ws_id LEFT JOIN users u ON u.id=i.approved_by ORDER BY i.inv_date DESC,i.id DESC");out(['invoices'=>$q->fetchAll()]);
