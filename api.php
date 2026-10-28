@@ -1,8 +1,8 @@
 <?php
-const BUILD=205;
+const BUILD=206;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
-if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
+if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
 $TASKA=['save','field','delete','dup','co_set','task_move','task_order','tl_add','tl_rev','cm_add'];
 $AUD_T='';
 function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
@@ -212,6 +212,72 @@ function wl_build($db,$path,$days=15){
   return ['rows'=>count($d),'hours'=>$grand];
 }
 function wl_files($dir){$o=[];foreach(glob($dir.'/worklog-????-??-??_??-??.xlsx')?:[] as $f)$o[]=['name'=>basename($f),'size'=>filesize($f),'time'=>filemtime($f)];usort($o,fn($x,$y)=>$y['time']<=>$x['time']);return $o;}
+// ---- Task status report: completed this week, ongoing, starting in the next 3 days; emailed to guests on a weekly schedule ----
+function sr_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS status_reports(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL DEFAULT '',ws_ids VARCHAR(200) NOT NULL DEFAULT '',emails TEXT NOT NULL,dow TINYINT NOT NULL DEFAULT 4,hhmm INT NOT NULL DEFAULT 900,active TINYINT NOT NULL DEFAULT 1,last_sent VARCHAR(10) NOT NULL DEFAULT '',created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function sr_now(){$tz=new DateTimeZone('Asia/Dhaka');return new DateTime('now',$tz);}
+function sr_data($db,$ws=[]){
+  $now=sr_now();$today=$now->format('Y-m-d');$mon=date('Y-m-d',strtotime($today.' -'.((int)$now->format('N')-1).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$nx=date('Y-m-d',strtotime($today.' +3 day'));
+  $ws=array_values(array_filter(array_map('intval',(array)$ws)));
+  $wh=$ws?" AND t.ws_id IN(".implode(',',$ws).")":"";
+  $rows=$db->query("SELECT t.id,t.ws_id,COALESCE(w.name,'') AS company,t.title,t.order_no,t.customer,t.drawing_type,t.start_date,t.end_date,DATE(t.updated_at) AS upd,t.status,COALESCE(s.name,t.status) AS sname,COALESCE(u.name,'') AS person FROM tasks t LEFT JOIN workspaces w ON w.id=t.ws_id LEFT JOIN statuses s ON s.ws_id=t.ws_id AND s.skey=t.status LEFT JOIN users u ON u.id=t.assigned_to WHERE 1=1".$wh." ORDER BY w.sort_no,w.name,t.order_no,t.title")->fetchAll();
+  $d=['done'=>[],'going'=>[],'soon'=>[],'from'=>$mon,'to'=>$sun,'today'=>$today,'next'=>$nx];
+  foreach($rows as $r){
+    $nm=(string)$r['sname'];
+    if($r['status']==='done'){
+      if(preg_match('/^not[\s_-]*needed$/i',trim($nm)))continue;
+      $r['when']=($r['end_date']&&$r['end_date']!=='0000-00-00')?$r['end_date']:$r['upd'];
+      if($r['when']>=$mon&&$r['when']<=$sun)$d['done'][]=$r;
+    }elseif($r['status']==='progress'||$r['status']==='review'||preg_match('/progress|ongoing|working|review/i',$nm)){$d['going'][]=$r;}
+    elseif(!preg_match('/hold|cancel/i',$nm)&&$r['start_date']&&$r['start_date']>=$today&&$r['start_date']<=$nx){$d['soon'][]=$r;}
+  }
+  usort($d['done'],fn($a,$b)=>strcmp($b['when'],$a['when']));
+  usort($d['going'],fn($a,$b)=>strcmp((string)($a['end_date']?:'9999'),(string)($b['end_date']?:'9999')));
+  usort($d['soon'],fn($a,$b)=>strcmp($a['start_date'],$b['start_date']));
+  return $d;
+}
+function sr_html($d,$title='Task status report'){
+  $e=fn($s)=>htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8');$fd=fn($s)=>$s?date('D j M',strtotime($s)):'';
+  $th='style="text-align:left;padding:6px 8px;background:#f1f5f9;color:#475569;font-size:11px;text-transform:uppercase;border-bottom:2px solid #e2e8f0"';$td='style="padding:6px 8px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#0f172a;vertical-align:top"';
+  $sec=function($name,$col,$rows,$cols,$empty)use($e,$th,$td){
+    $h='<h3 style="margin:22px 0 6px;font-size:16px;color:'.$col.'">'.$e($name).' <span style="color:#64748b;font-weight:400">('.count($rows).')</span></h3>';
+    if(!$rows)return $h.'<p style="margin:4px 0;color:#64748b;font-size:13px">'.$e($empty).'</p>';
+    $h.='<table cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse"><tr>';foreach($cols as $c)$h.='<th '.$th.'>'.$e($c[0]).'</th>';$h.='</tr>';
+    foreach($rows as $r){$h.='<tr>';foreach($cols as $c)$h.='<td '.$td.'>'.$e($c[1]($r)).'</td>';$h.='</tr>';}
+    return $h.'</table>';};
+  $fd2=$fd;$base=[['Company',fn($r)=>$r['company']],['Order No.',fn($r)=>$r['order_no']],['Task',fn($r)=>$r['title']],['Customer',fn($r)=>$r['customer']],['Type',fn($r)=>$r['drawing_type']],['Assigned to',fn($r)=>$r['person']?:'Unassigned']];
+  $o='<div style="font-family:Segoe UI,Arial,sans-serif;max-width:900px;margin:0 auto;color:#0f172a"><div style="background:#0f2a5c;color:#fff;padding:16px 20px;border-radius:10px 10px 0 0"><div style="font-size:20px;font-weight:700">'.$e($title).'</div><div style="font-size:13px;opacity:.8">Week '.$e($fd($d['from'])).' to '.$e($fd($d['to'])).' &middot; prepared '.$e($fd($d['today'])).'</div></div><div style="border:1px solid #e2e8f0;border-top:0;padding:4px 20px 20px;border-radius:0 0 10px 10px">';
+  $o.='<table cellspacing="8" style="margin:10px -8px 0"><tr>';
+  foreach([['Completed this week',count($d['done']),'#16a34a'],['Ongoing',count($d['going']),'#2563eb'],['Starting in 3 days',count($d['soon']),'#f59e0b']] as $k)$o.='<td style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 16px;text-align:center"><div style="font-size:24px;font-weight:800;color:'.$k[2].'">'.$k[1].'</div><div style="font-size:11px;color:#64748b">'.$k[0].'</div></td>';
+  $o.='</tr></table>';
+  $o.=$sec('Completed this week','#16a34a',$d['done'],array_merge($base,[['Completed',fn($r)=>$fd2($r['when'])]]),'Nothing completed yet this week.');
+  $o.=$sec('Ongoing','#2563eb',$d['going'],array_merge($base,[['Status',fn($r)=>$r['sname']],['Start',fn($r)=>$fd2($r['start_date'])],['End',fn($r)=>$fd2($r['end_date'])]]),'No ongoing tasks.');
+  $o.=$sec('Starting in the next 3 days','#d97706',$d['soon'],array_merge($base,[['Starts',fn($r)=>$fd2($r['start_date'])],['End',fn($r)=>$fd2($r['end_date'])]]),'No tasks are scheduled to start in the next 3 days.');
+  return $o.'<p style="margin-top:22px;font-size:11px;color:#94a3b8">Sent automatically by TaskFlow, powered by GURUCADD.</p></div></div>';
+}
+function sr_valid_emails($s){$o=[];foreach(preg_split('/[\s,;]+/',(string)$s,-1,PREG_SPLIT_NO_EMPTY) as $m){$m=strtolower(trim($m));if(filter_var($m,FILTER_VALIDATE_EMAIL)&&!in_array($m,$o,true))$o[]=$m;}return array_slice($o,0,30);}
+function sr_send($db,$s){
+  $to=sr_valid_emails($s['emails']);if(!$to)return ['ok'=>false,'sent'=>0,'err'=>'No valid email addresses'];
+  $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws);
+  $title=($s['name']!==''?$s['name']:'Task status report');$html='<!doctype html><html><body style="margin:0;padding:12px;background:#f8fafc">'.sr_html($d,$title).'</body></html>';
+  $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
+  foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN THE NEXT 3 DAYS','soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
+  $host=bk_host();$sent=0;$err='';
+  foreach($to as $m){$b='tf'.bin2hex(random_bytes(8));
+    $h="From: TaskFlow <reports@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"$b\"\r\n";
+    $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n$txt\r\n--$b\r\nContent-Type: text/html; charset=utf-8\r\n\r\n$html\r\n--$b--";
+    $subj='=?UTF-8?B?'.base64_encode($title.' - week of '.date('j M',strtotime($d['from']))).'?=';
+    if(@mail($m,$subj,$body,$h))$sent++;else $err='The server could not send to '.$m;}
+  return ['ok'=>$sent>0,'sent'=>$sent,'err'=>$err];
+}
+function sr_run($db,$force=false){
+  try{sr_ddl($db);$list=$db->query("SELECT * FROM status_reports WHERE active=1")->fetchAll();}catch(Throwable $e){return 'Status reports: not set up';}
+  $now=sr_now();$today=$now->format('Y-m-d');$dow=(int)$now->format('N');$min=(int)$now->format('G')*60+(int)$now->format('i');$n=0;$msg=[];
+  foreach($list as $s){
+    if((int)$s['dow']!==$dow||$min<(int)$s['hhmm']||$min>=(int)$s['hhmm']+180||$s['last_sent']===$today)continue;
+    $db->prepare("UPDATE status_reports SET last_sent=? WHERE id=?")->execute([$today,$s['id']]);
+    $r=sr_send($db,$s);$n+=$r['sent'];$msg[]=$s['name'].': '.($r['ok']?'sent to '.$r['sent']:'FAILED '.$r['err']);}
+  return $msg?'Status reports: '.implode('; ',$msg):'Status reports: none due';
+}
 function wl_mail($file,$name,$why){
   $to=BACKUP_EMAIL;if(!$to)return 'No email address set';
   $b='tf'.bin2hex(random_bytes(8));
@@ -243,7 +309,7 @@ function out($d){
 }
 if(($_GET['a']??'')==='remind'){header('Content-Type: text/plain');
   if(!hash_equals(rem_key(),(string)($_GET['key']??''))){http_response_code(403);exit("bad key\n");}
-  echo rem_run($db,'',false)."\n";exit;}
+  echo rem_run($db,'',false)."\n".sr_run($db)."\n";exit;}
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_GET['a']??'')==='wiki_img'){
   try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
@@ -347,6 +413,7 @@ function ensure_schema($db){
   }
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_pages(id INT AUTO_INCREMENT PRIMARY KEY,title VARCHAR(150) NOT NULL,body MEDIUMTEXT NOT NULL,updated_by INT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'logged_by'")->fetch())$db->exec("ALTER TABLE time_logs ADD logged_by INT NULL");
+  sr_ddl($db);
   $db->exec("CREATE TABLE IF NOT EXISTS invoices(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,slot INT NOT NULL DEFAULT 0,inv_no VARCHAR(80) NOT NULL,inv_date DATE NOT NULL,from_date DATE NOT NULL,to_date DATE NOT NULL,client VARCHAR(200) NOT NULL DEFAULT '',currency VARCHAR(8) NOT NULL DEFAULT '',amount DECIMAL(14,2) NOT NULL DEFAULT 0,hours DECIMAL(10,2) NOT NULL DEFAULT 0,status VARCHAR(10) NOT NULL DEFAULT 'pending',paid_date DATE NULL,html MEDIUMTEXT NULL,approved_by INT NULL,created_at DATETIME NOT NULL,UNIQUE KEY(ws_id,inv_no),KEY(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'color'")->fetch())$db->exec("ALTER TABLE task_groups ADD color VARCHAR(7) NULL");
   if(!$db->query("SHOW COLUMNS FROM invoices LIKE 'seq'")->fetch())$db->exec("ALTER TABLE invoices ADD seq VARCHAR(12) NOT NULL DEFAULT '', ADD amend_note VARCHAR(500) NULL");
@@ -845,6 +912,24 @@ case 'hrs_report':
     'users'=>$db->query("SELECT id,name FROM users ORDER BY name")->fetchAll(),
     'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),
     'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
+case 'sr_list':
+  admin();$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent FROM status_reports ORDER BY id");
+  out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll()]);
+case 'sr_preview':
+  admin();$d=sr_data($db,(array)($in['ws']??[]));out(['html'=>sr_html($d),'n'=>[count($d['done']),count($d['going']),count($d['soon'])]]);
+case 'sr_save':
+  admin();$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
+  $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
+  $ws=implode(',',array_values(array_unique(array_filter(array_map('intval',(array)($in['ws']??[]))))));
+  $dw=max(1,min(7,(int)($in['dow']??4)));$hm=max(0,min(1439,(int)($in['hhmm']??900)));$ac=empty($in['active'])?0:1;
+  if($id){$db->prepare("UPDATE status_reports SET name=?,ws_ids=?,emails=?,dow=?,hhmm=?,active=? WHERE id=?")->execute([$nm,$ws,$em,$dw,$hm,$ac,$id]);}
+  else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,created_at) VALUES(?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac]);}
+  out(['ok'=>1]);
+case 'sr_del':
+  admin();$db->prepare("DELETE FROM status_reports WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
+case 'sr_send':
+  admin();$q=$db->prepare("SELECT * FROM status_reports WHERE id=?");$q->execute([(int)($in['id']??0)]);$s=$q->fetch();if(!$s)out(['error'=>'Not found']);
+  $r=sr_send($db,$s);if(!$r['ok'])out(['error'=>$r['err']?:'Could not send']);out(['ok'=>1,'sent'=>$r['sent'],'err'=>$r['err']]);
 case 'inv_list':
   admin();$q=$db->query("SELECT i.id,i.ws_id,COALESCE(w.name,'(deleted company)') AS company,i.inv_no,i.inv_date,i.from_date,i.to_date,i.client,i.currency,i.amount,i.hours,i.status,i.paid_date,i.created_at,i.amend_note,i.slot,i.seq,COALESCE(u.name,'') AS by_name FROM invoices i LEFT JOIN workspaces w ON w.id=i.ws_id LEFT JOIN users u ON u.id=i.approved_by ORDER BY i.inv_date DESC,i.id DESC");out(['invoices'=>$q->fetchAll()]);
 case 'inv_get':
