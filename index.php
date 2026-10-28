@@ -243,12 +243,14 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .gh-pn{background:color-mix(in srgb,var(--col) 60%,var(--card));border-right:1px solid var(--line);min-width:170px;vertical-align:top!important}.gh-pn .gh-av{display:inline-grid;margin-right:8px;vertical-align:middle}.gh-pn b{vertical-align:middle}.gh-pn small{display:block;color:var(--mut);font-size:11px;margin:2px 0 0 42px}
 .gh-due{display:inline-flex;flex-direction:column;align-items:flex-start;font-size:14px;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;white-space:nowrap}.gh-due small{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:800}
 .gh-due.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-due.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}
-.gh-r .d{display:flex;flex-direction:column;align-items:flex-end;font-size:14px!important;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;color:var(--ink)}.gh-r .d small{font-size:9px;letter-spacing:.08em;font-weight:800;color:inherit;grid-column:auto}
-.gh-r .d.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-r .d.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}.gh-r .d.dn{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.gh-r .d.sn{color:#b45309;background:#fffbeb;border-color:#fde68a}
-@media (prefers-color-scheme:dark){.gh-due.du,.gh-r .d.du{color:#93c5fd;background:#172554;border-color:#1e3a8a}.gh-due.od,.gh-r .d.od{color:#fca5a5;background:#450a0a;border-color:#7f1d1d}.gh-r .d.dn{color:#86efac;background:#052e16;border-color:#14532d}.gh-r .d.sn{color:#fcd34d;background:#422006;border-color:#78350f}}
+.gh-r .d,.hrow .d{display:flex;flex-direction:column;align-items:flex-end;font-size:14px!important;font-weight:900;padding:3px 10px;border-radius:9px;border:1px solid;color:var(--ink)}.gh-r .d small,.hrow .d small{font-size:9px;letter-spacing:.08em;font-weight:800;color:inherit;grid-column:auto}
+.gh-r .d.du,.hrow .d.du{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe}.gh-r .d.od,.hrow .d.od{color:#b91c1c;background:#fef2f2;border-color:#fecaca}.gh-r .d.dn,.hrow .d.dn{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}.gh-r .d.sn,.hrow .d.sn{color:#b45309;background:#fffbeb;border-color:#fde68a}
+@media (prefers-color-scheme:dark){.gh-due.du,.gh-r .d.du,.hrow .d.du{color:#93c5fd;background:#172554;border-color:#1e3a8a}.gh-due.od,.gh-r .d.od,.hrow .d.od{color:#fca5a5;background:#450a0a;border-color:#7f1d1d}.gh-r .d.dn,.hrow .d.dn{color:#86efac;background:#052e16;border-color:#14532d}.gh-r .d.sn,.hrow .d.sn{color:#fcd34d;background:#422006;border-color:#78350f}}
 .gh-gp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 14px;margin:10px 0}.gh-gp summary{cursor:pointer;font-weight:800;font-size:13px}.gh-gp summary small{color:var(--mut);font-weight:600;margin-left:8px}
 .gh-gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}.gh-gb{display:grid;gap:4px;align-content:start;background:var(--col);border-radius:10px;padding:8px 10px}.gh-gb b{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}.gh-gb label{display:flex;gap:6px;align-items:center;font-size:13px}.gh-gb input{width:auto;margin:0}
 .gh-tchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.gh-tchips span{font-size:11.5px;font-weight:700;background:var(--col);border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink)}
+.hsec .gh-th{border:0;border-radius:8px;margin:10px 0 6px;padding:6px 12px}#ghdg .hw{padding:8px 0 0;max-width:none}#ghdg .hl{position:relative;top:0}
+.hrow .d{justify-self:end}.gh-tb{min-width:640px}@media(max-width:600px){.hrow .d{grid-column:2;grid-row:1;align-self:start}.hrow>div:nth-child(2){grid-column:1;grid-row:2;justify-content:flex-start!important}}
 .gh-tg{margin-bottom:10px}.gh-th{padding:8px 14px;background:var(--col);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--line)}.gh-th small{font-weight:600;letter-spacing:0;color:var(--mut);margin-left:6px;text-transform:none}
 .gh-tg .gh-r:first-of-type{border-top:0}
 @media (max-width:640px){.gh-k{grid-template-columns:1fr}.gho{padding:8px}}
@@ -2231,21 +2233,27 @@ function ghHtml(r){
     if(mode==="soon")return `<span class="d sn"><small>STARTS</small>${esc(fd(t.start_date))}</span>`;
     if(!ed)return `<span class="d" style="font-weight:600">${esc(t.sname||"")}</span>`;
     return ed<td?`<span class="d od"><small>OVERDUE</small>${esc(fd(ed))}</span>`:`<span class="d du"><small>DUE</small>${esc(fd(ed))}</span>`};
-  const row=(t,mode)=>`<div class="gh-r"><b>${esc(t.title)}</b><small>${meta(t)}${(t.person?" · "+esc(t.person):"")}</small>${dueTag(t,mode,r.today)}</div>`;
+  const multi=(r.companies||[]).length>1;
+  const row=(t,mode)=>`<a class="hrow" href="index.php?w=${t.ws_id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${meta(t)}</small></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end">${t.person?`<span class="hco">${esc(t.person)}</span>`:""}${multi&&t.company?`<span class="hst" style="--pc:#64748b">${esc(t.company)}</span>`:""}</div>${dueTag(t,mode,r.today)}</a>`;
   const byType=arr=>{const m={};arr.forEach(t=>{const k=String(t.drawing_type||"").trim().toUpperCase()||"OTHER";(m[k]=m[k]||[]).push(t)});return Object.keys(m).sort((a,b)=>a==="OTHER"?1:b==="OTHER"?-1:(m[b].length-m[a].length)||a.localeCompare(b)).map(k=>[k,m[k]])};
-  const box=(title,c,arr,mode)=>`<section><h3 style="color:${c}"><i style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block"></i>${title} <em>${arr.length}</em></h3>${arr.length?`<div class="gh-tchips">${byType(arr).map(([k,v])=>`<span>${esc(k)} <b style="color:${c}">${v.length}</b></span>`).join("")}</div>`+byType(arr).map(([k,v])=>`<div class="gh-l gh-tg"><div class="gh-th">${esc(k)} <small>${v.length} task${v.length===1?"":"s"}</small></div>${v.map(t=>row(t,mode)).join("")}</div>`).join(""):'<div class="gh-l"><div class="gh-e">Nothing here right now.</div></div>'}</section>`;
-  const cos=(r.companies||[]).map(w=>`<a href="index.php?w=${w.id}">${esc(w.name)}</a>`).join("");
+  const sec=(title,c,arr,mode)=>`<div class="hsec" style="--c:${c}"><h3><i></i>${title} <em>${arr.length}</em></h3>${arr.length?byType(arr).map(([k,v])=>`<div class="gh-th">${esc(k)} <small>${v.length} task${v.length===1?"":"s"}</small></div>${v.map(t=>row(t,mode)).join("")}`).join(""):'<div class="hrow" style="color:var(--mut)">Nothing here right now.</div>'}</div>`;
   const dueCell=t=>{const ed=t.end_date&&t.end_date!=="0000-00-00"?t.end_date:"";return ed?(ed<r.today?`<span class="gh-due od">${esc(fd(ed))}<small>Overdue</small></span>`:`<span class="gh-due du">${esc(fd(ed))}</span>`):'<span style="color:var(--mut)">–</span>'};
   const trs=(r.people||[]).map(p=>p.tasks.length?p.tasks.map((t,i)=>`<tr>${i?"":`<td rowspan="${p.tasks.length}" class="gh-pn"><div style="display:flex;align-items:center;gap:8px"><span class="gh-av">${esc(ini(p.name))}</span><b>${esc(p.name)}</b></div><small>${p.tasks.length} task${p.tasks.length===1?"":"s"}</small></td>`}<td><b>${esc(t.title)}</b></td><td>${esc(t.order_no||"")}</td><td>${esc(t.customer||"")}</td><td>${esc(t.drawing_type||"")}</td><td>${dueCell(t)}</td></tr>`).join(""):"").join("");
   const ppl=trs?`<div class="gh-tw"><table class="gh-tb"><thead><tr><th>Person</th><th>Working on</th><th>Order No.</th><th>Customer</th><th>Drawing type</th><th>Due</th></tr></thead><tbody>${trs}</tbody></table></div>`:"";
+  const np=(r.people||[]).filter(p=>p.tasks.length).length;
+  const late=r.going.filter(t=>t.end_date&&t.end_date!=="0000-00-00"&&t.end_date<r.today).length;
+  const lg=w=>{const f=(typeof wss!=="undefined"&&wss.find(x=>x.id==w.id))||w;return wlogo(f)};
+  const cards=(r.companies||[]).map(w=>{const g=r.going.filter(t=>t.ws_id==w.id).length,s=r.soon.filter(t=>t.ws_id==w.id).length,d=r.done.filter(t=>t.ws_id==w.id).length;return `<a class="hcc" href="index.php?w=${w.id}"><span class="hcl">${lg(w)}</span><b>${esc(w.name)}</b><small>${g} ongoing${s?` · ${s} starting soon`:""}</small><small>${d} completed this week</small></a>`}).join("")||'<div class="empty">No companies shared with you yet.</div>';
+  const h=new Date().getHours(),greet=h<5?"Working late":h<12?"Good morning":h<17?"Good afternoon":"Good evening",gem=h<5?"\u{1F319}":h<12?"☀️":h<17?"\u{1F324}️":"\u{1F306}";
+  const who=r.asName||(typeof me!=="undefined"&&me.name)||"there";
   const wk=fd(r.from)+" – "+fd(r.to);
-  return `<div class="gho"><div class="gh-hero"><h2>${r.asName?"Guest view: "+esc(r.asName):"Project overview"}</h2><p>Week of ${esc(wk)}. Updated live from TaskFlow.</p><div class="gh-cos">${cos||"No companies shared with you yet."}</div></div>
-  <div class="gh-k"><div style="--c:#16a34a"><b>${r.done.length}</b><span>Completed this week</span></div><div style="--c:#2563eb"><b>${r.going.length}</b><span>Ongoing now</span></div><div style="--c:#f59e0b"><b>${r.soon.length}</b><span>Starting in the next 3 days</span></div></div>
-
-  ${box("Completed this week","#16a34a",r.done,"done")}${box("Ongoing","#2563eb",r.going,"going")}${box("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
-<section><h3>Who is working on what <em>${(r.people||[]).filter(p=>p.tasks.length).length}</em></h3>${ppl?ppl:'<div class="gh-l"><div class="gh-e">No one has an ongoing task right now.</div></div>'}</section></div>`}
+  return `<div class="hw"><aside class="hl"><div class="hlt"><div class="hgr">${gem} ${greet}</div><h2>${esc(String(who).split(" ")[0])} <span class="wv">\u{1F44B}</span></h2><p>Week of ${esc(wk)}: <b>${r.going.length}</b> ongoing task${r.going.length===1?"":"s"} across <b>${(r.companies||[]).length}</b> compan${(r.companies||[]).length===1?"y":"ies"}.</p>
+  <div class="hch"><span class="gn"><b>${r.done.length}</b>Completed</span><span><b>${r.going.length}</b>Ongoing</span><span><b>${r.soon.length}</b>Starting soon</span><span class="${late?"rd":""}"><b>${late}</b>Overdue</span></div></div>
+  <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div><div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
+  <section class="hrr">${sec("Completed this week","#16a34a",r.done,"done")}${sec("Ongoing now","#2563eb",r.going,"going")}${sec("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
+  <div class="hsec" style="--c:#7c3aed"><h3><i></i>Who is working on what <em>${np}</em></h3>${ppl||'<div class="hrow" style="color:var(--mut)">No one has an ongoing task right now.</div>'}</div></section></div>`}
 async function renderGuestHome(){
-  const m=$("#main");m.innerHTML='<div class="gho"><div class="empty">Loading overview…</div></div>';
+  const m=$("#main");m.innerHTML='<div class="hm"><div class="empty">Loading overview…</div></div>';
   try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gho"><div class="empty">'+esc(e.message)+'</div></div>'}}
 let ghInit=false;
 async function ghLoad(){const as=+$("#ghas").value||0;$("#ghb").innerHTML='<div class="empty">Loading…</div>';
@@ -2371,7 +2379,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=229;
+const BUILD=230;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
