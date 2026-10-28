@@ -1,5 +1,5 @@
 <?php
-const BUILD=210;
+const BUILD=211;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -269,10 +269,10 @@ function sr_send($db,$s){
   foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN THE NEXT 3 DAYS','soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
   foreach($to as $m){$b='tf'.bin2hex(random_bytes(8));
-    $h="From: TaskFlow <reports@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"$b\"\r\n";
+    $h="From: TaskFlow <backup@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"$b\"\r\n";
     $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode($txt))."\r\n--$b\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode($html))."\r\n--$b--";
-    $subj='=?UTF-8?B?'.base64_encode($title.' - week of '.date('j M',strtotime($d['from']))).'?=';
-    if(@mail($m,$subj,$body,$h))$sent++;else $err='The server could not send to '.$m;}
+    $subj='TaskFlow status report '.date('j M',strtotime($d['from'])).' - '.date('j M',strtotime($d['to']));
+    if(@mail($m,$subj,$body,$h))$sent++;else{$le=error_get_last();$err='The server could not send to '.$m.($le?' ('.$le['message'].')':'');}}
   return ['ok'=>$sent>0,'sent'=>$sent,'err'=>$err];
 }
 function sr_run($db,$force=false){
