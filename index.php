@@ -5,7 +5,7 @@
 <title>TaskFlow</title>
 <style>
 :root{--bg:#f4f5f9;--card:#fff;--ink:#1d2433;--mut:#6b7385;--line:#e2e5ee;--pri:#4f46e5;--priInk:#fff;--col:#eceef5;--hi:#dc2626;--lo:#16a34a;color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#12141c;--card:#1d212d;--ink:#e8eaf2;--mut:#98a0b5;--line:#2c3142;--pri:#818cf8;--priInk:#12141c;--col:#171a24;color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root{--bg:#12141c;--card:#1d212d;--ink:#e8eaf2;--mut:#98a0b5;--line:#2c3142;--pri:#818cf8;--priInk:#12141c;--col:#171a24;--hi:#f87171;--lo:#4ade80;color-scheme:dark}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--line)}
@@ -409,7 +409,7 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  .hm{padding:12px 10px 30px}
  select,input,button{min-height:36px}
 }
-.pres-w{display:inline-flex;align-items:center;padding-left:8px;margin-right:6px}#pres{display:inline-flex;align-items:center}#pres .pb{position:relative;margin-left:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--nv,#0f2a5c);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;cursor:default;animation:pbIn .3s ease both}#pres .pb:first-child{margin-left:0}#pres .pb:hover{z-index:3;transform:translateY(-2px)}#pres .pb i{position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--nv,#0f2a5c);box-sizing:content-box}#pres .pb.mo{background:rgba(255,255,255,.22)}@keyframes pbIn{from{opacity:0;transform:scale(.6)}}@media(max-width:700px){#pres{display:none}}
+.pres-w{display:inline-flex;align-items:center;padding-left:8px;margin-right:6px}#pres{display:inline-flex;align-items:center}#pres .pb{text-shadow:0 1px 2px rgba(0,0,0,.45);position:relative;margin-left:-8px;width:28px;height:28px;border-radius:50%;border:2px solid var(--nv,#0f2a5c);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;cursor:default;animation:pbIn .3s ease both}#pres .pb:first-child{margin-left:0}#pres .pb:hover{z-index:3;transform:translateY(-2px)}#pres .pb i{position:absolute;right:-2px;bottom:-2px;width:9px;height:9px;border-radius:50%;background:#22c55e;border:2px solid var(--nv,#0f2a5c);box-sizing:content-box}#pres .pb.mo{background:rgba(255,255,255,.22)}@keyframes pbIn{from{opacity:0;transform:scale(.6)}}@media(max-width:700px){#pres{display:none}}
 .asw2{display:flex;gap:6px;align-items:center}.asw2 .av{width:26px;height:26px;font-size:10px}.card .meta .av{width:20px;height:20px;font-size:8px;vertical-align:middle}.asw2 select{flex:1;min-width:0}
 .coadd{padding:2px 8px;border-radius:999px;border:1px dashed var(--line);background:var(--card);color:var(--mut);font-size:12px;font-weight:600;white-space:nowrap}.coadd.has{border-style:solid;background:var(--accbg,#dcf3ea);color:#0b8f6a}
 .coN{font-size:12px;font-weight:600;color:var(--mut)}
@@ -2296,7 +2296,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=222;
+const BUILD=223;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
