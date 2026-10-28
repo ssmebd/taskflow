@@ -226,6 +226,8 @@ function template(name) {
     { label: 'Developer tools', accelerator: 'Ctrl+Shift+I', click: () => wc && wc.openDevTools({ mode: 'detach' }) }
   ];
   return [
+    { label: 'TaskFlow Help & guide', accelerator: 'F1', click: () => wc && wc.executeJavaScript('window.tfHelp&&window.tfHelp()').catch(() => {}) },
+    { type: 'separator' },
     { label: 'Open TaskFlow in browser', click: () => shell.openExternal(ORIGIN) },
     { type: 'separator' },
     { label: 'About TaskFlow', click: () => dialog.showMessageBox(win, { type: 'info', title: 'About TaskFlow', message: 'TaskFlow Desktop', detail: 'Version ' + app.getVersion() + '\nPowered by GURUCADD', buttons: ['OK'] }) }
