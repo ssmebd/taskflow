@@ -1,5 +1,5 @@
 <?php
-const BUILD=207;
+const BUILD=208;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -914,7 +914,7 @@ case 'hrs_report':
     'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
 case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent FROM status_reports ORDER BY id");
-  out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll()]);
+  out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll()]);
 case 'sr_preview':
   admin();$d=sr_data($db,(array)($in['ws']??[]));out(['html'=>sr_html($d),'n'=>[count($d['done']),count($d['going']),count($d['soon'])]]);
 case 'sr_save':
