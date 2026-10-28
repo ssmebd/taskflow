@@ -1,5 +1,5 @@
 <?php
-const BUILD=235;
+const BUILD=236;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -652,7 +652,6 @@ function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
 if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empty($in[$k]))$ids[]=(int)$in[$k];if(!empty($in['ids'])&&is_array($in['ids']))foreach(array_slice($in['ids'],0,5) as $x)$ids[]=(int)$x;
   if($ids){$ids=array_slice(array_unique($ids),0,5);$q=$db->prepare("SELECT title FROM tasks WHERE ws_id=? AND id IN(".implode(',',array_fill(0,count($ids),'?')).")");$q->execute(array_merge([$W],$ids));$AUD_T=mb_substr(implode(' | ',$q->fetchAll(PDO::FETCH_COLUMN)),0,150);}}
 if($a==='list'&&$W&&empty($_SESSION['aud_ws'][$W])){$_SESSION['aud_ws'][$W]=1;$wn='';foreach($WS as $w)if((int)$w['id']===$W)$wn=$w['name'];aud_log($db,$uid,(string)$me['username'],'activity','open_company',$wn,$W);}
-if($me['role']==='guest'&&in_array($a,['msg_users','msg_list','msg_send','home_msgs'],true))out(['users'=>[],'messages'=>[],'convs'=>[],'team'=>['n'=>0,'last'=>0]]);
 switch($a){
 case 'notif_poll':
   $u=(int)$me['id'];$cm=isset($in['cm'])?(int)$in['cm']:null;$ic=isset($in['ic'])?(int)$in['ic']:null;$items=[];
