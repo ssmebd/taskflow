@@ -226,13 +226,20 @@ function template(name) {
     { label: 'Developer tools', accelerator: 'Ctrl+Shift+I', click: () => wc && wc.openDevTools({ mode: 'detach' }) }
   ];
   return [
-    { label: 'TaskFlow Help & guide', accelerator: 'F1', click: () => wc && wc.executeJavaScript('window.tfHelp&&window.tfHelp()').catch(() => {}) },
+    { label: 'Help & guide', accelerator: 'F1', click: () => help() },
+    { label: 'What we call things (names of every part)', click: () => help('names') },
+    { label: 'Help topics', submenu: [
+      ['Start here: the map', 'start'], ['Getting around', 'nav'], ['Working with tasks', 'tasks'], ['List, Board and Gantt', 'views'],
+      ['Hours, overtime and reminders', 'hours'], ['Chat, notifications and phone alerts', 'chat'], ['Wiki and Tools', 'wiki'],
+      ['For admins', 'admin'], ['Questions and fixes', 'faq']
+    ].map(([label, id]) => ({ label, click: () => help(id) })) },
     { type: 'separator' },
     { label: 'Open TaskFlow in browser', click: () => shell.openExternal(ORIGIN) },
     { type: 'separator' },
     { label: 'About TaskFlow', click: () => dialog.showMessageBox(win, { type: 'info', title: 'About TaskFlow', message: 'TaskFlow Desktop', detail: 'Version ' + app.getVersion() + '\nPowered by GURUCADD', buttons: ['OK'] }) }
   ];
 }
+function help(id) { const a = active(); if (a) a.view.webContents.executeJavaScript('window.tfHelp&&window.tfHelp(' + JSON.stringify(id || null) + ')').catch(() => {}); }
 ipcMain.on('menu', async (e, name, x, y) => {
   if (e.sender !== ui()) return;
   if (name === 'file' || name === 'tools') await refreshCompanies();

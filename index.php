@@ -1942,7 +1942,7 @@ document.getElementById("hpbr").onclick=()=>hd.classList.toggle("nav");
 q.addEventListener("input",()=>{const v=q.value.trim();if(!v)show(cur);else find(v)});
 hd.addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(b){q.value="";show(b.dataset.s);return}
  const p=e.target.closest("[data-pin]");if(p){const n=p.dataset.pin;hd.querySelectorAll(".pin.hot,.hpleg .lg.hot").forEach(x=>x.classList.remove("hot"));hd.querySelectorAll('[data-pin="'+n+'"]').forEach(x=>x.classList.add("hot"));const l=hd.querySelector('.hpleg .lg[data-pin="'+n+'"]');if(l&&p.classList.contains("pin"))l.scrollIntoView({block:"nearest",behavior:"smooth"})}});
-const m=document.getElementById("hpm");if(m)m.addEventListener("click",e=>{e.preventDefault();const u=document.getElementById("umenu");if(u)u.hidden=true;window.tfHelp()});
+const m=document.getElementById("hpm");if(m&&window.tfCred)m.hidden=true;if(m)m.addEventListener("click",e=>{e.preventDefault();const u=document.getElementById("umenu");if(u)u.hidden=true;window.tfHelp()});
 document.addEventListener("keydown",e=>{if(e.key==="F1"){e.preventDefault();window.tfHelp()}});
 if(new URLSearchParams(location.search).get("help"))addEventListener("load",()=>setTimeout(()=>window.tfHelp(),900));
 })();
@@ -2199,7 +2199,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=203;
+const BUILD=204;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
