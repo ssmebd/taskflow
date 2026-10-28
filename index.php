@@ -691,6 +691,7 @@ header .tfh{width:40px;height:40px;flex:none;margin-right:2px;transition:width .
  <div class="srl" id="srl"></div>
  <div class="srf" id="srf" hidden><div class="row"><input id="srn" placeholder="Name, e.g. Weekly update for Bechtel" maxlength="80" style="flex:1;min-width:220px"></div>
   <div><small style="color:var(--mut)">Companies to include (none ticked = all)</small><div class="row" id="srw"></div></div>
+  <details id="srtd"><summary style="cursor:pointer;font-size:13px">Choose groups and tasks <span id="srtc" style="color:var(--mut)"></span></summary><div class="row" style="margin:6px 0"><button id="srta" type="button">Include all</button><small style="color:var(--mut)">Untick a group or a task to leave it out of the report. New tasks are included automatically.</small></div><div id="srtree" style="max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px"></div></details>
   <div><small style="color:var(--mut)">Team members (email comes from their user details)</small><div class="row" id="sru"></div></div>
   <div><small style="color:var(--mut)">Other email addresses, e.g. guests (separate with commas or new lines)</small><textarea id="sre" placeholder="client@example.com, manager@example.com"></textarea></div>
   <div class="row"><label>Send every</label><select id="srd"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select><label>at</label><select id="srt"></select><span style="color:var(--mut);font-size:12px">Dhaka time</span><label class="ck"><input type="checkbox" id="sra" checked> Active</label><span style="flex:1"></span><button id="srdel">Delete</button><button id="srsn">✉ Send now</button><button class="p" id="srsv">Save</button></div></div>
@@ -2184,25 +2185,32 @@ $("#pshtst").onclick=async()=>{try{await api("push_test",{});alert("Sent. It sho
 for(const k of["am","pm"])$("#rem"+k).onclick=async()=>{if(!confirm("This sends the real reminder messages to everyone now. Continue?"))return;try{const r=await api("rem_test",{slot:k});alert(r.res)}catch(e){alert(e.message)}};
 async function bkRun(mail,wl){const b=$(wl?(mail?"#wlm":"#wln"):(mail?"#bkm":"#bkn"));b.disabled=true;const t=b.textContent;b.textContent="Working…";try{const r=await api(wl?"wl_run":"bk_run",{mail:mail?1:0});if(!r.res.ok)alert("Backup failed: "+r.res.err);else if(r.res.err)alert(r.res.err)}catch(e){alert(e.message)}b.disabled=false;b.textContent=t;bkLoad()}
 // ---- Status report (admin) ----
-let srItems=[],srCo=[],srUs=[],srCur=null;
+let srItems=[],srCo=[],srUs=[],srCur=null,srEG=new Set(),srET=new Set(),srTree=[];
 const srDays=["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],srTm=m=>String(m/60|0).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
 function srList(){$("#srl").innerHTML=srItems.map(x=>`<div class="src ${srCur===x.id?"on":""}" data-sr="${x.id}"><b>${esc(x.name||"Status report")}</b><small>${esc(srDays[x.dow])} ${srTm(+x.hhmm)} · ${x.emails.split(",").filter(Boolean).length} guest(s)${+x.active?"":" · paused"}</small></div>`).join("")+`<div class="src" data-sr="0" style="display:flex;align-items:center;color:var(--pri)">＋ New weekly email</div>`}
 function srForm(id){srCur=id;const x=srItems.find(i=>i.id==id)||{id:0,name:"",ws_ids:"",emails:"",dow:4,hhmm:900,active:1},on=new Set(String(x.ws_ids||"").split(",").filter(Boolean));
  $("#srf").hidden=false;$("#srn").value=x.name;$("#sre").value=String(x.emails||"").replace(/,\s*/g,"\n");$("#srd").value=x.dow;$("#srt").value=x.hhmm;$("#sra").checked=!!+x.active;
- srUsDraw();$("#srw").innerHTML=srCo.map(w=>`<label class="ck"><input type="checkbox" data-w="${w.id}" ${on.has(String(w.id))?"checked":""}> ${esc(w.name)}</label>`).join("");$("#srdel").hidden=!x.id;$("#srsn").hidden=!x.id;srList();srPrev()}
+ srEG=new Set(String(x.excl_g||"").split(",").filter(Boolean));srET=new Set(String(x.excl_t||"").split(",").filter(Boolean));srUsDraw();$("#srw").innerHTML=srCo.map(w=>`<label class="ck"><input type="checkbox" data-w="${w.id}" ${on.has(String(w.id))?"checked":""}> ${esc(w.name)}</label>`).join("");$("#srdel").hidden=!x.id;$("#srsn").hidden=!x.id;srList();srPrev()}
 const srEm=()=>String($("#sre").value).split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(Boolean);
 function srUsDraw(){const on=new Set(srEm());$("#sru").innerHTML=srUs.map(u=>{const m=String(u.email||"").trim().toLowerCase();return m?`<label class="ck"><input type="checkbox" data-u="${ea(m)}" ${on.has(m)?"checked":""}> ${esc(u.name)}</label>`:`<label class="ck" style="opacity:.45;cursor:not-allowed" title="No email in this user's details. Add one in Manage users."><input type="checkbox" disabled> ${esc(u.name)}</label>`}).join("")||"<small>No users</small>"}
 const srWs=()=>[...document.querySelectorAll("#srw [data-w]:checked")].map(c=>+c.dataset.w);
-async function srPrev(){$("#srprev").innerHTML="<p>Loading…</p>";try{const r=await api("sr_preview",{ws:srWs()});$("#srprev").innerHTML=r.html;$("#srpn").textContent=r.n[0]+" completed · "+r.n[1]+" ongoing · "+r.n[2]+" starting soon"}catch(e){$("#srprev").innerHTML="";alert(e.message)}}
+const SRL={done:"Completed",going:"Ongoing",soon:"Starting soon"};
+function srTreeDraw(){const m=new Map();for(const t of srTree){const k=t.ws_id+"|"+t.gid;if(!m.has(k))m.set(k,{c:t.company,g:t.grp,gid:t.gid,r:[]});m.get(k).r.push(t)}
+ const multi=new Set(srTree.map(t=>t.ws_id)).size>1;let off=0;
+ $("#srtree").innerHTML=[...m.values()].map(g=>{const gx=srEG.has(String(g.gid));return `<div><label style="font-weight:700;display:flex;gap:6px;align-items:center"><input type="checkbox" data-xg="${g.gid}" ${gx?"":"checked"}> ${esc(g.g)}${multi?` <small style="color:var(--mut);font-weight:400">${esc(g.c)}</small>`:""} <small style="color:var(--mut);font-weight:400">${g.r.length}</small></label>`+g.r.map(t=>{const x=gx||srET.has(String(t.id));if(x)off++;return `<label style="display:flex;gap:6px;align-items:center;padding-left:22px;${gx?"opacity:.5":""}"><input type="checkbox" data-xt="${t.id}" ${gx?"disabled":""} ${x?"":"checked"}> <span>${esc((t.order_no?t.order_no+" · ":"")+t.title)}</span> <small style="color:var(--mut)">${SRL[t.sec]}</small></label>`}).join("")+`</div>`}).join("")||"<small>No tasks in this report right now.</small>";
+ $("#srtc").textContent=off?"("+off+" left out)":""}
+async function srPrev(){$("#srprev").innerHTML="<p>Loading…</p>";try{const r=await api("sr_preview",{ws:srWs(),exg:[...srEG],ext:[...srET]});srTree=r.tree||[];srTreeDraw();$("#srprev").innerHTML=r.html;$("#srpn").textContent=r.n[0]+" completed · "+r.n[1]+" ongoing · "+r.n[2]+" starting soon"}catch(e){$("#srprev").innerHTML="";alert(e.message)}}
 async function srLoad(keep){try{const r=await api("sr_list",{});srItems=r.items;srCo=r.companies;srUs=r.users||[];if(keep===undefined)keep=srItems[0]?srItems[0].id:0;srList();srForm(keep)}catch(e){alert(e.message)}}
 $("#srt").innerHTML=Array.from({length:48},(_,i)=>`<option value="${i*30}">${srTm(i*30)}</option>`).join("");
 $("#srm").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#srdg").showModal();srLoad()};
 $("#srx").onclick=()=>$("#srdg").close();$("#srpr").onclick=srPrev;
 $("#srl").addEventListener("click",e=>{const c=e.target.closest("[data-sr]");if(c)srForm(+c.dataset.sr)});
 $("#srw").addEventListener("change",srPrev);
+$("#srtree").addEventListener("change",e=>{const c=e.target;if(c.dataset.xg){c.checked?srEG.delete(c.dataset.xg):srEG.add(c.dataset.xg)}else if(c.dataset.xt){c.checked?srET.delete(c.dataset.xt):srET.add(c.dataset.xt)}else return;srPrev()});
+$("#srta").onclick=()=>{srEG.clear();srET.clear();srPrev()};
 $("#sru").addEventListener("change",e=>{const c=e.target.closest("[data-u]");if(!c)return;const m=c.dataset.u;let l=srEm().filter(x=>x!==m);if(c.checked)l.push(m);$("#sre").value=l.join("\n")});
 $("#sre").addEventListener("input",srUsDraw);
-$("#srsv").onclick=async()=>{try{await api("sr_save",{id:srCur,name:$("#srn").value,ws:srWs(),emails:$("#sre").value,dow:+$("#srd").value,hhmm:+$("#srt").value,active:$("#sra").checked?1:0});const r=await api("sr_list",{});srItems=r.items;const last=srCur||Math.max(...srItems.map(i=>+i.id));srCur=last;srList();srForm(last)}catch(e){alert(e.message)}};
+$("#srsv").onclick=async()=>{try{await api("sr_save",{id:srCur,exg:[...srEG],ext:[...srET],name:$("#srn").value,ws:srWs(),emails:$("#sre").value,dow:+$("#srd").value,hhmm:+$("#srt").value,active:$("#sra").checked?1:0});const r=await api("sr_list",{});srItems=r.items;const last=srCur||Math.max(...srItems.map(i=>+i.id));srCur=last;srList();srForm(last)}catch(e){alert(e.message)}};
 $("#srdel").onclick=async()=>{if(!confirm("Delete this weekly email?"))return;try{await api("sr_del",{id:srCur});await srLoad(0)}catch(e){alert(e.message)}};
 $("#srsn").onclick=async()=>{if(!confirm("Send the report now to every guest listed? Save your changes first."))return;const b=$("#srsn");b.disabled=true;try{const r=await api("sr_send",{id:srCur});alert("Sent to "+r.sent+" address(es)."+(r.err?"\n"+r.err:""))}catch(e){alert(e.message)}finally{b.disabled=false}};
 // ---- Admin hours report ----
@@ -2287,7 +2295,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=208;
+const BUILD=209;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
