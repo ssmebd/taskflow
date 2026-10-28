@@ -1,5 +1,5 @@
 <?php
-const BUILD=209;
+const BUILD=210;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -270,7 +270,7 @@ function sr_send($db,$s){
   $host=bk_host();$sent=0;$err='';
   foreach($to as $m){$b='tf'.bin2hex(random_bytes(8));
     $h="From: TaskFlow <reports@$host>\r\nMIME-Version: 1.0\r\nContent-Type: multipart/alternative; boundary=\"$b\"\r\n";
-    $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n$txt\r\n--$b\r\nContent-Type: text/html; charset=utf-8\r\n\r\n$html\r\n--$b--";
+    $body="--$b\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode($txt))."\r\n--$b\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n".chunk_split(base64_encode($html))."\r\n--$b--";
     $subj='=?UTF-8?B?'.base64_encode($title.' - week of '.date('j M',strtotime($d['from']))).'?=';
     if(@mail($m,$subj,$body,$h))$sent++;else $err='The server could not send to '.$m;}
   return ['ok'=>$sent>0,'sent'=>$sent,'err'=>$err];
@@ -931,7 +931,7 @@ case 'sr_save':
   $xg=implode(',',sr_ids($in['exg']??[]));$xt=implode(',',sr_ids($in['ext']??[]));
   if($id){$db->prepare("UPDATE status_reports SET name=?,ws_ids=?,emails=?,dow=?,hhmm=?,active=?,excl_g=?,excl_t=? WHERE id=?")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$id]);}
   else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,excl_g,excl_t,created_at) VALUES(?,?,?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt]);}
-  out(['ok'=>1]);
+  out(['ok'=>1,'id'=>$id?:(int)$db->lastInsertId()]);
 case 'sr_del':
   admin();sr_ddl($db);$db->prepare("DELETE FROM status_reports WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'sr_send':
