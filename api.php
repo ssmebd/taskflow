@@ -1,5 +1,5 @@
 <?php
-const BUILD=223;
+const BUILD=224;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1013,6 +1013,32 @@ case 'hrs_report':
     'users'=>$db->query("SELECT id,name FROM users ORDER BY name")->fetchAll(),
     'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),
     'groups'=>$db->query("SELECT id,ws_id,name FROM task_groups WHERE parent_id IS NULL OR parent_id=0 ORDER BY ws_id,sort_no,name")->fetchAll()]);
+case 'guest_home':
+  // Overview for guests (and an admin test window): status report numbers plus who is working on what, limited to the companies the viewer can see.
+  $as=(int)($in['as']??0);$ids=[];$asName='';
+  if($me['role']==='admin'&&$as>0){$q=$db->prepare("SELECT name FROM users WHERE id=?");$q->execute([$as]);$asName=(string)$q->fetchColumn();$q=$db->prepare("SELECT ws_id FROM ws_users WHERE user_id=?");$q->execute([$as]);$ids=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
+  else $ids=array_map(fn($w)=>(int)$w['id'],$WS);
+  $wn=[];if($ids){$q=$db->query("SELECT id,name,CRC32(COALESCE(logo,'')) AS lv,(logo IS NOT NULL AND logo<>'') AS hl FROM workspaces WHERE id IN(".implode(',',$ids).") ORDER BY sort_no,id");$wn=$q->fetchAll();}
+  $res=['companies'=>$wn,'as'=>$as,'asName'=>$asName,'from'=>'','to'=>'','done'=>[],'going'=>[],'soon'=>[],'people'=>[]];
+  if($me['role']==='admin'){$res['guests']=$db->query("SELECT id,name FROM users WHERE role='guest' ORDER BY name")->fetchAll();}
+  if(!$ids)out($res);
+  $d=sr_data($db,$ids);
+  $keep=['id','ws_id','company','title','order_no','customer','drawing_type','start_date','end_date','sname','person','when'];
+  $strip=function($r)use($keep){$o=[];foreach($keep as $k)$o[$k]=$r[$k]??'';return $o;};
+  foreach(['done','going','soon'] as $k)$res[$k]=array_map($strip,$d[$k]);
+  $res['from']=$d['from'];$res['to']=$d['to'];$res['today']=$d['today'];$res['next']=$d['next'];
+  // who is working on what: every person on an ongoing task (main assignee plus extra assignees)
+  $tid=array_map(fn($r)=>(int)$r['id'],$d['going']);$ppl=[];
+  if($tid){
+    $q=$db->query("SELECT t.id,t.assigned_to AS u FROM tasks t WHERE t.id IN(".implode(',',$tid).") AND t.assigned_to IS NOT NULL AND t.assigned_to>0 UNION SELECT task_id,user_id FROM task_assignees WHERE task_id IN(".implode(',',$tid).")");
+    $by=[];foreach($q->fetchAll() as $r)$by[(int)$r['id']][(int)$r['u']]=1;
+    $un=[];foreach($db->query("SELECT id,name FROM users WHERE role<>'guest'")->fetchAll() as $u)$un[(int)$u['id']]=$u['name'];
+    foreach($d['going'] as $r){$us=array_keys($by[(int)$r['id']]??[]);if(!$us)$us=[0];
+      foreach($us as $u){$nm=$u?($un[$u]??''):'Unassigned';if($nm==='')continue;$ppl[$u]['name']=$nm;$ppl[$u]['tasks'][]=$strip($r);}}
+  }
+  uasort($ppl,fn($a,$b)=>($a['name']==='Unassigned')<=>($b['name']==='Unassigned')?:strcmp($a['name'],$b['name']));
+  $res['people']=array_values($ppl);
+  out($res);
 case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
