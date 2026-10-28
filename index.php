@@ -2269,7 +2269,7 @@ function ghPanel(r,as){
   if(!as||!r.gtree)return"";
   const hide=new Set((r.hide||[]).map(String)),cn={};(r.companies||[]).forEach(w=>cn[w.id]=w.name);
   const by={};r.gtree.forEach(g=>{(by[g.ws_id]=by[g.ws_id]||[]).push(g)});
-  const blocks=Object.keys(by).map(k=>`<div class="gh-gb"><b>${esc(+k?cn[k]||"Company":"Tasks without a group")}</b>${by[k].map(g=>`<label><input type="checkbox" data-ghx="${g.gid}"${hide.has(String(g.gid))?"":" checked"}> ${esc(g.name)}</label>`).join("")}</div>`).join("");
+  const blocks=Object.keys(by).map(k=>`<div class="gh-gb"><b>${esc(+k?cn[k]||"Company":"Tasks without a group")}</b>${by[k].map(g=>`<label><input type="checkbox" data-ghx="${g.gid}"${(hide.has(String(g.gid))||(g.gid<=-1000&&hide.has("-1")))?"":" checked"}> ${esc(g.name)}</label>`).join("")}</div>`).join("");
   return `<details class="gh-gp" open><summary>Groups ${esc(r.asName||"this guest")} can see <small>${hide.size?hide.size+" hidden":"all visible"}</small></summary><div class="gh-gg">${blocks}</div><div class="acts" style="margin:8px 0 0"><button id="ghsv" class="p" style="width:auto;margin:0">Save for ${esc(r.asName||"this guest")}</button><small style="color:var(--mut)">Unticked groups are hidden from this guest's overview. New groups are visible by default.</small></div></details>`}
 document.addEventListener("click",async e=>{if(e.target.id!=="ghsv")return;const as=+$("#ghas").value||0;if(!as)return;const hide=[...document.querySelectorAll("#ghb [data-ghx]")].filter(c=>!c.checked).map(c=>+c.dataset.ghx);
   e.target.disabled=true;try{await api("guest_hide_save",{user_id:as,hide});await ghLoad()}catch(x){alert(x.message)}});
@@ -2386,7 +2386,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=233;
+const BUILD=234;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

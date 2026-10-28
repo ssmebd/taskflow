@@ -1,5 +1,5 @@
 <?php
-const BUILD=233;
+const BUILD=234;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -234,7 +234,7 @@ function sr_data($db,$ws=[],$exg=[],$ext=[]){
     elseif(!preg_match('/hold|cancel/i',$nm)&&$r['start_date']&&$r['start_date']>=$today&&$r['start_date']<=$nx){$sec='soon';}
     if($sec==='')continue;
     $d['tree'][]=['id'=>(int)$r['id'],'ws_id'=>(int)$r['ws_id'],'company'=>$r['company'],'gid'=>sr_gid($r),'grp'=>$r['grp'],'title'=>$r['title'],'order_no'=>$r['order_no'],'sec'=>$sec];
-    if(in_array(sr_gid($r),$exg,true)||in_array((int)$r['id'],$ext,true))continue;
+    if(in_array(sr_gid($r),$exg,true)||(!(int)$r['top_id']&&in_array(-(1000+(int)$r['ws_id']),$exg,true))||in_array((int)$r['id'],$ext,true))continue;
     $d[$sec][]=$r;
   }
   usort($d['done'],fn($a,$b)=>strcmp($b['when'],$a['when']));
@@ -1028,7 +1028,7 @@ case 'guest_home':
   if(!$ids)out($res);
   gh_ddl($db);$hu=$me['role']==='guest'?(int)$me['id']:($as>0?$as:0);$hide=[];
   if($hu){$q=$db->prepare("SELECT gid FROM guest_hide WHERE user_id=?");$q->execute([$hu]);$hide=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
-  if($me['role']==='admin'&&$as>0){$gt=[];$q=$db->query("SELECT g.id,g.ws_id,g.name FROM task_groups g WHERE g.ws_id IN(".implode(',',$ids).") AND (g.parent_id IS NULL OR g.parent_id=0) ORDER BY g.ws_id,g.sort_no,g.id");foreach($q->fetchAll() as $g)$gt[]=['gid'=>(int)$g['id'],'ws_id'=>(int)$g['ws_id'],'name'=>$g['name']];$gt[]=['gid'=>-1,'ws_id'=>0,'name'=>'(No group)'];$res['gtree']=$gt;$res['hide']=$hide;}
+  if($me['role']==='admin'&&$as>0){$gt=[];$q=$db->query("SELECT g.id,g.ws_id,g.name FROM task_groups g WHERE g.ws_id IN(".implode(',',$ids).") AND (g.parent_id IS NULL OR g.parent_id=0) ORDER BY g.ws_id,g.sort_no,g.id");foreach($q->fetchAll() as $g)$gt[]=['gid'=>(int)$g['id'],'ws_id'=>(int)$g['ws_id'],'name'=>$g['name']];foreach($ids as $wi)$gt[]=['gid'=>-(1000+$wi),'ws_id'=>$wi,'name'=>'(No group)'];$res['gtree']=$gt;$res['hide']=$hide;}
   $d=sr_data($db,$ids,$hide);
   $keep=['id','ws_id','company','title','order_no','customer','drawing_type','start_date','end_date','sname','person','when'];
   $strip=function($r)use($keep){$o=[];foreach($keep as $k)$o[$k]=$r[$k]??'';return $o;};
