@@ -2248,7 +2248,7 @@ function ghHtml(r0){
   const np=(r.people||[]).filter(p=>p.tasks.length).length;
   const late=r.going.filter(t=>t.end_date&&t.end_date!=="0000-00-00"&&t.end_date<r.today).length;
   const lg=w=>{const f=(typeof wss!=="undefined"&&wss.find(x=>x.id==w.id))||w;return wlogo(f)};
-  const cards=(r.companies||[]).map(w=>{const g=r.going.filter(t=>t.ws_id==w.id).length,s=r.soon.filter(t=>t.ws_id==w.id).length,d=r.done.filter(t=>t.ws_id==w.id).length;return `<a class="hcc" href="index.php?w=${w.id}"><span class="hcl">${lg(w)}</span><b>${esc(w.name)}</b><small>${g} ongoing${s?` · ${s} starting soon`:""}</small><small>${d} completed this week</small></a>`}).join("")||'<div class="empty">No companies shared with you yet.</div>';
+  const cards=allC.map(w=>{const g=r0.going.filter(t=>t.ws_id==w.id).length,s=r0.soon.filter(t=>t.ws_id==w.id).length,d=r0.done.filter(t=>t.ws_id==w.id).length;return `<a class="hcc"${ghSel==w.id&&allC.length>1?' style="outline:2px solid #38bdf8"':""} href="index.php?w=${w.id}"><span class="hcl">${lg(w)}</span><b>${esc(w.name)}</b><small>${g} ongoing${s?` · ${s} starting soon`:""}</small><small>${d} completed this week</small></a>`}).join("")||'<div class="empty">No companies shared with you yet.</div>';
   const h=new Date().getHours(),greet=h<5?"Working late":h<12?"Good morning":h<17?"Good afternoon":"Good evening",gem=h<5?"\u{1F319}":h<12?"☀️":h<17?"\u{1F324}️":"\u{1F306}";
   const who=r.asName||(typeof me!=="undefined"&&me.name)||"there";
   const wk=fd(r.from)+" – "+fd(r.to);
@@ -2386,7 +2386,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=232;
+const BUILD=233;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
