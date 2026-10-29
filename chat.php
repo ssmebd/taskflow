@@ -10,8 +10,8 @@
 <link rel="icon" type="image/png" href="chat-192.png">
 <link rel="apple-touch-icon" href="chat-192.png">
 <style>
-:root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--col:#f1f5f9;--pri:#0f2a5c;--acc:#38bdf8;--grn:#22c55e;--me:#0f2a5c;--meink:#fff;--them:#fff;--sel:#e8f1ff;--shadow:0 2px 10px rgba(15,42,92,.08)}
-@media(prefers-color-scheme:dark){:root{--bg:#0c0f16;--card:#171b26;--ink:#e8eaf2;--mut:#98a0b5;--line:#272c3b;--col:#1d2230;--pri:#7cb4ff;--me:#1d4694;--meink:#fff;--them:#1f2433;--sel:#1c2540;--shadow:0 2px 10px rgba(0,0,0,.4)}}
+:root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--col:#f1f5f9;--pri:#0f2a5c;--acc:#38bdf8;--grn:#22c55e;--me:#e4e8fb;--meink:#1b1f3a;--them:#f1f1f1;--avbg:#dfe3d6;--avink:#3d4a35;--sel:#e8f1ff;--shadow:0 2px 10px rgba(15,42,92,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0c0f16;--card:#171b26;--ink:#e8eaf2;--mut:#98a0b5;--line:#272c3b;--col:#1d2230;--pri:#7cb4ff;--me:#3a3f8f;--meink:#fff;--them:#262a38;--avbg:#3a4a46;--avink:#d6efe6;--sel:#1c2540;--shadow:0 2px 10px rgba(0,0,0,.4)}}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -50,16 +50,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 .th{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))}
 .th .t{flex:1;min-width:0}.th b{display:block;font-size:16px}.th small{color:var(--mut);font-size:12px}
 .bk{display:none;border:0;background:none;font-size:22px;width:34px;height:34px;color:var(--ink)}
-#msgs{flex:1;overflow:auto;padding:16px 14px 8px;display:flex;flex-direction:column;gap:3px;min-height:0;overscroll-behavior:contain}
-.dy{align-self:center;margin:12px 0 6px;font-size:11.5px;font-weight:700;color:var(--mut);background:var(--card);border:1px solid var(--line);padding:3px 12px;border-radius:999px}
-.row{display:flex;gap:8px;align-items:flex-end;max-width:100%}
-.row.me{justify-content:flex-end}
-.bb{max-width:min(78%,560px);background:var(--them);border:1px solid var(--line);border-radius:16px 16px 16px 5px;padding:8px 12px 6px;box-shadow:var(--shadow);overflow-wrap:anywhere;font-size:15px;line-height:1.4}
-.me .bb{background:var(--me);color:var(--meink);border-color:transparent;border-radius:16px 16px 5px 16px}
-.bb .nm{font-size:12px;font-weight:800;margin-bottom:2px}
+#msgs{background:var(--card);flex:1;overflow:auto;padding:6px 16px 8px;display:flex;flex-direction:column;gap:0;min-height:0;overscroll-behavior:contain}
+.hd{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--mut);margin:14px 0 3px}.hd b{font-weight:400}
+.g{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:8px;align-items:start;max-width:100%}
+.g.me{display:block}
+.gav{width:34px;height:34px;border-radius:50%;background:var(--avbg);color:var(--avink);display:grid;place-items:center;font-size:12px;font-weight:600;margin-top:2px}
+.gc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}.g.me .gc{align-items:flex-end}
+.g.me .hd{justify-content:flex-end}
+.bb{max-width:min(70%,640px);background:var(--them);color:var(--ink);border-radius:4px;padding:8px 12px;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
+.me .bb{background:var(--me);color:var(--meink)}
 .bb .tx{white-space:pre-wrap}.bb a{color:inherit;text-decoration:underline}
-.bb .mt{display:flex;justify-content:flex-end;gap:5px;font-size:11px;opacity:.7;margin-top:3px}
-.bb .mt .sn{color:#7ee0a0;opacity:1;font-weight:700}.me .bb .mt .sn{color:#86efac}
+.bb .ex{margin-top:4px;font-size:11px;opacity:.65}
+.sn{font-size:11px;color:var(--mut);margin:1px 2px 0 0;align-self:flex-end}
 .im{display:block;max-width:100%;max-height:300px;border-radius:10px;margin:2px 0 4px;cursor:zoom-in;object-fit:cover}
 .fl{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(127,127,127,.14);border-radius:10px;text-decoration:none!important;margin:3px 0}
 .fl i{font-style:normal;font-size:22px}.fl span{display:block;font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}.fl small{opacity:.7;font-size:11.5px}
@@ -153,7 +155,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=246;
+const BUILD=247;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -209,16 +211,28 @@ async function open_(id){
   $("#tav").outerHTML=avHtml(cur.name,cur.team,true).replace('class="av sm"','class="av sm" id="tav"');
   $("#tn").textContent=cur.name;$("#ts").textContent=cur.team?"Everyone at GURUCADD":(cur.role==="guest"?"Guest":"Team member");
   pending=[];renderPend();renderList();await pull(true);$("#tx").focus()}
-function bubble(m,showName){
+function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
+  if(n-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"short"})+" "+t;return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+" "+t}
+function bubble(m){
   const b=body(m.body);
   const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
-  const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<span title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</span>`:"";
-  const sn=(m.mine&&!cur.team&&m.id<=peerSeen)?'<span class="sn">✓✓ Seen</span>':(m.mine&&!cur.team?"<span>✓</span>":"");
-  return `<div class="row${m.mine?" me":""}" data-m="${m.id}"><div class="bb">${showName&&!m.mine?`<div class="nm" style="color:${col(m.name)}">${esc(m.name)}</div>`:""}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}<div class="mt">${exp}<span>${esc(hm(D(m.created_at)))}</span>${sn}</div></div></div>`}
+  const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<div class="ex" title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</div>`:"";
+  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${exp}</div>`}
 function paint(all){
-  const el=$("#msgs");let last=null,h="";
-  for(const m of all){const d=D(m.created_at);if(!last||!sameDay(d,last))h+=`<div class="dy">${esc(dayLabel(d))}</div>`;last=d;h+=bubble(m,cur.team)}
+  const el=$("#msgs");let h="",prev=null,open="";
+  let openMine=false;const close=()=>{if(open){h+=open+(openMine?"</div></div>":"</div></div></div>");open=""}};
+  let lastMine=0;all.forEach(m=>{if(m.mine)lastMine=m.id});
+  for(const m of all){
+    const d=D(m.created_at),same=prev&&prev.mine===m.mine&&(m.mine||prev.from_id===m.from_id)&&(d-D(prev.created_at))<5*60000&&sameDay(d,D(prev.created_at));
+    if(!same){close();
+      const hd=`<div class="hd">${m.mine?"":`<b style="font-weight:600;color:var(--ink)">${esc(m.name)}</b>`}<span>${esc(hdrTime(d))}</span></div>`;
+      openMine=!!m.mine;
+      open=m.mine?`<div class="g me">${hd}<div class="gc">`:`<div class="g"><div class="gav">${esc(ini(m.name))}</div><div>${hd}<div class="gc">`}
+    open+=bubble(m);
+    if(m.mine&&!cur.team&&m.id===lastMine)open+=`<div class="sn">${m.id<=peerSeen?"✓✓ Seen":"✓ Sent"}</div>`;
+    prev=m}
+  close();
   const near=el.scrollHeight-el.scrollTop-el.clientHeight<140;
   el.innerHTML=h||'<div class="empty">No messages yet. Say hello 👋</div>';
   return near}
