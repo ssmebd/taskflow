@@ -1,5 +1,5 @@
 <?php
-const BUILD=239;
+const BUILD=240;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -282,16 +282,16 @@ function sr_html($d,$title='Task status report',$as=null){
   $av=function($n)use($e,$pal){$n=trim((string)$n);if($n==='')return '<span style="color:#94a3b8">Unassigned</span>';$w=preg_split('/\s+/',$n);$in=strtoupper(mb_substr($w[0],0,1).(isset($w[1])?mb_substr($w[count($w)-1],0,1):''));$c=$pal[crc32($n)%count($pal)];
     return '<table role="presentation" cellspacing="0" cellpadding="0"><tr><td width="22" height="22" bgcolor="'.$c.'" align="center" valign="middle" style="font-family:Arial,sans-serif;width:22px;height:22px;background:'.$c.';color:#ffffff;font-size:10px;font-weight:700;border-radius:11px;text-align:center;white-space:nowrap">'.$e($in).'</td><td width="6">&nbsp;</td><td valign="middle" style="font-family:Arial,sans-serif;font-size:12px;color:#334155;white-space:nowrap">'.$e($n).'</td></tr></table>';};
   $multi=count(array_unique(array_map(fn($r)=>$r['company'],array_merge($d['done'],$d['going'],$d['soon']))))>1;
-  $logos='';foreach($as['co'] as $c)$logos.='<img src="'.$e($c[0]).'" alt="'.$e($c[1]).'" height="38" style="height:38px;max-width:150px;display:inline-block;vertical-align:middle;margin-left:10px;border:0">';
+  $logos='';foreach($as['co'] as $c)$logos.='<img src="'.$e($c[0]).'" alt="'.$e($c[1]).'" height="58" style="height:58px;max-width:230px;display:inline-block;vertical-align:middle;margin-right:14px;border:0">';
   if($logos==='')$logos='<span style="'.$F.'font-size:14px;font-weight:700;color:#0f2a5c">'.$e(implode('  ·  ',array_slice($as['names'],0,3))).(count($as['names'])>3?' +'.(count($as['names'])-3):'').'</span>';
-  $tfimg=$as['tf']?'<img src="'.$e($as['tf']).'" alt="TaskFlow" width="46" height="46" style="width:46px;height:46px;border-radius:11px;display:block;border:0">':'';
+  $tfimg=$as['tf']?'<img src="'.$e($as['tf']).'" alt="TaskFlow" width="34" height="34" style="width:34px;height:34px;border-radius:9px;display:block;border:0">':'';
   $o='<div style="margin:0;padding:0;background:#eef2f7"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7">'.$nd.' completed, '.$ng.' ongoing, '.$ns.' starting in the next 3 days.</div>';
   $o.='<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f7"><tr><td align="center" style="padding:22px 10px">';
   $o.='<table role="presentation" width="680" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(15,42,92,.12)">';
   // header
   $o.='<tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;padding:20px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
-    .'<td width="56" valign="middle">'.$tfimg.'</td><td valign="middle" style="'.$F.'padding-left:'.($tfimg?'12':'0').'px"><div style="font-size:23px;font-weight:800;color:#ffffff;letter-spacing:.2px">TaskFlow</div><div style="font-size:10px;letter-spacing:1.6px;color:#93c5fd;font-weight:700">POWERED BY GURUCADD</div></td>'
-    .'<td align="right" valign="middle">'.(!empty($as['white'])?'<span style="display:inline-block;line-height:0">'.$logos.'</span>':'<span style="display:inline-block;background:#ffffff;border-radius:10px;padding:8px 12px;line-height:0">'.$logos.'</span>').'</td></tr></table></td></tr>';
+    .'<td align="left" valign="middle">'.(!empty($as['white'])?'<span style="display:inline-block;line-height:0">'.$logos.'</span>':'<span style="display:inline-block;background:#ffffff;border-radius:10px;padding:8px 12px;line-height:0">'.$logos.'</span>').'</td>'
+    .'<td align="right" valign="middle"><table role="presentation" cellspacing="0" cellpadding="0" align="right"><tr><td valign="middle" align="right" style="'.$F.'padding-right:10px"><div style="font-size:16px;font-weight:800;color:#ffffff;letter-spacing:.2px;white-space:nowrap">TaskFlow</div><div style="font-size:8px;letter-spacing:1.4px;color:#93c5fd;font-weight:700;white-space:nowrap">POWERED BY GURUCADD</div></td><td width="34" valign="middle">'.$tfimg.'</td></tr></table></td></tr></table></td></tr>';
   $o.='<tr><td style="font-size:0;line-height:0;height:4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td width="34%" height="4" bgcolor="#e2e8f0" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#38bdf8" style="height:4px;line-height:4px;font-size:0">&nbsp;</td><td width="33%" height="4" bgcolor="#22c55e" style="height:4px;line-height:4px;font-size:0">&nbsp;</td></tr></table></td></tr>';
   // title
   $o.='<tr><td style="'.$F.'padding:24px 26px 6px"><div style="font-size:11px;letter-spacing:1.4px;color:#64748b;font-weight:700">WEEKLY PROGRESS REPORT</div><div style="font-size:25px;font-weight:800;color:#0f172a;margin-top:4px">'.$e($title).'</div><div style="font-size:13px;color:#475569;margin-top:6px">Week of <b>'.$e($fd($d['from'])).'</b> to <b>'.$e($fd($d['to'])).'</b> &nbsp;·&nbsp; prepared '.$e($fd($d['today'])).'</div></td></tr>';
