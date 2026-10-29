@@ -39,6 +39,21 @@ function create() {
   win.on('focus', () => win.flashFrame(false));
 }
 
+// Downloads go straight to the Downloads folder, then the chat offers "Open file" / "Show in folder".
+const nodePath = require('path'), nodeFs = require('fs');
+function uniqueDl(name) {
+  const dir = app.getPath('downloads'); const ext = nodePath.extname(name), base = nodePath.basename(name, ext).replace(/[<>:"/\\|?*]+/g, '_') || 'file';
+  let p = nodePath.join(dir, base + ext), i = 1; while (nodeFs.existsSync(p)) p = nodePath.join(dir, base + ' (' + (i++) + ')' + ext); return p;
+}
+let lastDl = '';
+app.whenReady().then(() => {
+  session.defaultSession.on('will-download', (e, item) => {
+    const p = uniqueDl(item.getFilename() || 'file'); item.setSavePath(p);
+    item.once('done', (ev, state) => { if (state === 'completed') { lastDl = p; if (win && !win.isDestroyed()) win.webContents.send('dl-done', { path: p, name: nodePath.basename(p) }); } });
+  });
+});
+ipcMain.on('dl-open', (e, p) => { if (p && p === lastDl) shell.openPath(p); });
+ipcMain.on('dl-folder', (e, p) => { if (p && p === lastDl) shell.showItemInFolder(p); });
 ipcMain.on('badge', (e, n) => {
   if (!win || win.isDestroyed()) return;
   const name = n <= 0 ? null : n > 9 ? 'plus' : String(n);

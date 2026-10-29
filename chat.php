@@ -86,7 +86,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pc button{position:absolute;right:3px;top:3px;border:0;background:none;color:var(--mut);font-size:15px;line-height:1}
 .cr{display:flex;gap:6px;align-items:flex-end}
 .tb{border:0;background:none;width:38px;height:38px;border-radius:10px;font-size:19px;color:var(--mut);flex:none}.tb:hover{background:var(--col);color:var(--ink)}
-#tx{flex:1;resize:none;max-height:140px;min-height:40px;padding:9px 13px;border:1px solid var(--line);border-radius:20px;background:var(--col);color:var(--ink);font:inherit;font-size:15px;outline:0;line-height:1.35}
+#rtx{flex:1;min-width:0;max-height:45vh;overflow:auto;padding:9px 13px;border:1px solid var(--acc);border-radius:16px;background:var(--col);color:var(--ink);font-size:15px;outline:0;line-height:1.4;overflow-wrap:anywhere}#rtx img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:6px 0}#rtx table,.rich table{border-collapse:collapse;margin:4px 0;max-width:100%}#rtx td,#rtx th,.rich td,.rich th{border:1px solid rgba(127,127,127,.4);padding:3px 6px;vertical-align:top}#rtx p,.rich p{margin:0 0 6px}#rtx ul,#rtx ol,.rich ul,.rich ol{margin:4px 0;padding-left:22px}
+.bb .tx.rich{white-space:normal}.rich img.im{max-width:100%;max-height:340px;border-radius:8px;display:block;margin:6px 0;cursor:zoom-in}#dlbar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;display:flex;gap:8px;align-items:center;background:#0f2a5c;color:#fff;padding:10px 14px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35);max-width:94vw;font-size:14px}#dlbar[hidden]{display:none}#dlbar #dlt{max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#dlbar button{border:0;border-radius:9px;padding:6px 11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.16);color:#fff}#dlbar button:hover{background:rgba(255,255,255,.28)}#dlbar #dlo{background:#38bdf8;color:#06223f}
+.sn.seen{color:#38bdf8;font-weight:600}
+#tx{flex:1;resize:none;max-height:45vh;min-height:40px;padding:9px 13px;border:1px solid var(--line);border-radius:20px;background:var(--col);color:var(--ink);font:inherit;font-size:15px;outline:0;line-height:1.35}
 #tx:focus{border-color:var(--acc)}
 #snd{border:0;width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#38bdf8,#22c55e);color:#062a4a;font-size:18px;font-weight:900;flex:none;display:grid;place-items:center}
 #snd:disabled{opacity:.45}
@@ -141,7 +144,7 @@ button{font:inherit;color:inherit;cursor:pointer}
      <button class="tb" id="bat" title="Attach photo or file (deleted after 48 hours)">📎</button>
      <button class="tb" id="btk" title="Share a task">📋</button>
      <button class="tb" id="bem" title="Emoji">😊</button>
-     <textarea id="tx" rows="1" placeholder="Write a message" enterkeyhint="send"></textarea>
+     <textarea id="tx" rows="1" placeholder="Write a message" enterkeyhint="send"></textarea><div id="rtx" contenteditable="true" role="textbox" aria-label="Write a message" data-ph="Write a message" hidden></div>
      <button id="snd" title="Send" aria-label="Send">➤</button>
     </div>
     <input type="file" id="fi" multiple hidden>
@@ -150,6 +153,7 @@ button{font:inherit;color:inherit;cursor:pointer}
    <div class="pop" id="emp" hidden><div id="emo"></div></div>
   </section>
   <div id="drop" hidden>Drop to attach</div>
+  <div id="dlbar" hidden><span id="dlt"></span><button type="button" id="dlo">Open file</button><button type="button" id="dlf">Show in folder</button><button type="button" id="dlx" aria-label="Close">✕</button></div>
  </main>
 </div>
 <div id="lb" hidden><div id="lbt"><button class="lbb" id="lbd" type="button">⬇ Download</button><button class="lbb p" id="lba" type="button">✎ Annotate</button><button class="lbb" id="lbx" type="button" aria-label="Close">✕</button></div><img alt=""></div>
@@ -167,10 +171,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=260;
+const BUILD=261;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
+let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
 const PAL=["#2563eb","#0891b2","#16a34a","#d97706","#9333ea","#dc2626","#0d9488","#db2777"];
 const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
 const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();
@@ -222,20 +226,22 @@ async function open_(id){
   $("#msgs").innerHTML="";$("#main").classList.add("open");
   $("#tav").outerHTML=avHtml(cur.name,cur.team,true).replace('class="av sm"','class="av sm" id="tav"');
   $("#tn").textContent=cur.name;$("#ts").textContent=cur.team?"Everyone at GURUCADD":(cur.role==="guest"?"Guest":"Team member");
-  pending=[];renderPend();renderList();await pull(true);$("#tx").focus()}
+  pending=[];setRich(false);renderPend();renderList();await pull(true);$("#tx").focus()}
 const QUICK=["👍","❤️","😆","😮","😢"],MORE=["👍","❤️","😆","😮","😢","🙏","👏","🔥","✅","❌","🎉","💡","👀","😅","🤝","💯"];
 function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
   if(n-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"short"})+" "+t;return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+" "+t}
 function bubble(m){
   if(m.deleted)return `<div class="bb dl" data-m="${m.id}"><i>🚫 This message was deleted</i></div>`;
   const b=body(m.body);
-  const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
+  const inl=new Set();if(m.html)for(const x of m.html.matchAll(/data-fid="(\d+)"/g))inl.add(+x[1]);
+  const rich=m.html?`<div class="tx rich">${m.html.replace(/<img data-fid="(\d+)">/g,(x,id)=>{const f=(m.files||[]).find(q=>q.id==id);if(!f)return "";if(f.gone)return '<span class="gone" style="opacity:.65">🗑 picture removed after 48 hours</span>';return `<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`})}</div>`:"";
+  const fl=(m.files||[]).filter(f=>!inl.has(f.id)).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
   const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<div class="ex" title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</div>`:"";
   const fs=(m.files||[]).filter(f=>!f.gone),hasImg=fs.some(f=>/^image\//.test(f.mime));
-  const bt=`<div class="bt">${QUICK.map(e=>`<button type="button" data-r="${e}" title="React">${e}</button>`).join("")}<button type="button" data-more="1" title="More reactions">☺</button>${fs.length?`<span class="sp"></span><button type="button" data-dlm="1" title="Download${fs.length>1?" all":""}">⬇</button>`:""}${hasImg?`<button type="button" data-anm="1" title="Annotate picture">✎</button>`:""}${m.mine?`<span class="sp"></span><button type="button" data-ed="1" title="Edit message">✏️</button><button type="button" data-del="1" title="Delete message">🗑</button>`:""}</div>`;
+  const bt=`<div class="bt">${QUICK.map(e=>`<button type="button" data-r="${e}" title="React">${e}</button>`).join("")}<button type="button" data-more="1" title="More reactions">☺</button>${fs.length?`<span class="sp"></span><button type="button" data-dlm="1" title="Download${fs.length>1?" all":""}">⬇</button>`:""}${hasImg?`<button type="button" data-anm="1" title="Annotate picture">✎</button>`:""}${m.mine?`<span class="sp"></span>${m.html?"":`<button type="button" data-ed="1" title="Edit message">✏️</button>`}<button type="button" data-del="1" title="Delete message">🗑</button>`:""}</div>`;
   const rx=(m.reacts||[]).length?`<div class="rx" data-m="${m.id}">${m.reacts.map(r=>`<button type="button" class="rp${r.mine?" on":""}" data-r="${esc(r.e)}" title="${esc(r.names.join(", "))}">${esc(r.e)} <b>${r.n}</b></button>`).join("")}</div>`:"";
-  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${bt}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${m.edited?`<div class="ed">(edited)</div>`:""}${exp}</div>${rx}`}
+  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${bt}${fl}${m.html?rich:(b.text?`<div class="tx">${b.text}</div>`:"")}${m.html?"":tk}${m.edited?`<div class="ed">(edited)</div>`:""}${exp}</div>${rx}`}
 function paint(all){
   const el=$("#msgs");let h="",prev=null,open="";
   let openMine=false;const close=()=>{if(open){h+=open+(openMine?"</div></div>":"</div></div></div>");open=""}};
@@ -247,7 +253,7 @@ function paint(all){
       openMine=!!m.mine;
       open=m.mine?`<div class="g me">${hd}<div class="gc">`:`<div class="g"><div class="gav">${esc(ini(m.name))}</div><div>${hd}<div class="gc">`}
     open+=bubble(m);
-    if(m.mine&&!cur.team&&m.id===lastMine)open+=`<div class="sn">${m.id<=peerSeen?"✓✓ Seen":"✓ Sent"}</div>`;
+    if(m.mine&&!cur.team&&m.id===lastMine)open+=`<div class="sn${m.id<=peerSeen?" seen":""}">${m.id<=peerSeen?"✓✓ Seen":m.id<=peerDlv?"✓✓ Delivered":"✓ Sent"}</div>`;
     prev=m}
   close();
   const near=el.scrollHeight-el.scrollTop-el.clientHeight<140;
@@ -256,7 +262,7 @@ function paint(all){
 async function pull(first){
   if(!cur)return;const id=cur.id;
   const r=await api("msg_list",{peer:id,after:first?0:lastId});if(!cur||cur.id!==id)return;
-  const nu=r.messages||[];const seenChanged=!cur.team&&r.peer_seen!==peerSeen;peerSeen=r.peer_seen||0;
+  const nu=r.messages||[];const seenChanged=!cur.team&&(r.peer_seen!==peerSeen||(r.peer_dlv||0)!==peerDlv);peerSeen=r.peer_seen||0;peerDlv=r.peer_dlv||0;
   const rm=r.reacts||{};let rxChanged=false;
   if(first)msgs=nu;else{const have=new Set(msgs.map(m=>m.id));nu.forEach(m=>{if(!have.has(m.id))msgs.push(m)})}
   const chg=r.changes||{};msgs.forEach(m=>{const k=chg[m.id];if(k){if(k.d&&!m.deleted){m.deleted=1;m.body="";m.files=[];m.reacts=[];rxChanged=true}else if(!k.d&&(k.b!==m.body||!m.edited)){m.body=k.b;m.edited=1;rxChanged=true}}});
@@ -283,30 +289,65 @@ async function addFiles(list){
     pending.push({name:f.name||"file",mime:f.type||"application/octet-stream",blob:f,thumb:/^image\//.test(f.type)?URL.createObjectURL(f):""})}
   renderPend()}
 async function send(){
-  if(!cur||sending)return;const tx=$("#tx"),b=tx.value.trim();if(!b&&!pending.length)return;
+  if(!cur||sending)return;const tx=$("#tx");let b=tx.value.trim(),html="",used=[];
+  if(rich){const r=RT();b=r.innerText.replace(/\n{3,}/g,"\n\n").trim();const hasImg=!!r.querySelector("img[data-k]");if(!b&&!hasImg&&!pending.length)return;
+    html=r.innerHTML.replace(/<img\b[^>]*data-k="(\d+)"[^>]*>/g,(x,k)=>{const f=richFiles[+k];if(!f)return "";let i=used.indexOf(f);if(i<0){used.push(f);i=used.length-1}return `<img data-i="${i}">`}).replace(/<img\b(?![^>]*data-i)[^>]*>/g,"");
+    if(used.length+pending.length>6){toast("Up to 6 pictures and files per message");return}}
+  else if(!b&&!pending.length)return;
   sending=true;renderPend();
-  try{const files=[];for(const p of pending)files.push({name:p.name,mime:p.mime,data:await toB64(p.blob)});
-    await api("msg_send",{peer:cur.id,body:b,files});tx.value="";tx.style.height="";pending.forEach(p=>p.thumb&&URL.revokeObjectURL(p.thumb));pending=[];
+  try{const files=[];for(const f of used)files.push({name:f.name,mime:f.type||"image/png",data:await toB64(f)});for(const p of pending)files.push({name:p.name,mime:p.mime,data:await toB64(p.blob)});
+    await api("msg_send",rich?{peer:cur.id,body:b,html,files}:{peer:cur.id,body:b,files});tx.value="";tx.style.height="";setRich(false);pending.forEach(p=>p.thumb&&URL.revokeObjectURL(p.thumb));pending=[];
     sending=false;renderPend();await pull(false);const el=$("#msgs");el.scrollTop=el.scrollHeight;loadList().catch(()=>{})}
   catch(e){sending=false;renderPend();toast(e.message)}}
 /* events */
 $("#snd").onclick=send;
 $("#tx").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&matchMedia("(pointer:fine)").matches){e.preventDefault();send()}});
-$("#tx").addEventListener("input",e=>{const t=e.target;t.style.height="auto";t.style.height=Math.min(140,t.scrollHeight)+"px"});
-/* paste: text and pictures together (Outlook, Word, web pages, screenshots) */
-async function dataImgs(html){const out=[];let n=0;try{const d=new DOMParser().parseFromString(html,"text/html");
-  for(const im of d.querySelectorAll("img")){const s=im.getAttribute("src")||"";if(/^data:image\//i.test(s)||/^blob:/i.test(s)){try{let b;if(/^data:/i.test(s)){const m=s.match(/^data:([^;,]+)?(;base64)?,(.*)$/is);const bin=m[2]?atob(m[3]):decodeURIComponent(m[3]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);b=new Blob([u],{type:m[1]||"image/png"})}else b=await (await fetch(s)).blob();if(b.size>60){n++;out.push(new File([b],"pasted-image-"+n+"."+((b.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:b.type||"image/png"}))}}catch(x){}}}
-  return {files:out,total:d.querySelectorAll("img").length}}catch(x){return {files:out,total:0}}}
-$("#tx").addEventListener("paste",async e=>{const cd=e.clipboardData;if(!cd)return;
-  const fs=[...(cd.files||[])].map((f,i)=>/^image\//.test(f.type)&&(!f.name||/^image\.\w+$/i.test(f.name))?new File([f],"pasted-image-"+(i+1)+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type}):f);
-  const html=cd.getData("text/html")||"",txt=cd.getData("text/plain")||"",tx=$("#tx");
-  const hasImgTag=/<img\b/i.test(html);
-  if(!fs.length&&!hasImgTag)return;            // plain text: normal paste
+$("#tx").addEventListener("input",e=>{const t=e.target;t.style.height="auto";t.style.height=Math.min(Math.round(innerHeight*.45),t.scrollHeight)+"px"});
+/* rich composer: Outlook / Word paste keeps formatting and puts pictures where they were */
+let rich=false,richFiles=[];const RT=()=>$("#rtx");
+function setRich(on){rich=on;$("#tx").hidden=on;RT().hidden=!on;if(!on){RT().innerHTML="";richFiles=[]}}
+function insTxt(t){if(rich){RT().focus();document.execCommand("insertText",false,t)}else{const x=$("#tx"),s=x.selectionStart==null?x.value.length:x.selectionStart,e=x.selectionEnd==null?s:x.selectionEnd;x.value=x.value.slice(0,s)+t+x.value.slice(e);x.focus();x.selectionStart=x.selectionEnd=s+t.length;x.dispatchEvent(new Event("input"))}}
+function srcFile(s,n){try{let b;if(/^data:/i.test(s)){const m=s.match(/^data:([^;,]+)?(;base64)?,(.*)$/is);if(!m)return null;const bin=m[2]?atob(m[3]):decodeURIComponent(m[3]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);b=new Blob([u],{type:m[1]||"image/png"})}else return fetch(s).then(r=>r.blob()).then(b=>b.size>60?new File([b],"pasted-image-"+n+".png",{type:b.type||"image/png"}):null).catch(()=>null);
+  return b.size>60?new File([b],"pasted-image-"+n+"."+((b.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:b.type||"image/png"}):null}catch(x){return null}}
+const RK={p:1,div:1,b:1,strong:1,i:1,em:1,u:1,s:1,strike:1,del:1,ul:1,ol:1,li:1,blockquote:1,pre:1,code:1,span:1,table:1,thead:1,tbody:1,tfoot:1,tr:1,td:1,th:1,sub:1,sup:1};
+async function richBuild(html,fs){
+  const d=new DOMParser().parseFromString(html,"text/html"),imgs=[...d.querySelectorAll("img")],map=new Map(),bad=[];let n=0;
+  for(const im of imgs){const s=im.getAttribute("src")||"";let f=null;if(/^(data:image|blob:)/i.test(s))f=await srcFile(s,++n);if(f)map.set(im,f);else bad.push(im)}
+  let spare=fs.slice();if(map.size)spare=[];if(spare.length&&spare.length===bad.length){bad.forEach((im,i)=>map.set(im,spare[i]));spare=[]}
+  const reg=f=>{if(richFiles.length+used0()>=6)return"";richFiles.push(f);return `<img data-k="${richFiles.length-1}" src="${URL.createObjectURL(f)}">`};
+  const used0=()=>pending.length;
+  const w=(nd,pre)=>{let o="";for(const ch of nd.childNodes){
+    if(ch.nodeType===3){let t=ch.nodeValue;if(!pre)t=t.replace(/[\s ]+/g," ");o+=esc(t);continue}
+    if(ch.nodeType!==1)continue;const t=ch.nodeName.toLowerCase();
+    if(["script","style","head","title","meta","link","object","embed","iframe","svg","xml","form","input","button"].includes(t))continue;
+    if(t==="br"){o+="<br>";continue}if(t==="hr"){o+="<hr>";continue}
+    if(t==="img"){const f=map.get(ch);if(f)o+=reg(f);continue}
+    if(t==="a"){const h=(ch.getAttribute("href")||"").trim(),inn=w(ch,pre);o+=/^(https?:|mailto:)/i.test(h)?`<a href="${esc(h)}" target="_blank" rel="noopener">${inn}</a>`:inn;continue}
+    if(/^h[1-6]$/.test(t)){o+="<p><b>"+w(ch,pre)+"</b></p>";continue}
+    if(RK[t]){let at="";if(t==="td"||t==="th"){const cs=ch.getAttribute("colspan"),rs=ch.getAttribute("rowspan");if(/^\d+$/.test(cs||""))at+=` colspan="${+cs}"`;if(/^\d+$/.test(rs||""))at+=` rowspan="${+rs}"`}o+=`<${t}${at}>${w(ch,pre||t==="pre")}</${t}>`;continue}
+    o+=w(ch,pre)}return o};
+  let out=w(d.body,false);for(const f of spare)out+="<p>"+reg(f)+"</p>";return out}
+const OFFICE=/urn:schemas-microsoft-com|class="?Mso|<o:p>|mso-/i,FORMAT=/<(b|strong|i|em|u|ul|ol|table|h[1-6]|blockquote)\b/i;
+async function onPaste(e){const cd=e.clipboardData;if(!cd)return;
+  const fs=[...(cd.files||[])].filter(f=>/^image\//.test(f.type)).map((f,i)=>new File([f],"pasted-image-"+(i+1)+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type}));
+  const others=[...(cd.files||[])].filter(f=>!/^image\//.test(f.type));
+  const html=cd.getData("text/html")||"",txt=cd.getData("text/plain")||"";
+  const hasImg=/<img\b/i.test(html),useRich=hasImg||/<table\b/i.test(html)||(OFFICE.test(html)&&FORMAT.test(html));
+  if(others.length&&!html){e.preventDefault();addFiles(others);return}
+  if(!useRich&&!fs.length)return;                                  // ordinary text: normal paste
   e.preventDefault();
-  if(txt.trim()){const s=tx.selectionStart,t=tx.selectionEnd;tx.setRangeText(txt.replace(/\r\n/g,"\n").replace(/\n{3,}/g,"\n\n"),s,t,"end");tx.dispatchEvent(new Event("input"))}
-  let files=fs;
-  if(!files.length){const r=await dataImgs(html);files=r.files;if(!files.length&&r.total)toast("Outlook did not pass the picture itself. Copy the picture alone, or take a screenshot (Win+Shift+S) and paste.")}
-  if(files.length)addFiles(files)});
+  if(!useRich){if(txt.trim())insTxt(txt.replace(/\r\n/g,"\n"));addFiles(fs);return}   // image(s) only
+  const frag=html.replace(/^[\s\S]*?<!--StartFragment-->/i,"").replace(/<!--EndFragment-->[\s\S]*$/i,"");
+  const out=await richBuild(frag,fs);
+  if(!out.replace(/<[^>]*>/g,"").trim()&&!/<img/.test(out)){if(txt.trim())insTxt(txt);return}
+  if(!rich){const old=$("#tx").value.trim();setRich(true);RT().innerHTML=(old?"<p>"+esc(old).replace(/\n/g,"<br>")+"</p>":"")+out;
+    const r=document.createRange();r.selectNodeContents(RT());r.collapse(false);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);RT().focus()}
+  else{RT().focus();document.execCommand("insertHTML",false,out)}
+  if(others.length)addFiles(others);
+  if(/<img/.test(frag)&&!/<img data-k/.test(out))toast("Outlook did not pass the pictures. Copy a picture alone, or use Win+Shift+S and paste.")}
+$("#tx").addEventListener("paste",onPaste);RT().addEventListener("paste",onPaste);
+RT().addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&matchMedia("(pointer:fine)").matches){e.preventDefault();send()}});
+RT().addEventListener("input",()=>{const r=RT();if(!r.innerText.trim()&&!r.querySelector("img")){setRich(false);$("#tx").focus()}});
 $("#bat").onclick=()=>$("#fi").click();$("#fi").onchange=e=>{addFiles([...e.target.files]);e.target.value=""};
 $("#pend").onclick=e=>{const b=e.target.closest("[data-rm]");if(!b)return;const p=pending.splice(+b.dataset.rm,1)[0];if(p&&p.thumb)URL.revokeObjectURL(p.thumb);renderPend()};
 $("#list").onclick=e=>{const b=e.target.closest(".cv");if(b)open_(+b.dataset.id)};
@@ -325,7 +366,10 @@ async function download(id,name){
 async function saveBlob(blob,name){
   const C=window.Capacitor,P=C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins;
   if(P&&P.Filesystem&&P.Share){const b64=await toB64(blob);const w=await P.Filesystem.writeFile({path:name,data:b64,directory:"CACHE"});await P.Share.share({title:name,url:w.uri,dialogTitle:"Save or share"});return}
-  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);toast("Saved: "+name)}
+  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);if(!(window.tfNative&&tfNative.onDownload))toast("Saved: "+name)}
+/* desktop app: after a download offer to open the file or its folder */
+if(window.tfNative&&tfNative.onDownload){let dt=0,dp="";tfNative.onDownload(d=>{dp=d.path;$("#dlt").textContent="✓ Saved to Downloads: "+d.name;$("#dlbar").hidden=false;clearTimeout(dt);dt=setTimeout(()=>$("#dlbar").hidden=true,15000)});
+  $("#dlo").onclick=()=>{tfNative.openFile(dp);$("#dlbar").hidden=true};$("#dlf").onclick=()=>{tfNative.showFolder(dp);$("#dlbar").hidden=true};$("#dlx").onclick=()=>$("#dlbar").hidden=true}
 /* annotate a picture, then add it to the message as feedback */
 const A={img:null,name:"",shapes:[],tool:"pen",color:"#ef4444",sz:6,cur:null,W:0,H:0};
 ["#ef4444","#f59e0b","#22c55e","#38bdf8","#ffffff","#111827"].forEach((c,i)=>{const b=document.createElement("button");b.type="button";b.className="sw"+(i?"":" on");b.style.background=c;b.dataset.c=c;$("#annco").appendChild(b)});
@@ -398,13 +442,13 @@ document.addEventListener("click",e=>{if(!e.target.closest("#rpop,[data-more]"))
 /* emoji */
 $("#emo").innerHTML=["😀","😂","🙂","😉","😍","🤝","👍","👎","🙏","👏","🔥","✅","❌","⚠️","❓","🎉","💡","📐","📎","⏰","☕","😅","😢","❤️"].map(e=>`<button type="button">${e}</button>`).join("");
 $("#bem").onclick=e=>{e.stopPropagation();$("#tkp").hidden=true;$("#emp").hidden=!$("#emp").hidden};
-$("#emo").onclick=e=>{const b=e.target.closest("button");if(!b)return;const t=$("#tx"),s=t.selectionStart||t.value.length;t.value=t.value.slice(0,s)+b.textContent+t.value.slice(t.selectionEnd||s);t.focus();t.selectionStart=t.selectionEnd=s+b.textContent.length};
+$("#emo").onclick=e=>{const b=e.target.closest("button");if(!b)return;insTxt(b.textContent)};
 /* share a task */
 let tkT=0;
 async function tkSearch(){const q=$("#tkq").value.trim();try{const r=await api("chat_tasks",{q});$("#tkl").innerHTML=(r.tasks||[]).map(t=>`<button class="it" data-w="${t.ws_id}" data-i="${t.id}" data-t="${esc(t.title)}"><b>${esc(t.order_no?t.order_no+"  ":"")+esc(t.title)}</b><small>${esc(t.company||"")}</small></button>`).join("")||'<div class="empty">No tasks found</div>'}catch(e){$("#tkl").innerHTML='<div class="empty">'+esc(e.message)+"</div>"}}
 $("#btk").onclick=e=>{e.stopPropagation();$("#emp").hidden=true;const p=$("#tkp");p.hidden=!p.hidden;if(!p.hidden){$("#tkq").value="";tkSearch();$("#tkq").focus()}};
 $("#tkq").oninput=()=>{clearTimeout(tkT);tkT=setTimeout(tkSearch,250)};
-$("#tkl").onclick=e=>{const b=e.target.closest(".it");if(!b)return;const t=$("#tx"),tok="[[task:"+b.dataset.w+":"+b.dataset.i+":"+b.dataset.t.replace(/[\]\[:]/g," ").slice(0,90)+"]]";t.value=(t.value?t.value+" ":"")+tok;$("#tkp").hidden=true;t.focus();t.dispatchEvent(new Event("input"))};
+$("#tkl").onclick=e=>{const b=e.target.closest(".it");if(!b)return;const tok="[[task:"+b.dataset.w+":"+b.dataset.i+":"+b.dataset.t.replace(/[\]\[:]/g," ").slice(0,90)+"]]";$("#tkp").hidden=true;insTxt((rich||!$("#tx").value?"":" ")+tok)};
 /* drag and drop */
 let dn=0;const mn=$("#main");
 mn.addEventListener("dragenter",e=>{if(!cur||!e.dataTransfer||![...e.dataTransfer.types].includes("Files"))return;e.preventDefault();dn++;$("#drop").hidden=false});

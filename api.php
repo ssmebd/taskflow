@@ -1,5 +1,5 @@
 <?php
-const BUILD=260;
+const BUILD=261;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -18,6 +18,27 @@ $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add'
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
 // Daily reminders (cron): php api.php remind  -> run every 30 min; sends at ~8am (am) and ~3pm (pm) Dhaka time, once per day each, Mon-Fri.
 // Sends in-app chat messages: log-hours reminder (+ "set a task In Progress" when nothing is ongoing); admins get an alert for people with no assigned task.
+// ---- Chat rich text (Outlook / Word paste): strict whitelist, rebuilt from the DOM ----
+function msg_clean_html($h){$h=mb_substr((string)$h,0,150000);if(trim($h)==='')return '';
+  $d=new DOMDocument();libxml_use_internal_errors(true);$d->loadHTML('<?xml encoding="utf-8"?><div id="r">'.$h.'</div>',LIBXML_HTML_NODEFDTD);libxml_clear_errors();
+  $xp=new DOMXPath($d);$r=$xp->query("//div[@id='r']")->item(0);if(!$r)return '';
+  $ok=['p'=>1,'div'=>1,'b'=>1,'strong'=>1,'i'=>1,'em'=>1,'u'=>1,'s'=>1,'strike'=>1,'del'=>1,'ul'=>1,'ol'=>1,'li'=>1,'blockquote'=>1,'pre'=>1,'code'=>1,'span'=>1,'table'=>1,'thead'=>1,'tbody'=>1,'tfoot'=>1,'tr'=>1,'td'=>1,'th'=>1,'hr'=>1,'sub'=>1,'sup'=>1];
+  $w=function($n,$dep)use(&$w,$ok){if($dep>20)return '';$o='';
+    foreach($n->childNodes as $c){
+      if($c->nodeType===XML_TEXT_NODE){$o.=htmlspecialchars($c->nodeValue,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');continue;}
+      if($c->nodeType!==XML_ELEMENT_NODE)continue;$t=strtolower($c->nodeName);
+      if(in_array($t,['script','style','head','title','meta','link','object','embed','iframe','form','input','button','svg','xml'],true))continue;
+      if($t==='br'){$o.='<br>';continue;}
+      if($t==='hr'){$o.='<hr>';continue;}
+      if($t==='img'){$i=$c->getAttribute('data-i');if($i!==''&&ctype_digit($i))$o.='<img data-i="'.(int)$i.'">';continue;}
+      if($t==='a'){$hr=trim($c->getAttribute('href'));$in=$w($c,$dep+1);if(preg_match('~^(https?://|mailto:)~i',$hr))$o.='<a href="'.htmlspecialchars($hr,ENT_QUOTES,'UTF-8').'" target="_blank" rel="noopener noreferrer">'.$in.'</a>';else $o.=$in;continue;}
+      if(preg_match('/^h[1-6]$/',$t)){$o.='<p><b>'.$w($c,$dep+1).'</b></p>';continue;}
+      if(isset($ok[$t])){$at='';if($t==='td'||$t==='th'){foreach(['colspan','rowspan'] as $k){$v=$c->getAttribute($k);if($v!==''&&ctype_digit($v)&&(int)$v>0&&(int)$v<20)$at.=' '.$k.'="'.(int)$v.'"';}}
+        $o.='<'.$t.$at.'>'.$w($c,$dep+1).'</'.$t.'>';continue;}
+      $o.=$w($c,$dep+1);}
+    return $o;};
+  $out=$w($r,0);$out=preg_replace('~(<br>\s*){4,}~i','<br><br>',$out);$out=preg_replace('~<(p|div|span)>\s*</\1>~i','',$out);
+  return mb_strlen($out)>80000?'':trim($out);}
 // ---- Flow: the assistant's notification centre (bell). Automatic reminders/alerts land here, not in chat. ----
 function notices_ddl($db){static $d=0;if($d)return;$d=1;$db->exec("CREATE TABLE IF NOT EXISTS notices(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,kind VARCHAR(16) NOT NULL DEFAULT 'info',title VARCHAR(160) NOT NULL DEFAULT '',body VARCHAR(1000) NOT NULL DEFAULT '',ws_id INT NOT NULL DEFAULT 0,task_id INT NOT NULL DEFAULT 0,act VARCHAR(12) NOT NULL DEFAULT '',dkey VARCHAR(60) NOT NULL DEFAULT '',created_at DATETIME NOT NULL,read_at DATETIME NULL,KEY u(user_id,read_at,id),KEY d(user_id,dkey)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
 function notices_unread($db){global $me;try{notices_ddl($db);$q=$db->prepare("SELECT COUNT(*) FROM notices WHERE user_id=? AND read_at IS NULL");$q->execute([(int)$me['id']]);return (int)$q->fetchColumn();}catch(Throwable $e){return 0;}}
@@ -429,6 +450,7 @@ function msg_purge($db,$force=false){
     return (int)$n;
   }catch(Throwable $e){return 0;}
 }
+function msg_dlv_mark($db,$u){try{$db->prepare("INSERT INTO msg_dlv(user_id,last_id) SELECT ?,COALESCE(MAX(id),0) FROM messages ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$u]);}catch(Throwable $e){}}
 function msg_reacts($db,$ids,$uid){
   $ids=array_values(array_filter(array_map('intval',$ids)));if(!$ids)return [];
   $by=[];$q=$db->query("SELECT r.msg_id,r.emoji,r.user_id,u.name FROM msg_reacts r LEFT JOIN users u ON u.id=r.user_id WHERE r.msg_id IN(".implode(',',$ids).") ORDER BY r.created_at");
@@ -519,7 +541,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v36']))return;
+  if(!empty($_SESSION['schema_v37']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -576,8 +598,10 @@ function ensure_schema($db){
   foreach(["cat VARCHAR(80) NOT NULL DEFAULT ''","tags VARCHAR(400) NOT NULL DEFAULT ''","src VARCHAR(40) NOT NULL DEFAULT ''"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM wiki_pages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE wiki_pages ADD $cd");}
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_media(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(120) NOT NULL DEFAULT '',mime VARCHAR(40) NOT NULL,data MEDIUMBLOB NOT NULL,created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   foreach(["edited_at DATETIME NULL","deleted TINYINT NOT NULL DEFAULT 0"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM messages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE messages ADD $cd");}
+  if(!$db->query("SHOW COLUMNS FROM messages LIKE 'html'")->fetch())$db->exec("ALTER TABLE messages ADD html MEDIUMTEXT NULL");
+  $db->exec("CREATE TABLE IF NOT EXISTS msg_dlv(user_id INT NOT NULL PRIMARY KEY,last_id INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   notices_ddl($db);
-  $_SESSION['schema_v36']=1;
+  $_SESSION['schema_v37']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -782,7 +806,7 @@ case 'ping':
   }catch(Throwable $e){}
   out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>$msgn,'on'=>$on]);
 case 'msg_users':
-  msg_purge($db);
+  msg_purge($db);msg_dlv_mark($db,$uid);
   $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
   $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
@@ -792,21 +816,24 @@ case 'msg_users':
   out(['build'=>BUILD,'users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
-  if($peer){$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
-  else{$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
+  if($peer){$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,IF(m.deleted=1,NULL,m.html) AS html,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
+  else{$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,IF(m.deleted=1,NULL,m.html) AS html,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
   $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;$m['deleted']=(int)$m['deleted'];$m['edited']=(int)$m['edited'];$m['files']=[];}unset($m);
   if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size,gone FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size'],'gone'=>(int)$f['gone']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
+  msg_dlv_mark($db,$uid);
+  $dlv=0;if($peer){$qd=$db->prepare("SELECT last_id FROM msg_dlv WHERE user_id=?");$qd->execute([$peer]);$dlv=(int)$qd->fetchColumn();}
   $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
   if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
   if($peer){$qi=$db->prepare("SELECT id FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id DESC LIMIT 150");$qi->execute([$uid,$peer,$peer,$uid]);}
   else{$qi=$db->query("SELECT id FROM messages WHERE to_id=0 ORDER BY id DESC LIMIT 150");}
   $ids=$qi->fetchAll(PDO::FETCH_COLUMN);$rc=msg_reacts($db,$ids,$uid);
   $ch=[];if($ids){foreach($db->query("SELECT id,IF(deleted=1,'',body) AS body,deleted,(edited_at IS NOT NULL) AS e FROM messages WHERE id IN(".implode(',',array_map('intval',$ids)).") AND (deleted=1 OR edited_at IS NOT NULL)")->fetchAll() as $r)$ch[(int)$r['id']]=['b'=>$r['body'],'d'=>(int)$r['deleted'],'e'=>(int)$r['e']];}
-  out(['messages'=>$ms,'peer_seen'=>$seen,'reacts'=>(object)$rc,'changes'=>(object)$ch]);
+  out(['messages'=>$ms,'peer_seen'=>$seen,'peer_dlv'=>$dlv,'reacts'=>(object)$rc,'changes'=>(object)$ch]);
 case 'msg_edit':
   $id=(int)($in['id']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);
-  $q=$db->prepare("SELECT id,from_id,deleted FROM messages WHERE id=?");$q->execute([$id]);$m=$q->fetch();
+  $q=$db->prepare("SELECT id,from_id,deleted,html FROM messages WHERE id=?");$q->execute([$id]);$m=$q->fetch();
   if(!$m||(int)$m['from_id']!==$uid||(int)$m['deleted'])out(['error'=>'You can only edit your own messages']);
+  if($m['html']!==null&&$m['html']!=='')out(['error'=>'Formatted messages cannot be edited. Delete and paste again.']);
   $nf=$db->prepare("SELECT COUNT(*) FROM msg_files WHERE msg_id=? AND gone=0");$nf->execute([$id]);
   if($b===''&&!(int)$nf->fetchColumn())out(['error'=>'A message cannot be empty. Use delete instead.']);
   $db->prepare("UPDATE messages SET body=?,edited_at=NOW() WHERE id=?")->execute([$b,$id]);out(['ok'=>1,'body'=>$b]);
@@ -814,7 +841,7 @@ case 'msg_del':
   $id=(int)($in['id']??0);
   $q=$db->prepare("SELECT id,from_id FROM messages WHERE id=?");$q->execute([$id]);$m=$q->fetch();
   if(!$m||(int)$m['from_id']!==$uid)out(['error'=>'You can only delete your own messages']);
-  $db->prepare("UPDATE messages SET deleted=1,body='',edited_at=NULL WHERE id=?")->execute([$id]);
+  $db->prepare("UPDATE messages SET deleted=1,body='',html=NULL,edited_at=NULL WHERE id=?")->execute([$id]);
   try{$db->prepare("DELETE FROM msg_files WHERE msg_id=?")->execute([$id]);$db->prepare("DELETE FROM msg_reacts WHERE msg_id=?")->execute([$id]);}catch(Throwable $e){}
   out(['ok'=>1]);
 case 'msg_react':
@@ -829,12 +856,15 @@ case 'msg_send':
   $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);$fl=is_array($in['files']??null)?array_slice($in['files'],0,6):[];
   if($b===''&&!$fl)out(['error'=>'Write a message first']);
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
-  $raws=[];$tot=0;foreach($fl as $f){$raw=base64_decode((string)($f['data']??''),true);if($raw===false||$raw==='')continue;$tot+=strlen($raw);if(strlen($raw)>6*1048576||$tot>10*1048576)out(['error'=>'Files are too large (max 6 MB each, 10 MB in total)']);
+  $raws=[];$tot=0;foreach($fl as $fx=>$f){$raw=base64_decode((string)($f['data']??''),true);if($raw===false||$raw==='')continue;$tot+=strlen($raw);if(strlen($raw)>6*1048576||$tot>10*1048576)out(['error'=>'Files are too large (max 6 MB each, 10 MB in total)']);
     $mime=(string)($f['mime']??'');$inf=@getimagesizefromstring($raw);if($inf&&in_array($inf['mime'],['image/png','image/jpeg','image/gif','image/webp'],true))$mime=$inf['mime'];elseif(preg_match('/\.(exe|bat|cmd|com|scr|msi|js|vbs|ps1|php|html?|svg)$/i',(string)($f['name']??'')))out(['error'=>'That file type cannot be sent']);
-    $raws[]=[mb_substr(basename((string)($f['name']??'file')),0,150),mb_substr($mime,0,80),$raw];}
-  if($b===''&&!$raws)out(['error'=>'Write a message first']);
+    $raws[]=[mb_substr(basename((string)($f['name']??'file')),0,150),mb_substr($mime,0,80),$raw,$fx];}
+  $html=isset($in['html'])?msg_clean_html($in['html']):'';
+  if($b===''&&!$raws&&$html==='')out(['error'=>'Write a message first']);
   $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
-  foreach($raws as $r)$db->prepare("INSERT INTO msg_files(msg_id,name,mime,size,data) VALUES(?,?,?,?,?)")->execute([$id,$r[0],$r[1],strlen($r[2]),$r[2]]);
+  $fmap=[];foreach($raws as $r){$db->prepare("INSERT INTO msg_files(msg_id,name,mime,size,data) VALUES(?,?,?,?,?)")->execute([$id,$r[0],$r[1],strlen($r[2]),$r[2]]);$fmap[$r[3]]=(int)$db->lastInsertId();}
+  if($html!==''){$html=preg_replace_callback('~<img data-i="(\d+)">~',function($m)use($fmap){return isset($fmap[(int)$m[1]])?'<img data-fid="'.$fmap[(int)$m[1]].'">':'';},$html);
+    $db->prepare("UPDATE messages SET html=? WHERE id=?")->execute([$html,$id]);}
   $pb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',$b);if(trim($pb)==='')$pb="\u{1F4CE} ".($raws[0][0]??'Attachment');
   push_q($peer,$peer?($me['name']??'Message'):'Team chat: '.($me['name']??''),$pb,'chat');
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
