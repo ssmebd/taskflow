@@ -31,21 +31,21 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sr input:focus{border-color:var(--acc)}
 #list{flex:1;overflow:auto;min-height:0}
 #bld{border:0;border-top:1px solid var(--line);background:var(--side);color:var(--mut);font-size:12px;padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));text-align:center;opacity:.85}#bld.new{background:#fff4d6;color:#7a5200;font-weight:700;opacity:1}
-.cv{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:1px 11px;align-items:center;padding:9px 14px;border:0;border-bottom:1px solid transparent;background:none;width:100%;text-align:left}
+.cv{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:1px 11px;align-items:center;padding:9px 14px;border:0;border-bottom:1px solid transparent;background:none;width:100%;text-align:left}
 .cv:hover{background:rgba(127,127,127,.12)}.cv.on{background:var(--card);box-shadow:inset 3px 0 0 var(--acc)}
-.avw{position:relative;grid-row:1/3;flex:none;width:36px;height:36px}.avw.sm{width:34px;height:34px;grid-row:auto}
-.av{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12.5px}
-.av.sm{font-size:12px}
-.stt{position:absolute;right:-3px;bottom:-3px;width:15px;height:15px;border-radius:50%;box-sizing:border-box;border:2px solid var(--side);background:#13a10e;display:grid;place-items:center}.avw.sm .stt{border-color:var(--card)}
-.stt.on:after{content:"";width:3.5px;height:6.5px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translate(-.5px,-.5px)}
+.avw{position:relative;grid-row:1/3;flex:none;width:30px;height:30px}.avw.sm{width:32px;height:32px;grid-row:auto}
+.av{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;color:#3b4540;font-weight:600;font-size:11px;letter-spacing:.2px}
+.avw.sm .av{font-size:11.5px}@media(prefers-color-scheme:dark){.av{color:#e4ebe7}}
+.stt{position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;box-sizing:border-box;border:2px solid var(--side);background:#3f9a56;display:grid;place-items:center}.avw.sm .stt{border-color:var(--card)}
+.stt.on:after{content:"";width:3px;height:5.5px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translate(-.5px,-.5px)}
 .stt.off{background:var(--card);border-color:#9aa3b2}
 .cv.on .stt{border-color:var(--card)}
-.cv b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
+.cv b{font-weight:400;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
 .cv b i{font-style:normal;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--col);color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
 .cv small{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;grid-column:2}
 .cv .tm{font-size:11.5px;color:var(--mut);justify-self:end;align-self:start}
 .cv .ub{grid-column:3;grid-row:2;justify-self:end;background:var(--grn);color:#052e16;font-size:11.5px;font-weight:800;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 6px}
-.cv.un b,.cv.un small{color:var(--ink)}.cv.un small{font-weight:600}.cv.un .tm{color:var(--grn);font-weight:700}
+.cv.un b{font-weight:600}.cv.un b,.cv.un small{color:var(--ink)}.cv.un small{font-weight:600}.cv.un .tm{color:var(--grn);font-weight:700}
 .empty{padding:26px;text-align:center;color:var(--mut);font-size:14px}
 /* main */
 #main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;background:var(--bg)}
@@ -176,12 +176,12 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=265;
+const BUILD=266;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
 const PAL=["#2563eb","#0891b2","#16a34a","#d97706","#9333ea","#dc2626","#0d9488","#db2777"];
-const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
+const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return matchMedia("(prefers-color-scheme:dark)").matches?"hsl("+(h%360)+" 18% 32%)":"hsl("+(h%360)+" 28% 80%)"};
 const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();
 const avHtml=(n,team_,sm,on)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div></div>`:`<div class="avw${sm?" sm":""}"><div class="av" style="background:${col(n)}">${esc(ini(n))}</div><i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
 async function api(a,data){
