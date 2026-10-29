@@ -171,7 +171,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=263;
+const BUILD=264;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -217,7 +217,7 @@ async function loadList(){
   firstLoad=false;badge(tot);renderList()}
 function badge(n){unreadTotal=n;document.title=(n?"("+(n>99?"99+":n)+") ":"")+"TaskFlow Chat";try{if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}try{window.tfNative&&window.tfNative.badge&&window.tfNative.badge(n)}catch(e){}}
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.12)}catch(e){}}
-function notify(c){beep();if(!("Notification" in window)||Notification.permission!=="granted")return;
+function notify(c){if(window.tfNative&&tfNative.notify){try{tfNative.notify(c.id?c.name:"Team chat",c.lb||"New message",c.id)}catch(e){}if(document.hidden||!document.hasFocus())beep();return}beep();if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{const n=new Notification(c.id?c.name:"Team chat",{body:(c.lb||"New message"),icon:"chat-192.png",tag:"c"+c.id});n.onclick=()=>{window.focus();open_(c.id)}}catch(e){}}
 /* thread */
 const byId=id=>id?conv.find(c=>c.id===id):{id:0,name:"Team chat",team:true};
@@ -467,7 +467,7 @@ $("#mnot").onclick=async()=>{if("Notification" in window&&Notification.permissio
 /* polling */
 let busy=false;
 async function tick(){if(busy)return;busy=true;try{await loadList();if(cur)await pull(false)}catch(e){}busy=false}
-setInterval(tick,document.hidden?15000:4000);
+setInterval(tick,window.tfNative?4000:(document.hidden?15000:4000));if(window.tfNative&&tfNative.onOpen)tfNative.onOpen(id=>{try{if(id)open_(id)}catch(e){}});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
 window.addEventListener("focus",tick);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});

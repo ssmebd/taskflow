@@ -1,5 +1,5 @@
 // TaskFlow Chat for Windows: its own window around the live chat page. Stays in the tray so alerts keep coming.
-const { app, BrowserWindow, Menu, shell, Tray, nativeImage, session, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, shell, Tray, nativeImage, session, ipcMain, Notification } = require('electron');
 const path = require('path');
 
 const URL_CHAT = process.env.TASKFLOW_CHAT_URL || 'https://taskflow.gurucadd.com/chat.php';
@@ -20,7 +20,7 @@ function create() {
     width: 1100, height: 760, minWidth: 380, minHeight: 520, show: !startHidden,
     title: 'TaskFlow Chat', backgroundColor: '#0f2a5c', autoHideMenuBar: true,
     icon: path.join(__dirname, 'icon.png'),
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false }
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' }
   });
   win.setMenuBarVisibility(false);
   win.loadURL(URL_CHAT);
@@ -54,6 +54,14 @@ app.whenReady().then(() => {
 });
 ipcMain.on('dl-open', (e, p) => { if (p && p === lastDl) shell.openPath(p); });
 ipcMain.on('dl-folder', (e, p) => { if (p && p === lastDl) shell.showItemInFolder(p); });
+// Windows pop-up for a new message when the chat is minimized, hidden in the tray or behind other windows.
+ipcMain.on('notify', (e, title, body, id) => {
+  if (!win || win.isDestroyed() || (win.isFocused() && win.isVisible() && !win.isMinimized())) return;
+  if (!Notification.isSupported()) return;
+  const n = new Notification({ title: String(title || 'TaskFlow Chat').slice(0, 80), body: String(body || 'New message').slice(0, 200), icon: path.join(__dirname, 'icon.png'), silent: false });
+  n.on('click', () => { show(); win.webContents.send('open-chat', Number(id) || 0); });
+  n.show();
+});
 ipcMain.on('badge', (e, n) => {
   if (!win || win.isDestroyed()) return;
   const name = n <= 0 ? null : n > 9 ? 'plus' : String(n);
