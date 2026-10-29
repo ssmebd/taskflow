@@ -166,7 +166,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=257;
+const BUILD=258;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -408,7 +408,7 @@ window.addEventListener("focus",tick);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* start */
 (async()=>{
-  try{const j=await api("chat_me");ME=j.me;$("#who").textContent=ME.name||""}catch(e){}
+  try{const j=await api("chat_me");ME=j.me;$("#who").textContent=ME.name||""}catch(e){if(/guest/i.test(e.message||"")){document.body.innerHTML='<div style="font:16px system-ui;padding:40px;text-align:center"><h3>Chat is for the GURUCADD team</h3><p>Guest accounts can add messages on tasks in TaskFlow.</p><p><a href="index.php">Back to TaskFlow</a></p></div>';throw e}}
   notLabel();
   if("Notification" in window&&Notification.permission==="default")setTimeout(()=>{try{Notification.requestPermission().then(notLabel)}catch(e){}},3000);
   try{await loadList()}catch(e){$("#list").innerHTML='<div class="empty">'+esc(e.message)+"</div>"}

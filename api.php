@@ -1,5 +1,5 @@
 <?php
-const BUILD=257;
+const BUILD=258;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -452,6 +452,7 @@ if(($_GET['a']??'')==='wiki_img'){
 }
 if(($_GET['a']??'')==='msg_file'){
   $u0=(int)$_SESSION['uid'];
+  try{$gq=$db->prepare("SELECT role FROM users WHERE id=?");$gq->execute([$u0]);if($gq->fetchColumn()==='guest'){http_response_code(403);exit;}}catch(Throwable $e){}
   try{$q=$db->prepare("SELECT f.name,f.mime,f.data,f.gone FROM msg_files f JOIN messages m ON m.id=f.msg_id WHERE f.id=? AND (m.to_id=0 OR m.from_id=? OR m.to_id=?)");$q->execute([(int)($_GET['id']??0),$u0,$u0]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
   if(!$r||!empty($r['gone'])){http_response_code($r?410:404);exit;}
   $img=in_array($r['mime'],['image/png','image/jpeg','image/gif','image/webp'],true);
@@ -463,6 +464,7 @@ $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
+if($me['role']==='guest'&&preg_match('/^(msg_|chat_)/',$a))out(['error'=>'Chat is not available for guest accounts. You can add messages on tasks.']);
 const WORK_H=8.0;
 // Overtime is automatic: all of Saturday/Sunday, and anything beyond 8 hours on a weekday.
 function ot_rebalance($db,$who,$d){
@@ -785,7 +787,7 @@ case 'msg_users':
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
   $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
   foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
-  $us=[];foreach($db->query("SELECT id,name,role FROM users ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
+  $us=[];foreach($db->query("SELECT id,name,role FROM users WHERE role<>'guest' ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
   out(['build'=>BUILD,'users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
