@@ -1,5 +1,5 @@
 <?php
-const BUILD=245;
+const BUILD=246;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -768,7 +768,7 @@ case 'msg_users':
   $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
   foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
   $us=[];foreach($db->query("SELECT id,name,role FROM users ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
-  out(['users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
+  out(['build'=>BUILD,'users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
   if($peer){$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}

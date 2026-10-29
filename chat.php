@@ -30,6 +30,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .sr input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:12px;background:var(--col) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") 11px center no-repeat;color:var(--ink);font:inherit;font-size:14px;outline:0}
 .sr input:focus{border-color:var(--acc)}
 #list{flex:1;overflow:auto;min-height:0}
+#bld{border:0;border-top:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));text-align:center;opacity:.85}#bld.new{background:#fff4d6;color:#7a5200;font-weight:700;opacity:1}
 .cv{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left}
 .cv:hover{background:var(--col)}.cv.on{background:var(--sel)}
 .av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;grid-row:1/3;flex:none}
@@ -114,6 +115,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   </div>
   <div class="sr"><input id="q" type="search" placeholder="Search people" autocomplete="off"></div>
   <div id="list"><div class="empty">Loading…</div></div>
+  <button id="bld" type="button" title="Version of this app. Tap to reload and get the newest version.">Build</button>
  </aside>
  <main id="main">
   <div id="ph"><div><img src="chat-512.png" alt=""><h2>TaskFlow Chat</h2><div>Pick a person or the team chat to start.</div></div></div>
@@ -151,6 +153,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
+const BUILD=246;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -177,6 +180,8 @@ function body(b){
   h=esc(rest).replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
   return {text:h,tasks}}
 /* sidebar */
+function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.classList.add("new")}else{e.textContent="TaskFlow Chat · Build "+BUILD;e.classList.remove("new")}}
+$("#bld").onclick=()=>location.reload();chkBuild(0);
 function renderList(){
   const q=$("#q").value.trim().toLowerCase();
   const rows=[{id:0,name:"Team chat",team:true,...team}].concat(conv);
@@ -184,7 +189,7 @@ function renderList(){
   const f=rows.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.team&&"team chat everyone".includes(q)));
   $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
 async function loadList(){
-  const r=await api("msg_users");conv=r.users||[];team=r.team||{};
+  const r=await api("msg_users");conv=r.users||[];team=r.team||{};chkBuild(r.build);
   const tot=conv.reduce((a,c)=>a+c.n,0)+(team.n||0);
   // alerts for new messages in conversations that are not open
   const all=[{id:0,name:"Team chat",...team}].concat(conv);
