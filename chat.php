@@ -171,7 +171,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=261;
+const BUILD=262;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -460,7 +460,7 @@ function notState(){return !("Notification" in window)?"not supported":Notificat
 function notLabel(){$("#mnot").textContent="🔔 Notifications: "+notState()}
 $("#mnot").onclick=async()=>{if("Notification" in window&&Notification.permission==="default"){try{await Notification.requestPermission()}catch(e){}}else if(Notification.permission==="denied")toast("Notifications are blocked. Allow them in the browser or app settings.");notLabel();$("#menu").hidden=true};
 /* phone push (Android app) */
-(()=>{try{const C=window.Capacitor;if(!C||!C.isNativePlatform||!C.isNativePlatform())return;const PN=C.Plugins&&C.Plugins.PushNotifications;if(!PN)return;
+(()=>{try{const C=window.Capacitor;if(!C||!C.isNativePlatform||!C.isNativePlatform()||!/TFPush/.test(navigator.userAgent))return;const PN=C.Plugins&&C.Plugins.PushNotifications;if(!PN)return;
  PN.addListener("registration",t=>{try{api("push_reg",{token:t.value,app:"chat"}).catch(()=>{})}catch(e){}});
  PN.addListener("pushNotificationActionPerformed",()=>{try{loadList()}catch(e){}});
  setTimeout(()=>{PN.checkPermissions().then(r=>r.receive==="granted"?r:PN.requestPermissions()).then(r=>{if(r.receive==="granted")PN.register()}).catch(()=>{})},2000)}catch(e){}})();
