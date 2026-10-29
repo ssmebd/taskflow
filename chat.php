@@ -166,7 +166,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=258;
+const BUILD=259;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -290,7 +290,20 @@ async function send(){
 $("#snd").onclick=send;
 $("#tx").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&matchMedia("(pointer:fine)").matches){e.preventDefault();send()}});
 $("#tx").addEventListener("input",e=>{const t=e.target;t.style.height="auto";t.style.height=Math.min(140,t.scrollHeight)+"px"});
-$("#tx").addEventListener("paste",e=>{const fs=[...(e.clipboardData&&e.clipboardData.files||[])];if(fs.length){e.preventDefault();addFiles(fs)}});
+/* paste: text and pictures together (Outlook, Word, web pages, screenshots) */
+async function dataImgs(html){const out=[];let n=0;try{const d=new DOMParser().parseFromString(html,"text/html");
+  for(const im of d.querySelectorAll("img")){const s=im.getAttribute("src")||"";if(/^data:image\//i.test(s)||/^blob:/i.test(s)){try{let b;if(/^data:/i.test(s)){const m=s.match(/^data:([^;,]+)?(;base64)?,(.*)$/is);const bin=m[2]?atob(m[3]):decodeURIComponent(m[3]),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);b=new Blob([u],{type:m[1]||"image/png"})}else b=await (await fetch(s)).blob();if(b.size>60){n++;out.push(new File([b],"pasted-image-"+n+"."+((b.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:b.type||"image/png"}))}}catch(x){}}}
+  return {files:out,total:d.querySelectorAll("img").length}}catch(x){return {files:out,total:0}}}
+$("#tx").addEventListener("paste",async e=>{const cd=e.clipboardData;if(!cd)return;
+  const fs=[...(cd.files||[])].map((f,i)=>/^image\//.test(f.type)&&(!f.name||/^image\.\w+$/i.test(f.name))?new File([f],"pasted-image-"+(i+1)+"."+((f.type.split("/")[1]||"png").replace("jpeg","jpg")),{type:f.type}):f);
+  const html=cd.getData("text/html")||"",txt=cd.getData("text/plain")||"",tx=$("#tx");
+  const hasImgTag=/<img\b/i.test(html);
+  if(!fs.length&&!hasImgTag)return;            // plain text: normal paste
+  e.preventDefault();
+  if(txt.trim()){const s=tx.selectionStart,t=tx.selectionEnd;tx.setRangeText(txt.replace(/\r\n/g,"\n").replace(/\n{3,}/g,"\n\n"),s,t,"end");tx.dispatchEvent(new Event("input"))}
+  let files=fs;
+  if(!files.length){const r=await dataImgs(html);files=r.files;if(!files.length&&r.total)toast("Outlook did not pass the picture itself. Copy the picture alone, or take a screenshot (Win+Shift+S) and paste.")}
+  if(files.length)addFiles(files)});
 $("#bat").onclick=()=>$("#fi").click();$("#fi").onchange=e=>{addFiles([...e.target.files]);e.target.value=""};
 $("#pend").onclick=e=>{const b=e.target.closest("[data-rm]");if(!b)return;const p=pending.splice(+b.dataset.rm,1)[0];if(p&&p.thumb)URL.revokeObjectURL(p.thumb);renderPend()};
 $("#list").onclick=e=>{const b=e.target.closest(".cv");if(b)open_(+b.dataset.id)};
