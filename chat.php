@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=268;
+const BUILD=269;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -217,7 +217,7 @@ function renderList(){headStat();
   const rows=[{id:0,name:"Team chat",team:true,...team}].concat(conv);
   rows.sort((a,b)=>{if(a.team)return -1;if(b.team)return 1;const A=a.at||"",B=b.at||"";return A===B?a.name.localeCompare(b.name):(A<B?1:-1)});
   const f=rows.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.team&&"team chat everyone".includes(q)));
-  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team,false,r.online,r.id,r.ph)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
+  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team,false,r.online,r.id,0)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
 async function loadList(){
   const r=await api("msg_users");conv=r.users||[];team=r.team||{};chkBuild(r.build);
   const tot=conv.reduce((a,c)=>a+c.n,0)+(team.n||0);
