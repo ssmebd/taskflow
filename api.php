@@ -1,5 +1,5 @@
 <?php
-const BUILD=266;
+const BUILD=267;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -472,6 +472,11 @@ if(($_GET['a']??'')==='wiki_img'){
   if(!$r){http_response_code(404);exit;}
   header('Content-Type: '.$r['mime']);header('Cache-Control: private, max-age=604800');header('X-Content-Type-Options: nosniff');echo $r['data'];exit;
 }
+if(($_GET['a']??'')==='photo'){
+  try{$q=$db->prepare("SELECT mime,data FROM user_photos WHERE user_id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
+  if(!$r){http_response_code(404);exit;}
+  header('Content-Type: '.$r['mime']);header('X-Content-Type-Options: nosniff');header('Cache-Control: private, max-age=2592000');echo $r['data'];exit;
+}
 if(($_GET['a']??'')==='msg_file'){
   $u0=(int)$_SESSION['uid'];
   try{$gq=$db->prepare("SELECT role FROM users WHERE id=?");$gq->execute([$u0]);if($gq->fetchColumn()==='guest'){http_response_code(403);exit;}}catch(Throwable $e){}
@@ -541,7 +546,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v37']))return;
+  if(!empty($_SESSION['schema_v38']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -600,8 +605,9 @@ function ensure_schema($db){
   foreach(["edited_at DATETIME NULL","deleted TINYINT NOT NULL DEFAULT 0"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM messages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE messages ADD $cd");}
   if(!$db->query("SHOW COLUMNS FROM messages LIKE 'html'")->fetch())$db->exec("ALTER TABLE messages ADD html MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_dlv(user_id INT NOT NULL PRIMARY KEY,last_id INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS user_photos(user_id INT NOT NULL PRIMARY KEY,mime VARCHAR(30) NOT NULL,data MEDIUMBLOB NOT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   notices_ddl($db);
-  $_SESSION['schema_v37']=1;
+  $_SESSION['schema_v38']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -813,7 +819,8 @@ case 'msg_users':
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
   $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.deleted,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
   foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";if((int)$m['deleted'])$bb='Message deleted';$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
-  $us=[];foreach($db->query("SELECT id,name,role FROM users WHERE role<>'guest' ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'online'=>!empty($onl[(int)$u['id']]),'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
+  $phs=[];try{foreach($db->query("SELECT user_id,UNIX_TIMESTAMP(updated_at) AS t FROM user_photos")->fetchAll() as $r)$phs[(int)$r['user_id']]=(int)$r['t'];}catch(Throwable $e){}
+  $us=[];foreach($db->query("SELECT id,name,role FROM users WHERE role<>'guest' ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'online'=>!empty($onl[(int)$u['id']]),'ph'=>$phs[(int)$u['id']]??0,'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
   out(['build'=>BUILD,'users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
@@ -870,7 +877,15 @@ case 'msg_send':
   push_q($peer,$peer?($me['name']??'Message'):'Team chat: '.($me['name']??''),$pb,'chat');
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
 case 'chat_me':
-  out(['me'=>['id'=>$uid,'name'=>$me['name'],'role'=>$me['role']]]);
+  $pq=$db->prepare("SELECT UNIX_TIMESTAMP(updated_at) FROM user_photos WHERE user_id=?");$pq->execute([$uid]);$pv=(int)$pq->fetchColumn();
+  out(['me'=>['id'=>$uid,'name'=>$me['name'],'role'=>$me['role'],'ph'=>$pv]]);
+case 'photo_set':
+  $tu=$uid;if(!empty($in['user'])&&$me['role']==='admin')$tu=(int)$in['user'];
+  if(!empty($in['remove'])){$db->prepare("DELETE FROM user_photos WHERE user_id=?")->execute([$tu]);out(['ok'=>1,'ph'=>0]);}
+  $raw=base64_decode((string)($in['data']??''),true);if($raw===false||$raw===''||strlen($raw)>400000)out(['error'=>'Choose a smaller picture']);
+  $inf=@getimagesizefromstring($raw);if(!$inf||!in_array($inf['mime'],['image/jpeg','image/png','image/webp'],true))out(['error'=>'Use a JPG, PNG or WebP picture']);
+  $db->prepare("INSERT INTO user_photos(user_id,mime,data,updated_at) VALUES(?,?,?,NOW()) ON DUPLICATE KEY UPDATE mime=VALUES(mime),data=VALUES(data),updated_at=NOW()")->execute([$tu,$inf['mime'],$raw]);
+  out(['ok'=>1,'ph'=>time()]);
 case 'chat_tasks':
   $qq=trim((string)($in['q']??''));$ids=array_map(fn($w)=>(int)$w['id'],$WS);if(!$ids)out(['tasks'=>[]]);
   $st=$db->prepare("SELECT t.id,t.ws_id,t.title,t.order_no,w.name AS company FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.ws_id IN(".implode(',',$ids).") AND (?='' OR t.title LIKE ? OR t.order_no LIKE ?) ORDER BY t.updated_at DESC LIMIT 25");$like='%'.str_replace(['%','_'],['\\%','\\_'],$qq).'%';$st->execute([$qq,$like,$like]);

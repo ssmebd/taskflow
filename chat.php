@@ -59,7 +59,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hd{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--mut);margin:14px 0 3px}.hd b{font-weight:400}
 .g{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:8px;align-items:start;max-width:100%}
 .g.me{display:block}
-.gav{width:34px;height:34px;border-radius:50%;background:var(--avbg);color:var(--avink);display:grid;place-items:center;font-size:12px;font-weight:600;margin-top:2px}
+.gav img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}.av{object-fit:cover}
+.gav{width:34px;overflow:hidden;height:34px;border-radius:50%;background:var(--avbg);color:var(--avink);display:grid;place-items:center;font-size:12px;font-weight:600;margin-top:2px}
 .gc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}.g.me .gc{align-items:flex-end}
 .g.me .hd{justify-content:flex-end}
 .bb{max-width:min(82%,840px);background:var(--them);color:var(--ink);border-radius:4px;padding:8px 12px;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
@@ -131,6 +132,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div class="sh"><img src="chat-192.png" alt=""><div class="t"><b>TaskFlow Chat</b><small id="who"></small></div><button class="ib" id="mb" title="Menu" aria-haspopup="true">⋯</button></div>
   <div id="menu" hidden>
    <button id="mnot">🔔 Notifications: …</button>
+   <button id="mph">📷 My profile photo</button><input type="file" id="phf" accept="image/*" hidden>
    <a href="index.php?home=1" target="_blank" rel="noopener">↗ Open TaskFlow</a>
    <a href="login.php?logout=1&next=chat">⎋ Log out</a>
   </div>
@@ -176,14 +178,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=266;
+const BUILD=267;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
 const PAL=["#2563eb","#0891b2","#16a34a","#d97706","#9333ea","#dc2626","#0d9488","#db2777"];
 const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return matchMedia("(prefers-color-scheme:dark)").matches?"hsl("+(h%360)+" 18% 32%)":"hsl("+(h%360)+" 28% 80%)"};
 const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();
-const avHtml=(n,team_,sm,on)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div></div>`:`<div class="avw${sm?" sm":""}"><div class="av" style="background:${col(n)}">${esc(ini(n))}</div><i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
+const phUrl=(id,v)=>"api.php?a=photo&id="+id+"&v="+v;
+const phOf=id=>{if(ME&&ME.id===id)return ME.ph||0;const c=conv.find(x=>x.id===id);return c&&c.ph||0};
+const avHtml=(n,team_,sm,on,id,ph)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div></div>`:`<div class="avw${sm?" sm":""}">${ph?`<img class="av" src="${phUrl(id,ph)}" alt="" onerror="this.outerHTML='<div class=&quot;av&quot; style=&quot;background:#ddd&quot;></div>'">`:`<div class="av" style="background:${col(n)}">${esc(ini(n))}</div>`}<i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
 async function api(a,data){
   const r=await fetch("api.php?a="+a,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{}),credentials:"same-origin"});
   if(r.status===401){location="login.php?next=chat";throw new Error("auth")}
@@ -205,15 +209,15 @@ function body(b){
 /* sidebar */
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.classList.add("new")}else{e.textContent="TaskFlow Chat · Build "+BUILD;e.classList.remove("new")}}
 $("#bld").onclick=()=>location.reload();chkBuild(0);
-function headStat(force){if(!cur)return;const c=cur.team?null:conv.find(x=>x.id===cur.id),on=!!(c&&c.online),k=cur.team+"|"+on+"|"+cur.name;if(!force&&headStat.k===k)return;headStat.k=k;
-  const t=$("#tav");if(t)t.outerHTML=avHtml(cur.name,cur.team,true,on).replace('<div class="avw sm"','<div id="tav" class="avw sm"');
+function headStat(force){if(!cur)return;const c=cur.team?null:conv.find(x=>x.id===cur.id),on=!!(c&&c.online),k=cur.team+"|"+on+"|"+cur.name+"|"+((c&&c.ph)||0);if(!force&&headStat.k===k)return;headStat.k=k;
+  const t=$("#tav");if(t)t.outerHTML=avHtml(cur.name,cur.team,true,on,cur.id,(c&&c.ph)||0).replace('<div class="avw sm"','<div id="tav" class="avw sm"');
   $("#ts").textContent=cur.team?"Everyone at GURUCADD":(on?"Online":"Offline")+(cur.role==="guest"?" · Guest":"")}
 function renderList(){headStat();
   const q=$("#q").value.trim().toLowerCase();
   const rows=[{id:0,name:"Team chat",team:true,...team}].concat(conv);
   rows.sort((a,b)=>{if(a.team)return -1;if(b.team)return 1;const A=a.at||"",B=b.at||"";return A===B?a.name.localeCompare(b.name):(A<B?1:-1)});
   const f=rows.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.team&&"team chat everyone".includes(q)));
-  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team,false,r.online)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
+  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team,false,r.online,r.id,r.ph)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
 async function loadList(){
   const r=await api("msg_users");conv=r.users||[];team=r.team||{};chkBuild(r.build);
   const tot=conv.reduce((a,c)=>a+c.n,0)+(team.n||0);
@@ -259,7 +263,7 @@ function paint(all){
     if(!same){close();
       const hd=`<div class="hd">${m.mine?"":`<b style="font-weight:600;color:var(--ink)">${esc(m.name)}</b>`}<span>${esc(hdrTime(d))}</span></div>`;
       openMine=!!m.mine;
-      open=m.mine?`<div class="g me">${hd}<div class="gc">`:`<div class="g"><div class="gav">${esc(ini(m.name))}</div><div>${hd}<div class="gc">`}
+      open=m.mine?`<div class="g me">${hd}<div class="gc">`:`<div class="g"><div class="gav">${phOf(m.from_id)?`<img src="${phUrl(m.from_id,phOf(m.from_id))}" alt="">`:esc(ini(m.name))}</div><div>${hd}<div class="gc">`}
     open+=bubble(m);
     if(m.mine&&!cur.team&&m.id===lastMine)open+=`<div class="sn${m.id<=peerSeen?" seen":""}">${m.id<=peerSeen?"✓✓ Seen":m.id<=peerDlv?"✓✓ Delivered":"✓ Sent"}</div>`;
     prev=m}
@@ -465,6 +469,9 @@ mn.addEventListener("dragleave",()=>{dn=Math.max(0,dn-1);if(!dn)$("#drop").hidde
 mn.addEventListener("drop",e=>{e.preventDefault();dn=0;$("#drop").hidden=true;if(cur&&e.dataTransfer.files.length)addFiles([...e.dataTransfer.files])});
 /* notifications permission */
 function notState(){return !("Notification" in window)?"not supported":Notification.permission==="granted"?"On":Notification.permission==="denied"?"Blocked in browser":"Off"}
+$("#mph").onclick=()=>{$("#menu").hidden=true;if(ME&&ME.ph&&confirm("Change your photo? Press Cancel to remove it instead."))$("#phf").click();else if(ME&&ME.ph){api("photo_set",{remove:1}).then(()=>{ME.ph=0;loadList().catch(()=>{});toast("Photo removed")}).catch(e=>toast(e.message))}else $("#phf").click()};
+$("#phf").onchange=async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;try{const bmp=await createImageBitmap(f),s=Math.min(bmp.width,bmp.height),c=document.createElement("canvas");c.width=c.height=256;c.getContext("2d").drawImage(bmp,(bmp.width-s)/2,(bmp.height-s)/2,s,s,0,0,256,256);
+  const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.85)),r=await api("photo_set",{data:await toB64(b)});ME.ph=r.ph||1;await loadList();headStat(true);toast("Photo updated")}catch(x){toast(x.message||"Could not use that picture")}};
 function notLabel(){$("#mnot").textContent="🔔 Notifications: "+notState()}
 $("#mnot").onclick=async()=>{if("Notification" in window&&Notification.permission==="default"){try{await Notification.requestPermission()}catch(e){}}else if(Notification.permission==="denied")toast("Notifications are blocked. Allow them in the browser or app settings.");notLabel();$("#menu").hidden=true};
 /* phone push (Android app) */
