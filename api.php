@@ -1,5 +1,5 @@
 <?php
-const BUILD=249;
+const BUILD=250;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -42,11 +42,11 @@ function rem_run($db,$slot='',$force=false){
   $admins=array_values(array_filter($users,fn($u)=>$u['role']==='admin'));
   $sender=function($to)use($users,$admins){foreach($admins as $a)if((int)$a['id']!==(int)$to)return (int)$a['id'];foreach($users as $u)if((int)$u['id']!==(int)$to)return (int)$u['id'];return 0;};
   $prog=[];foreach($db->query("SELECT ws_id,skey,name FROM statuses")->fetchAll() as $r)if($r['skey']==='progress'||preg_match('/progress|ongoing|working/i',(string)$r['name']))$prog[$r['ws_id'].'|'.$r['skey']]=1;
-  $open=$db->query("SELECT t.id,t.ws_id,t.status,t.assigned_to FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.status<>'done'")->fetchAll();
+  $open=$db->query("SELECT t.id,t.ws_id,t.status,t.assigned_to,t.title,t.end_date FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.status<>'done'")->fetchAll();
   $asg=[];foreach($db->query("SELECT task_id,user_id FROM task_assignees")->fetchAll() as $r)$asg[(int)$r['task_id']][]=(int)$r['user_id'];
-  $mine=[];$going=[];$first=[];
+  $mine=[];$going=[];$first=[];$due=[];$late=[];
   foreach($open as $t){$us=$asg[(int)$t['id']]??[];if($t['assigned_to'])$us[]=(int)$t['assigned_to'];
-    foreach(array_unique($us) as $u){if(!isset($first[$u]))$first[$u]=[(int)$t['ws_id'],(int)$t['id']];$mine[$u]=($mine[$u]??0)+1;if(isset($prog[$t['ws_id'].'|'.$t['status']]))$going[$u]=($going[$u]??0)+1;}}
+    foreach(array_unique($us) as $u){if(!isset($first[$u]))$first[$u]=[(int)$t['ws_id'],(int)$t['id']];$mine[$u]=($mine[$u]??0)+1;$ed=(string)($t['end_date']??'');if($ed!==''&&$ed!=='0000-00-00'){if($ed===$today)$due[$u][]=$t;elseif($ed<$today)$late[$u][]=$t;}if(isset($prog[$t['ws_id'].'|'.$t['status']]))$going[$u]=($going[$u]??0)+1;}}
   $prev=$now->modify('-1 day')->format('Y-m-d');$now=new DateTime('now',$tz);
   $lb=$dow===1?date('Y-m-d',strtotime($today.' -3 day')):$prev;
   $hq=$db->prepare("SELECT COALESCE(SUM(hours),0) FROM time_logs WHERE user_id=? AND work_date=?");
@@ -59,6 +59,9 @@ function rem_run($db,$slot='',$force=false){
       notify($db,$id,'hours',"Time to log today's hours 🕒",$fh($hh)."h of 8h logged so far. A minute now saves guessing later.",['act'=>'hours','dkey'=>'pm'.$today]);}
     if(($mine[$id]??0)>0&&empty($going[$id])){$f=$first[$id]??[0,0];
       notify($db,$id,'nudge',"Nothing is In Progress",$mine[$id]." task".($mine[$id]>1?"s are":" is")." assigned to you but none is In Progress. Open one and set it going.",['act'=>'task','ws'=>$f[0],'task'=>$f[1],'dkey'=>'np'.$slot.$today]);}
+    if($slot==='am'){
+      if(!empty($due[$id])){$d=$due[$id];$f=$d[0];notify($db,$id,'nudge',count($d)>1?count($d)." tasks are due today":"Due today: ".$f['title'],count($d)>1?implode("\n",array_map(fn($x)=>"• ".$x['title'],array_slice($d,0,4))):"This one finishes today. Need more time? Adjust the date early so the plan stays honest.",['act'=>'task','ws'=>(int)$f['ws_id'],'task'=>(int)$f['id'],'dkey'=>'due'.$today]);}
+      if(!empty($late[$id])){$d=$late[$id];$f=$d[0];notify($db,$id,'alert',count($d)>1?count($d)." tasks are overdue":"Overdue: ".$f['title'],count($d)>1?implode("\n",array_map(fn($x)=>"• ".$x['title']." (was due ".$x['end_date'].")",array_slice($d,0,4))):"This was due ".$f['end_date'].". Finish it, or move the end date if the plan changed.",['act'=>'task','ws'=>(int)$f['ws_id'],'task'=>(int)$f['id'],'dkey'=>'late'.$today]);}}
     $nUsers++;
     if(!($mine[$id]??0)&&$u['role']!=='admin')$unas[]=$u;}
   foreach($unas as $u)foreach($admins as $a){$aid=(int)$a['id'];if($aid===(int)$u['id'])continue;
