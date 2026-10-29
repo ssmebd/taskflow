@@ -113,7 +113,7 @@ button{font:inherit;color:inherit;cursor:pointer}
    <div id="cmp">
     <div id="pend"></div>
     <div class="cr">
-     <button class="tb" id="bat" title="Attach photo or file">📎</button>
+     <button class="tb" id="bat" title="Attach photo or file (deleted after 48 hours)">📎</button>
      <button class="tb" id="btk" title="Share a task">📋</button>
      <button class="tb" id="bem" title="Emoji">😊</button>
      <textarea id="tx" rows="1" placeholder="Write a message" enterkeyhint="send"></textarea>
@@ -186,10 +186,11 @@ async function open_(id){
   pending=[];renderPend();renderList();await pull(true);$("#tx").focus()}
 function bubble(m,showName){
   const b=body(m.body);
-  const fl=(m.files||[]).map(f=>/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
+  const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
+  const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<span title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</span>`:"";
   const sn=(m.mine&&!cur.team&&m.id<=peerSeen)?'<span class="sn">✓✓ Seen</span>':(m.mine&&!cur.team?"<span>✓</span>":"");
-  return `<div class="row${m.mine?" me":""}" data-m="${m.id}"><div class="bb">${showName&&!m.mine?`<div class="nm" style="color:${col(m.name)}">${esc(m.name)}</div>`:""}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}<div class="mt"><span>${esc(hm(D(m.created_at)))}</span>${sn}</div></div></div>`}
+  return `<div class="row${m.mine?" me":""}" data-m="${m.id}"><div class="bb">${showName&&!m.mine?`<div class="nm" style="color:${col(m.name)}">${esc(m.name)}</div>`:""}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}<div class="mt">${exp}<span>${esc(hm(D(m.created_at)))}</span>${sn}</div></div></div>`}
 function paint(all){
   const el=$("#msgs");let last=null,h="";
   for(const m of all){const d=D(m.created_at);if(!last||!sameDay(d,last))h+=`<div class="dy">${esc(dayLabel(d))}</div>`;last=d;h+=bubble(m,cur.team)}
@@ -208,7 +209,7 @@ async function pull(first){
   if(nu.some(m=>!m.mine)&&!first){loadList().catch(()=>{})}else if(first)loadList().catch(()=>{})}
 /* composer */
 function renderPend(){
-  $("#pend").innerHTML=pending.map((f,i)=>`<div class="pc">${f.thumb?`<img src="${f.thumb}" alt="">`:"<span>📄</span>"}<span>${esc(f.name)}</span><button data-rm="${i}" aria-label="Remove">×</button></div>`).join("");
+  $("#pend").innerHTML=(pending.length?'<div style="flex-basis:100%;font-size:11.5px;color:var(--mut)">Attachments are deleted automatically 48 hours after sending.</div>':"")+pending.map((f,i)=>`<div class="pc">${f.thumb?`<img src="${f.thumb}" alt="">`:"<span>📄</span>"}<span>${esc(f.name)}</span><button data-rm="${i}" aria-label="Remove">×</button></div>`).join("");
   $("#snd").disabled=sending}
 function toB64(blob){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(blob)})}
 async function shrink(file){

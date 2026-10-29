@@ -1,5 +1,5 @@
 <?php
-const BUILD=243;
+const BUILD=244;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -407,6 +407,18 @@ function wl_run($db,$mail=true){
   aud_log($db,0,'system','activity','worklog',$res['ok']?('Worklog '.$res['file'].': '.$res['rows'].' entries'.($res['emailed']?', emailed':'').($res['err']?' - '.$res['err']:'')):'Worklog FAILED: '.$res['err']);
   return $res;
 }
+const MSG_FILE_HOURS=48;
+// Chat attachments are removed after 48 hours to save disk space (the message text stays; the file becomes "expired").
+function msg_purge($db,$force=false){
+  try{
+    $lk=sys_get_temp_dir().'/tf_msgpurge';if(!$force&&is_file($lk)&&time()-filemtime($lk)<600)return 0;@touch($lk);
+    if(!$db->query("SHOW TABLES LIKE 'msg_files'")->fetch())return 0;
+    if(!$db->query("SHOW COLUMNS FROM msg_files LIKE 'gone'")->fetch())$db->exec("ALTER TABLE msg_files ADD gone TINYINT NOT NULL DEFAULT 0");
+    $n=$db->exec("UPDATE msg_files f JOIN messages m ON m.id=f.msg_id SET f.data='',f.gone=1 WHERE f.gone=0 AND m.created_at<DATE_SUB(NOW(),INTERVAL ".MSG_FILE_HOURS." HOUR)");
+    if($n>0){$ol=sys_get_temp_dir().'/tf_msgopt';if(!is_file($ol)||time()-filemtime($ol)>86400){@touch($ol);try{$db->exec("OPTIMIZE TABLE msg_files");}catch(Throwable $e){}}}
+    return (int)$n;
+  }catch(Throwable $e){return 0;}
+}
 function out($d){
   global $a,$db,$WRITEA,$uid,$me,$W,$in,$AUD_T;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -415,7 +427,7 @@ function out($d){
 }
 if(($_GET['a']??'')==='remind'){header('Content-Type: text/plain');
   if(!hash_equals(rem_key(),(string)($_GET['key']??''))){http_response_code(403);exit("bad key\n");}
-  echo rem_run($db,'',false)."\n".sr_run($db)."\n";exit;}
+  echo rem_run($db,'',false)."\n".sr_run($db)."\nChat files expired: ".msg_purge($db,true)."\n";exit;}
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_GET['a']??'')==='wiki_img'){
   try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
@@ -424,8 +436,8 @@ if(($_GET['a']??'')==='wiki_img'){
 }
 if(($_GET['a']??'')==='msg_file'){
   $u0=(int)$_SESSION['uid'];
-  try{$q=$db->prepare("SELECT f.name,f.mime,f.data FROM msg_files f JOIN messages m ON m.id=f.msg_id WHERE f.id=? AND (m.to_id=0 OR m.from_id=? OR m.to_id=?)");$q->execute([(int)($_GET['id']??0),$u0,$u0]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
-  if(!$r){http_response_code(404);exit;}
+  try{$q=$db->prepare("SELECT f.name,f.mime,f.data,f.gone FROM msg_files f JOIN messages m ON m.id=f.msg_id WHERE f.id=? AND (m.to_id=0 OR m.from_id=? OR m.to_id=?)");$q->execute([(int)($_GET['id']??0),$u0,$u0]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
+  if(!$r||!empty($r['gone'])){http_response_code($r?410:404);exit;}
   $img=in_array($r['mime'],['image/png','image/jpeg','image/gif','image/webp'],true);
   header('Content-Type: '.($img?$r['mime']:'application/octet-stream'));header('X-Content-Type-Options: nosniff');header('Cache-Control: private, max-age=604800');
   header('Content-Disposition: '.($img&&empty($_GET['dl'])?'inline':'attachment').'; filename="'.preg_replace('/[^A-Za-z0-9._ -]/','_',$r['name']).'"');echo $r['data'];exit;
@@ -535,6 +547,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM drawing_types LIKE 'color'")->fetch())$db->exec("ALTER TABLE drawing_types ADD color VARCHAR(7) NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_files(id INT AUTO_INCREMENT PRIMARY KEY,msg_id INT NOT NULL,name VARCHAR(160) NOT NULL DEFAULT '',mime VARCHAR(80) NOT NULL DEFAULT '',size INT NOT NULL DEFAULT 0,data MEDIUMBLOB NOT NULL,KEY(msg_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  if(!$db->query("SHOW COLUMNS FROM msg_files LIKE 'gone'")->fetch())$db->exec("ALTER TABLE msg_files ADD gone TINYINT NOT NULL DEFAULT 0");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -748,6 +761,7 @@ case 'ping':
   }catch(Throwable $e){}
   out(['v'=>(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn(),'build'=>BUILD,'msgn'=>$msgn,'on'=>$on]);
 case 'msg_users':
+  msg_purge($db);
   $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
   $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
@@ -760,7 +774,7 @@ case 'msg_list':
   if($peer){$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
   else{$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
   $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;$m['files']=[];}unset($m);
-  if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
+  if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size,gone FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size'],'gone'=>(int)$f['gone']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
   $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
   if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
   out(['messages'=>$ms,'peer_seen'=>$seen]);
