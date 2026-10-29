@@ -113,6 +113,29 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 #thr{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}#thl{max-height:220px;overflow:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
 .msg{border:1px solid var(--line);border-radius:10px;padding:6px 9px;font-size:13px;white-space:pre-wrap;word-break:break-word}.msg.ins{border-color:#f59e0b;background:rgba(245,158,11,.1)}.msg.new{box-shadow:0 0 0 2px #3b82f6}.msg small{display:block;color:var(--mut);font-size:11px}.msg .x{float:right;cursor:pointer;color:var(--mut);border:0;background:none;width:auto;padding:0}
 #bell{position:relative}#bell b{background:#dc2626;color:#fff;border-radius:9px;font-size:11px;padding:1px 6px;margin-left:3px}
+#idlg{width:min(430px,94vw);padding:0;overflow:hidden;display:none;max-height:86vh;border-radius:20px}#idlg[open]{display:flex;flex-direction:column}
+#idlg .fh{display:flex;align-items:center;gap:12px;padding:16px 16px 6px;cursor:move}
+#idlg .fo{width:42px;height:42px;border-radius:50%;background:conic-gradient(from 200deg,#6366f1,#06b6d4,#a855f7,#6366f1);display:grid;place-items:center;box-shadow:0 4px 14px rgba(99,102,241,.45);animation:fspin 9s linear infinite;flex:none}
+#idlg .fo i{width:34px;height:34px;border-radius:50%;background:var(--card);display:block;position:relative}#idlg .fo i:after{content:"✦";position:absolute;inset:0;display:grid;place-items:center;font-style:normal;font-size:17px;color:#6366f1}
+@keyframes fspin{to{transform:rotate(360deg)}}#idlg .fo i{animation:fspin 9s linear infinite reverse}
+#idlg .ft{flex:1;display:flex;flex-direction:column;line-height:1.2}#idlg .ft b{font-size:17px}#idlg .ft small{color:var(--mut);font-size:12px}
+#idlg .fh button{border:0;background:transparent;font-size:16px;color:var(--mut);cursor:pointer}
+#idlg .fg{padding:2px 18px 10px;font-size:14px;color:var(--ink)}
+#idlg .ftabs{display:flex;gap:6px;padding:0 14px 8px;border-bottom:1px solid var(--line)}
+#idlg .ftabs button{flex:1;border:0;border-radius:999px;padding:7px 8px;background:transparent;color:var(--mut);font-weight:600;cursor:pointer}
+#idlg .ftabs button.on{background:rgba(99,102,241,.14);color:#6366f1}#idlg .ftabs b{background:#ef4444;color:#fff;border-radius:99px;font-size:11px;padding:1px 6px;margin-left:4px}
+#idlg #ilist{overflow:auto;padding:6px 12px;flex:1;min-height:120px}
+#idlg .fd{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:12px 4px 4px}
+#idlg .fc{position:relative;display:flex;gap:11px;padding:11px 12px;margin:7px 0;border:1px solid var(--line);border-radius:14px;background:var(--card);animation:fin .35s both}
+#idlg .fc.un{background:linear-gradient(135deg,rgba(99,102,241,.09),rgba(6,182,212,.07));border-color:rgba(99,102,241,.35)}#idlg .fc.un:before{content:"";position:absolute;top:12px;right:12px;width:8px;height:8px;border-radius:50%;background:#6366f1}
+@keyframes fin{from{opacity:0;transform:translateY(8px)}}
+#idlg .fi{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;flex:none}
+#idlg .fb{flex:1;min-width:0;font-size:13px}#idlg .fb b{font-size:14px;display:block;padding-right:14px}#idlg .fb p{margin:3px 0 0;color:var(--mut);white-space:pre-wrap;overflow-wrap:anywhere}
+#idlg .fb small{color:var(--mut);font-size:11px}
+#idlg .fa{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}#idlg .fa button{border:0;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;background:#6366f1;color:#fff}#idlg .fa button.g{background:rgba(127,127,127,.15);color:var(--ink)}
+#idlg .fe{text-align:center;color:var(--mut);padding:34px 10px}#idlg .fe span{font-size:38px;display:block;margin-bottom:6px}
+#idlg>.acts:last-child{margin:0;padding:10px 14px;justify-content:space-between}
+@media(max-width:600px){#idlg{width:100vw;max-width:100vw;max-height:92vh;margin:auto 0 0;border-radius:20px 20px 0 0}}
 .ib{border:1px solid var(--line);border-radius:10px;padding:7px 10px;margin:6px 0;cursor:pointer;font-size:13px}.ib:hover{background:rgba(127,127,127,.1)}
 header{--nv:#0f2a5c;--hfg:#ffffff;background:var(--nv);border-bottom:1px solid color-mix(in srgb,var(--nv) 80%,#000);color:var(--hfg)}
 header h1,header .app,header #who,header a.out,header #live{color:var(--hfg)!important}header .app{opacity:.75}
@@ -575,7 +598,7 @@ header .tfh{width:40px;height:40px;flex:none;margin-right:2px;transition:width .
  <select id="fs"></select><select id="fp"></select><select id="fa"></select>
  <span class="sp"></span>
  <span id="pres" title="Online now"></span><span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button>
- <button id="bell" title="Messages for you">🔔<b id="bn" hidden></b></button>
+ <button id="bell" title="Flow – your notifications">🔔<b id="bn" hidden></b></button>
  <button class="p" id="add">+ New task</button>
 </header>
 <div id="sidetabs"><button id="tbtn" class="stab" style="--pc:#0891b2" title="Tools: containers, converter, wiki"><i>📐</i><span>Tools</span></button><button id="mgb" class="stab" style="--pc:#7c3aed" title="Messages between team members"><i>💬</i><span>Chat</span><b id="mgn" hidden></b></button></div>
@@ -761,7 +784,10 @@ header .tfh{width:40px;height:40px;flex:none;margin-right:2px;transition:width .
  <div class="acts"><button id="pdel" class="danger">Delete</button><span class="sp"></span><button id="pcc2">Cancel</button><button class="p" id="ivsv">Save</button></div>
 </dialog>
 <dialog id="mdlg"><div class="acts mhd"><span class="mic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></span><div class="mti"><b id="mord"></b><div id="mtit" style="overflow:hidden;text-overflow:ellipsis"></div></div><button id="mopen" title="Open the full task">Open task</button><button id="mcl" title="Close">✕</button></div><div id="mbody"></div></dialog>
-<dialog id="idlg"><b>🔔 Messages for you</b><div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><span class="sp"></span><button id="icl">Close</button></div></dialog>
+<dialog id="idlg"><div class="fh"><span class="fo"><i></i></span><div class="ft"><b>Flow</b><small>Your TaskFlow assistant</small></div><button id="icl" title="Close">✕</button></div>
+<div class="fg" id="fgreet"></div>
+<div class="ftabs"><button data-ft="n" class="on">✨ For you <b id="ftn" hidden></b></button><button data-ft="c">💬 Comments <b id="ftc" hidden></b></button></div>
+<div id="ilist"></div><div class="acts"><button id="iall">Mark all read</button><button id="iclr">Clear</button></div></dialog>
 <dialog id="odlg"><b>Overlap rules</b>
  <p style="color:var(--mut);font-size:13px;margin:8px 0">A task is flagged ⚠ when the same person has another open task on overlapping dates, in any company. These rules apply to everyone.</p>
  <label style="display:flex;gap:8px;align-items:flex-start;color:var(--ink)"><input type="checkbox" id="oh"> <span>Allow a hand-over day: a task may start on the same day another one ends</span></label>
@@ -1598,7 +1624,7 @@ async function thrLoad(first){
     if(first){const t=tasks.find(x=>x.id==thrId);if(cmeta[thrId]){cmeta[thrId]=[cmeta[thrId][0],0,0];render()}api("ping").catch(()=>{});inboxRefresh()}
   }catch(e){}
 }
-async function inboxRefresh(){try{const r=await api("inbox");inboxN=r.items.length;bellUpd()}catch(e){}}
+async function inboxRefresh(){try{const r=await api("notices");inboxN=r.unread+r.comments;bellUpd()}catch(e){}}
 async function thrSend(){
   const b=$("#cbody").value.trim();if(!b||!thrId)return;
   try{await api("cm_add",{task_id:thrId,body:b,kind:$("#ckind").value,to_user_id:$("#cto").value||0});$("#cbody").value="";grow($("#cbody"));thrKey="";await thrLoad(true);dirty=true}catch(e){alert(e.message)}
@@ -1609,10 +1635,42 @@ $("#cbody").addEventListener("input",e=>grow(e.target));
 $("#cbody").addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();thrSend()}});
 $("#ckind").onchange=()=>{if($("#ckind").value==="instruction"&&!$("#cto").value&&$("#cto").options.length>1)$("#cto").selectedIndex=1};
 $("#thl").addEventListener("click",async e=>{const id=e.target.closest("[data-cd]")?.dataset.cd;if(!id)return;try{await api("cm_del",{id});thrKey="";thrLoad(true);dirty=true}catch(x){alert(x.message)}});
-$("#bell").onclick=async()=>{try{const r=await api("inbox");$("#ilist").innerHTML=r.items.length?r.items.map(i=>`<div class="ib" data-w="${i.ws_id}" data-t="${i.task_id}"><small style="color:var(--mut)">${esc(i.from_name)}${i.kind==="instruction"?" 📌 instruction":""} · ${esc(i.ws_name)} · ${esc(fmtT(i.created_at))}</small><br><b>${esc(i.title)}</b><br>${esc(i.body.length>140?i.body.slice(0,140)+"…":i.body)}</div>`).join(""):`<p style="color:var(--mut)">Nothing new.</p>`;$("#idlg").showModal()}catch(e){alert(e.message)}};
+const FK={hours:["⏱","#f59e0b"],nudge:["▶️","#3b82f6"],assign:["📌","#8b5cf6"],alert:["🔔","#ef4444"],approval:["✅","#10b981"],info:["✨","#6366f1"]};
+let fTab="n",fData=null;
+const fAgo=s=>{const d=new Date((s||"").replace(" ","T"));if(isNaN(d))return"";const m=Math.round((Date.now()-d)/6e4);return m<1?"just now":m<60?m+" min ago":m<1440?Math.floor(m/60)+" h ago":Math.floor(m/1440)+" d ago"};
+async function fOpen(){try{fData=await api("notices");inboxN=fData.unread+fData.comments;bellUpd();fPaint();const d=$("#idlg");if(!d.open)d.showModal()}catch(e){alert(e.message)}}
+function fPaint(){
+  const r=fData,h=new Date().getHours(),g=h<12?"Good morning":h<17?"Good afternoon":"Good evening",fn=((me&&me.name)||"").split(" ")[0];
+  const tot=r.unread+r.comments;$("#fgreet").innerHTML=`<b>${g}${fn?", "+esc(fn):""}.</b> ${tot?`You have <b>${tot}</b> thing${tot>1?"s":""} waiting.`:"You're all caught up. Nice work. 🎉"}`;
+  $("#ftn").hidden=!r.unread;$("#ftn").textContent=r.unread;$("#ftc").hidden=!r.comments;$("#ftc").textContent=r.comments;
+  document.querySelectorAll("#idlg .ftabs button").forEach(b=>b.classList.toggle("on",b.dataset.ft===fTab));
+  $("#iclr").hidden=fTab!=="n";
+  if(fTab==="n"){
+    if(!r.items.length){$("#ilist").innerHTML=`<div class="fe"><span>🌿</span>Nothing here yet.<br>I'll remind you about hours and tasks as they come up.</div>`;return}
+    const td=new Date().toDateString();let last="",out="";
+    r.items.forEach((n,i)=>{const d=new Date(n.created_at.replace(" ","T")),lab=d.toDateString()===td?"Today":"Earlier";if(lab!==last){out+=`<div class="fd">${lab}</div>`;last=lab}
+      const k=FK[n.kind]||FK.info,un=+n.unread;
+      const acts=n.act==="hours"?`<button data-fa="hours" data-id="${n.id}">Log my hours</button>`:n.act==="task"?`<button data-fa="task" data-id="${n.id}" data-w="${n.ws_id}" data-t="${n.task_id}">Open task</button>`:"";
+      out+=`<div class="fc${un?" un":""}" style="animation-delay:${Math.min(i,8)*40}ms"><div class="fi" style="background:${k[1]}22">${k[0]}</div><div class="fb"><b>${esc(n.title)}</b>${n.body?`<p>${esc(n.body)}</p>`:""}<small>${fAgo(n.created_at)}</small><div class="fa">${acts}${un?`<button class="g" data-fa="read" data-id="${n.id}">Got it</button>`:""}<button class="g" data-fa="del" data-id="${n.id}">Dismiss</button></div></div></div>`});
+    $("#ilist").innerHTML=out;
+  }else{
+    api("inbox").then(x=>{if(fTab!=="c")return;$("#ilist").innerHTML=x.items.length?x.items.map(i=>`<div class="ib" data-w="${i.ws_id}" data-t="${i.task_id}"><small style="color:var(--mut)">${esc(i.from_name)}${i.kind==="instruction"?" 📌 instruction":""} · ${esc(i.ws_name)} · ${esc(fmtT(i.created_at))}</small><br><b>${esc(i.title)}</b><br>${esc(i.body.length>140?i.body.slice(0,140)+"…":i.body)}</div>`).join(""):`<div class="fe"><span>💬</span>No new comments.</div>`}).catch(()=>{});
+  }
+}
+$("#bell").onclick=fOpen;
 $("#icl").onclick=()=>$("#idlg").close();
-$("#iall").onclick=async()=>{try{await api("inbox_read");$("#idlg").close();await load(true)}catch(e){alert(e.message)}};
-$("#ilist").addEventListener("click",e=>{const b=e.target.closest(".ib");if(!b)return;const w=+b.dataset.w,t=+b.dataset.t;$("#idlg").close();
+$("#idlg .ftabs").addEventListener("click",e=>{const b=e.target.closest("[data-ft]");if(!b)return;fTab=b.dataset.ft;if(fData)fPaint()});
+$("#iall").onclick=async()=>{try{await api("notice_read",{});await api("inbox_read");await fOpen();load(true)}catch(e){alert(e.message)}};
+$("#iclr").onclick=async()=>{if(!confirm("Clear all of Flow's notifications?"))return;try{await api("notice_del",{});await fOpen()}catch(e){alert(e.message)}};
+$("#ilist").addEventListener("click",async e=>{
+  const f=e.target.closest("[data-fa]");
+  if(f){const a=f.dataset.fa,id=+f.dataset.id;try{
+    if(a==="del"){await api("notice_del",{id});await fOpen()}
+    else if(a==="read"){await api("notice_read",{id});await fOpen()}
+    else{await api("notice_read",{id});$("#idlg").close();inboxRefresh();
+      if(a==="hours")mhOpen();else{const w=+f.dataset.w,t=+f.dataset.t;if(w===W){const tk=tasks.find(x=>x.id==t);if(tk)openDlg(tk)}else location.href="index.php?w="+w+"&t="+t}}
+  }catch(x){alert(x.message)}return}
+  const b=e.target.closest(".ib");if(!b)return;const w=+b.dataset.w,t=+b.dataset.t;$("#idlg").close();
   if(w===W)openMsg(t);else location.href="index.php?w="+w+"&t="+t+"&m=1"});
 $("#dt").addEventListener("change",async e=>{if(e.target.value!=="__new")return;const prev=editing?((tasks.find(x=>x.id==editing)||{}).drawing_type||""):"";
   try{const n=await addDtype();$("#dt").innerHTML=dtOpts(n||prev);$("#dt").value=n||prev}catch(err){alert(err.message);$("#dt").innerHTML=dtOpts(prev);$("#dt").value=prev}});
@@ -2395,7 +2453,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=248;
+const BUILD=249;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

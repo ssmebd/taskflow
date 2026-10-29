@@ -1,5 +1,5 @@
 <?php
-const BUILD=248;
+const BUILD=249;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -18,6 +18,13 @@ $WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add'
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
 // Daily reminders (cron): php api.php remind  -> run every 30 min; sends at ~8am (am) and ~3pm (pm) Dhaka time, once per day each, Mon-Fri.
 // Sends in-app chat messages: log-hours reminder (+ "set a task In Progress" when nothing is ongoing); admins get an alert for people with no assigned task.
+// ---- Flow: the assistant's notification centre (bell). Automatic reminders/alerts land here, not in chat. ----
+function notices_ddl($db){static $d=0;if($d)return;$d=1;$db->exec("CREATE TABLE IF NOT EXISTS notices(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,kind VARCHAR(16) NOT NULL DEFAULT 'info',title VARCHAR(160) NOT NULL DEFAULT '',body VARCHAR(1000) NOT NULL DEFAULT '',ws_id INT NOT NULL DEFAULT 0,task_id INT NOT NULL DEFAULT 0,act VARCHAR(12) NOT NULL DEFAULT '',dkey VARCHAR(60) NOT NULL DEFAULT '',created_at DATETIME NOT NULL,read_at DATETIME NULL,KEY u(user_id,read_at,id),KEY d(user_id,dkey)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function notices_unread($db){global $me;try{notices_ddl($db);$q=$db->prepare("SELECT COUNT(*) FROM notices WHERE user_id=? AND read_at IS NULL");$q->execute([(int)$me['id']]);return (int)$q->fetchColumn();}catch(Throwable $e){return 0;}}
+function notify($db,$to,$kind,$title,$body='',$o=[]){$to=(int)$to;if(!$to)return;try{notices_ddl($db);$dk=(string)($o['dkey']??'');
+  if($dk!==''){$q=$db->prepare("SELECT COUNT(*) FROM notices WHERE user_id=? AND dkey=?");$q->execute([$to,$dk]);if((int)$q->fetchColumn())return;}
+  $db->prepare("INSERT INTO notices(user_id,kind,title,body,ws_id,task_id,act,dkey,created_at) VALUES(?,?,?,?,?,?,?,?,NOW())")->execute([$to,$kind,mb_substr($title,0,160),mb_substr($body,0,1000),(int)($o['ws']??0),(int)($o['task']??0),(string)($o['act']??''),$dk]);
+  push_q($to,'Flow · '.$title,$body!==''?$body:$title);}catch(Throwable $e){}}
 function rem_key(){return substr(hash_hmac('sha256','taskflow-remind',DB_PASS.DB_NAME),0,24);}
 function rem_url(){$h=$_SERVER['HTTP_HOST']??'taskflow.gurucadd.com';return 'https://'.$h.rtrim(dirname($_SERVER['SCRIPT_NAME']??'/api.php'),'/').'/api.php?a=remind&key='.rem_key();}
 function rem_run($db,$slot='',$force=false){
@@ -34,28 +41,28 @@ function rem_run($db,$slot='',$force=false){
   if(!$users)return 'No users';
   $admins=array_values(array_filter($users,fn($u)=>$u['role']==='admin'));
   $sender=function($to)use($users,$admins){foreach($admins as $a)if((int)$a['id']!==(int)$to)return (int)$a['id'];foreach($users as $u)if((int)$u['id']!==(int)$to)return (int)$u['id'];return 0;};
-  $ins=$db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())");
-  $send=function($from,$to,$b)use($ins){if(!$from||!$to)return;try{$ins->execute([$from,$to,mb_substr($b,0,1900)]);push_q($to,'TaskFlow',$b);}catch(Throwable $e){}};
   $prog=[];foreach($db->query("SELECT ws_id,skey,name FROM statuses")->fetchAll() as $r)if($r['skey']==='progress'||preg_match('/progress|ongoing|working/i',(string)$r['name']))$prog[$r['ws_id'].'|'.$r['skey']]=1;
   $open=$db->query("SELECT t.id,t.ws_id,t.status,t.assigned_to FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.status<>'done'")->fetchAll();
   $asg=[];foreach($db->query("SELECT task_id,user_id FROM task_assignees")->fetchAll() as $r)$asg[(int)$r['task_id']][]=(int)$r['user_id'];
-  $mine=[];$going=[];
+  $mine=[];$going=[];$first=[];
   foreach($open as $t){$us=$asg[(int)$t['id']]??[];if($t['assigned_to'])$us[]=(int)$t['assigned_to'];
-    foreach(array_unique($us) as $u){$mine[$u]=($mine[$u]??0)+1;if(isset($prog[$t['ws_id'].'|'.$t['status']]))$going[$u]=($going[$u]??0)+1;}}
+    foreach(array_unique($us) as $u){if(!isset($first[$u]))$first[$u]=[(int)$t['ws_id'],(int)$t['id']];$mine[$u]=($mine[$u]??0)+1;if(isset($prog[$t['ws_id'].'|'.$t['status']]))$going[$u]=($going[$u]??0)+1;}}
   $prev=$now->modify('-1 day')->format('Y-m-d');$now=new DateTime('now',$tz);
   $lb=$dow===1?date('Y-m-d',strtotime($today.' -3 day')):$prev;
   $hq=$db->prepare("SELECT COALESCE(SUM(hours),0) FROM time_logs WHERE user_id=? AND work_date=?");
   $nUsers=0;$unas=[];
   foreach($users as $u){$id=(int)$u['id'];$fn=explode(' ',trim((string)$u['name']))[0];
+    $fh=function($x){return rtrim(rtrim(number_format($x,2),'0'),'.');};
     if($slot==='am'){$hq->execute([$id,$lb]);$hh=(float)$hq->fetchColumn();
-      $b="☀️ Good morning ".$fn."! Reminder to log your hours. ".($hh<7.99?"Last working day you logged ".rtrim(rtrim(number_format($hh,2),'0'),'.')."h of 8h - please complete it in Home → My hours check.":"Keep your hours up to date today.");}
+      notify($db,$id,'hours',"Good morning, ".$fn." ☀️",$hh<7.99?"Last working day you logged ".$fh($hh)."h of 8h. Let's complete it so your hours are accurate.":"Your hours are up to date. Keep logging as you go today.",['act'=>'hours','dkey'=>'am'.$today]);}
     else{$hq->execute([$id,$today]);$hh=(float)$hq->fetchColumn();
-      $b="🕒 Hi ".$fn.", time to log today's hours (".rtrim(rtrim(number_format($hh,2),'0'),'.')."h of 8h so far).";}
-    if(($mine[$id]??0)>0&&empty($going[$id]))$b.="\n⚠️ You have ".$mine[$id]." assigned task".($mine[$id]>1?"s":"")." but none is In Progress. Please open your assigned task and set it to In Progress.";
-    $send($sender($id),$id,$b);$nUsers++;
+      notify($db,$id,'hours',"Time to log today's hours 🕒",$fh($hh)."h of 8h logged so far. A minute now saves guessing later.",['act'=>'hours','dkey'=>'pm'.$today]);}
+    if(($mine[$id]??0)>0&&empty($going[$id])){$f=$first[$id]??[0,0];
+      notify($db,$id,'nudge',"Nothing is In Progress",$mine[$id]." task".($mine[$id]>1?"s are":" is")." assigned to you but none is In Progress. Open one and set it going.",['act'=>'task','ws'=>$f[0],'task'=>$f[1],'dkey'=>'np'.$slot.$today]);}
+    $nUsers++;
     if(!($mine[$id]??0)&&$u['role']!=='admin')$unas[]=$u;}
   foreach($unas as $u)foreach($admins as $a){$aid=(int)$a['id'];if($aid===(int)$u['id'])continue;
-    $send((int)$u['id'],$aid,"🔔 TaskFlow alert: ".$u['name']." is not assigned to any open task, so nothing is ongoing for them. Please assign work.");}
+    notify($db,$aid,'alert',$u['name']." has no open task","Nothing is assigned to ".$u['name'].", so nothing is ongoing for them. Please assign work.",['dkey'=>'un'.$u['id'].$today]);}
   return 'Sent '.$slot.' reminders to '.$nUsers.' users; '.count($unas).' unassigned alert(s)';
 }
 // ---- Phone push (Firebase Cloud Messaging, HTTP v1). Needs the service-account key file on the server:
@@ -507,7 +514,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v34']))return;
+  if(!empty($_SESSION['schema_v35']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -563,7 +570,8 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'col_grp'")->fetch())$db->exec("ALTER TABLE workspaces ADD col_grp INT NOT NULL DEFAULT 0");
   foreach(["cat VARCHAR(80) NOT NULL DEFAULT ''","tags VARCHAR(400) NOT NULL DEFAULT ''","src VARCHAR(40) NOT NULL DEFAULT ''"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM wiki_pages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE wiki_pages ADD $cd");}
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_media(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(120) NOT NULL DEFAULT '',mime VARCHAR(40) NOT NULL,data MEDIUMBLOB NOT NULL,created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v34']=1;
+  notices_ddl($db);
+  $_SESSION['schema_v35']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -643,7 +651,7 @@ function notify_assign($db,$tid,$new,$old,$pre="📌 New task assigned to you: "
   try{$q=$db->prepare("SELECT title,order_no FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$t=$q->fetch();if(!$t)return;
   $cn='';foreach($WS as $w)if((int)$w['id']===(int)$W)$cn=$w['name'];
   $b=$pre.$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:"");
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$new,mb_substr($b,0,1900)]);push_q($new,'TaskFlow',$b);}catch(Throwable $e){}}
+  notify($db,$new,'assign',$pre==="📌 New task assigned to you: "?"New task for you":trim($pre," :📌"),$t['title'].($t['order_no']!==''?" (Order ".$t['order_no'].")":"").($cn!==''?" — ".$cn:""),['act'=>'task','ws'=>$W,'task'=>(int)$tid]);}catch(Throwable $e){}}
 function del_name($db,$kind,$id){global $W;
   $t=['group'=>['task_groups','name'],'status'=>['statuses','name'],'column'=>['custom_cols','name'],'dtype'=>['drawing_types','name']][$kind]??null;if(!$t)return null;
   $q=$db->prepare("SELECT {$t[1]} FROM {$t[0]} WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$n=$q->fetchColumn();return $n===false?null:(string)$n;}
@@ -676,7 +684,7 @@ function del_gate($db,$kind,$id){global $me,$uid,$W,$WS;
     $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$kind];
     $b="🗑 Delete request: ".$kn." \"".$nm."\"".($cn!==''?" in ".$cn:"")." — please review under Settings ▸ Approvals.";
     foreach($db->query("SELECT id FROM users WHERE role='admin'")->fetchAll(PDO::FETCH_COLUMN) as $ad){if((int)$ad===$uid)continue;
-      $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$ad,mb_substr($b,0,1900)]);push_q((int)$ad,'TaskFlow',$b);}
+      notify($db,(int)$ad,'approval',"Delete request to review",$b,['dkey'=>'dr'.$kind.$id.$W.date('YmdHi')]);}
   }
   out(['ok'=>1,'pending'=>1]);}
 if(in_array($a,$TASKA,true)&&$W){$ids=[];foreach(['id','task_id'] as $k)if(!empty($in[$k]))$ids[]=(int)$in[$k];if(!empty($in['ids'])&&is_array($in['ids']))foreach(array_slice($in['ids'],0,5) as $x)$ids[]=(int)$x;
@@ -755,7 +763,7 @@ case 'dr_act':
   if($ap){if(del_name($db,$r['kind'],(int)$r['target_id'])!==null)del_do($db,$r['kind'],(int)$r['target_id']);}
   $db->prepare("UPDATE delete_requests SET status=?,decided_by=?,decided_at=NOW() WHERE id=?")->execute([$ap?'approved':'rejected',$uid,$id]);
   $kn=['group'=>'group','status'=>'status','column'=>'column','dtype'=>'drawing type'][$r['kind']]??$r['kind'];
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,(int)$r['requested_by'],mb_substr(($ap?"✅ Approved: ":"❌ Not approved: ").$kn." \"".$r['target_name']."\" delete request.",1900)]);push_q((int)$r['requested_by'],'TaskFlow',($ap?'Approved: ':'Not approved: ').$kn.' delete request');
+  notify($db,(int)$r['requested_by'],'approval',$ap?"Delete request approved":"Delete request not approved",ucfirst($kn).' "'.$r['target_name'].'"');
   out(['ok'=>1]);
 case 'ping':
   $q=$db->prepare("SELECT COUNT(*) FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0)");$q->execute([$uid,$uid,$uid]);
@@ -845,7 +853,7 @@ case 'my_tasks':
 case 'list':
   $ver=(int)$db->query("SELECT v FROM meta WHERE k='ver'")->fetchColumn();
   $names=[];foreach($db->query("SELECT id,name FROM users")->fetchAll() as $u)$names[$u['id']]=$u['name'];
-  $res=['build'=>BUILD,'inbox'=>inbox_sql($db,true),'v'=>$ver,'me'=>$me,'ws'=>$WS,'w'=>$W,'level'=>$LV,'names'=>(object)$names,'users'=>[],'cols'=>[],'tasks'=>[]];
+  $res=['build'=>BUILD,'inbox'=>inbox_sql($db,true)+notices_unread($db),'v'=>$ver,'me'=>$me,'ws'=>$WS,'w'=>$W,'level'=>$LV,'names'=>(object)$names,'users'=>[],'cols'=>[],'tasks'=>[]];
   if($W){
     $q=$db->prepare("SELECT id,name,role FROM users WHERE role='admin' OR (role<>'guest' AND id IN(SELECT user_id FROM ws_users WHERE ws_id=? AND level<>'view')) ORDER BY name");$q->execute([$W]);$res['users']=$q->fetchAll();
     $q=$db->prepare("SELECT * FROM tasks WHERE ws_id=? ORDER BY sort_no ASC,id DESC");$q->execute([$W]);$tasks=$q->fetchAll();
@@ -1329,6 +1337,21 @@ case 'cm_del':
   if($o===false)out(['error'=>'Message not found']);
   if((int)$o!==(int)$me['id']&&$me['role']!=='admin')out(['error'=>'You can only delete your own messages']);
   $db->prepare("DELETE FROM task_comments WHERE id=?")->execute([$id]);out(['ok'=>1]);
+case 'notices':
+  notices_ddl($db);$u=(int)$me['id'];
+  $q=$db->prepare("SELECT id,kind,title,body,ws_id,task_id,act,created_at,read_at IS NULL AS unread FROM notices WHERE user_id=? ORDER BY id DESC LIMIT 40");$q->execute([$u]);
+  $c=$db->prepare("SELECT COUNT(*) FROM notices WHERE user_id=? AND read_at IS NULL");$c->execute([$u]);
+  out(['items'=>$q->fetchAll(),'unread'=>(int)$c->fetchColumn(),'comments'=>inbox_sql($db,true)]);
+case 'notice_read':
+  notices_ddl($db);$id=(int)($in['id']??0);
+  if($id)$db->prepare("UPDATE notices SET read_at=NOW() WHERE id=? AND user_id=? AND read_at IS NULL")->execute([$id,$me['id']]);
+  else $db->prepare("UPDATE notices SET read_at=NOW() WHERE user_id=? AND read_at IS NULL")->execute([$me['id']]);
+  out(['ok'=>1]);
+case 'notice_del':
+  notices_ddl($db);$id=(int)($in['id']??0);
+  if($id)$db->prepare("DELETE FROM notices WHERE id=? AND user_id=?")->execute([$id,$me['id']]);
+  else $db->prepare("DELETE FROM notices WHERE user_id=?")->execute([$me['id']]);
+  out(['ok'=>1]);
 case 'inbox':
   $rows=inbox_sql($db,false);$wn=array_column($WS,'name','id');foreach($rows as &$r)$r['ws_name']=$wn[$r['ws_id']]??'';out(['items'=>$rows]);
 case 'inbox_read':
