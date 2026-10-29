@@ -1,0 +1,11 @@
+{
+  "appId": "com.gurucadd.taskflow.chat",
+  "appName": "TaskFlow Chat",
+  "webDir": "www",
+  "server": {
+    "url": "https://taskflow.gurucadd.com/chat.php",
+    "cleartext": false,
+    "allowNavigation": ["taskflow.gurucadd.com", "gurucadd.com"]
+  },
+  "android": { "backgroundColor": "#0f2a5c" }
+}

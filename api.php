@@ -1,5 +1,5 @@
 <?php
-const BUILD=242;
+const BUILD=243;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -61,7 +61,7 @@ function rem_run($db,$slot='',$force=false){
 // ---- Phone push (Firebase Cloud Messaging, HTTP v1). Needs the service-account key file on the server:
 // define('FCM_KEY_FILE','/home/USER/taskflow-fcm.json') in config.php, or just place taskflow-fcm.json in your home folder.
 $PUSHQ=[];
-function push_q($to,$title,$body){global $PUSHQ;$PUSHQ[]=[(int)$to,(string)$title,(string)$body];}
+function push_q($to,$title,$body,$app=''){global $PUSHQ;$PUSHQ[]=[(int)$to,(string)$title,(string)$body,(string)$app];}
 function push_key(){
   $c=[];if(defined('FCM_KEY_FILE'))$c[]=FCM_KEY_FILE;$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-fcm.json';$c[]=dirname(__DIR__,2).'/taskflow-fcm.json';$c[]=__DIR__.'/../taskflow-fcm.json';
   foreach($c as $f)if($f&&is_file($f)){$j=json_decode((string)file_get_contents($f),true);if(is_array($j)&&!empty($j['private_key'])&&!empty($j['client_email'])&&!empty($j['project_id']))return $j;}
@@ -84,11 +84,12 @@ function push_send_one($k,$tok,$token,$title,$body){
 function push_flush(){global $PUSHQ,$db,$uid;if(!$PUSHQ||!isset($db)||!function_exists('curl_init'))return;$q=$PUSHQ;$PUSHQ=[];
   if(function_exists('fastcgi_finish_request'))@fastcgi_finish_request();
   try{$k=push_key();if(!$k)return;
-    $tok='';$sel=$db->prepare("SELECT token FROM push_tokens WHERE user_id=?");$del=$db->prepare("DELETE FROM push_tokens WHERE token=?");
-    foreach($q as [$to,$title,$body]){
+    try{$db->exec("CREATE TABLE IF NOT EXISTS push_tokens(token VARCHAR(400) NOT NULL,user_id INT NOT NULL,platform VARCHAR(12) NOT NULL DEFAULT 'android',updated_at DATETIME NOT NULL,PRIMARY KEY(token(190)),KEY(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");if(!$db->query("SHOW COLUMNS FROM push_tokens LIKE 'app'")->fetch())$db->exec("ALTER TABLE push_tokens ADD app VARCHAR(12) NOT NULL DEFAULT ''");}catch(Throwable $e){}
+    $tok='';$sel=$db->prepare("SELECT token,app FROM push_tokens WHERE user_id=?");$del=$db->prepare("DELETE FROM push_tokens WHERE token=?");
+    foreach($q as [$to,$title,$body,$app]){
       if($to>0)$ids=[$to];else{$ids=$db->query("SELECT DISTINCT user_id FROM push_tokens")->fetchAll(PDO::FETCH_COLUMN);}
-      foreach($ids as $u){if($to===0&&(int)$u===(int)($uid??0))continue;$sel->execute([$u]);
-        foreach($sel->fetchAll(PDO::FETCH_COLUMN) as $t){if($tok==='')$tok=push_token($k);if($tok==='')return;
+      foreach($ids as $u){if($to===0&&(int)$u===(int)($uid??0))continue;$sel->execute([$u]);$rows=$sel->fetchAll();$tk=[];foreach($rows as $r0)if($app==='chat'?($r0['app']==='chat'):($r0['app']!=='chat'))$tk[]=$r0['token'];if(!$tk&&$app==='chat')$tk=array_column($rows,'token');
+        foreach($tk as $t){if($tok==='')$tok=push_token($k);if($tok==='')return;
           [$code,$o]=push_send_one($k,$tok,$t,$title,mb_substr($body,0,180));
           if($code===404||($code===400&&strpos($o,'INVALID_ARGUMENT')!==false)||strpos($o,'UNREGISTERED')!==false)$del->execute([$t]);}}}
   }catch(Throwable $e){}}
@@ -421,6 +422,14 @@ if(($_GET['a']??'')==='wiki_img'){
   if(!$r){http_response_code(404);exit;}
   header('Content-Type: '.$r['mime']);header('Cache-Control: private, max-age=604800');header('X-Content-Type-Options: nosniff');echo $r['data'];exit;
 }
+if(($_GET['a']??'')==='msg_file'){
+  $u0=(int)$_SESSION['uid'];
+  try{$q=$db->prepare("SELECT f.name,f.mime,f.data FROM msg_files f JOIN messages m ON m.id=f.msg_id WHERE f.id=? AND (m.to_id=0 OR m.from_id=? OR m.to_id=?)");$q->execute([(int)($_GET['id']??0),$u0,$u0]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
+  if(!$r){http_response_code(404);exit;}
+  $img=in_array($r['mime'],['image/png','image/jpeg','image/gif','image/webp'],true);
+  header('Content-Type: '.($img?$r['mime']:'application/octet-stream'));header('X-Content-Type-Options: nosniff');header('Cache-Control: private, max-age=604800');
+  header('Content-Disposition: '.($img&&empty($_GET['dl'])?'inline':'attachment').'; filename="'.preg_replace('/[^A-Za-z0-9._ -]/','_',$r['name']).'"');echo $r['data'];exit;
+}
 if(($_SERVER['HTTP_X_REQUESTED_WITH']??'')!=='fetch'){http_response_code(400);out(['error'=>'bad request']);}
 $in=json_decode(file_get_contents('php://input'),true)?:[];
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
@@ -525,6 +534,7 @@ function ensure_schema($db){
   if($db->query("SHOW INDEX FROM invoices WHERE Key_name='ws_id'")->fetch())$db->exec("ALTER TABLE invoices DROP INDEX ws_id");
   if(!$db->query("SHOW COLUMNS FROM drawing_types LIKE 'color'")->fetch())$db->exec("ALTER TABLE drawing_types ADD color VARCHAR(7) NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS msg_files(id INT AUTO_INCREMENT PRIMARY KEY,msg_id INT NOT NULL,name VARCHAR(160) NOT NULL DEFAULT '',mime VARCHAR(80) NOT NULL DEFAULT '',size INT NOT NULL DEFAULT 0,data MEDIUMBLOB NOT NULL,KEY(msg_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -672,7 +682,8 @@ case 'rem_test':
 case 'push_reg':
   $t=trim((string)($in['token']??''));if($t===''||strlen($t)>400)out(['error'=>'bad token']);
   $db->exec("CREATE TABLE IF NOT EXISTS push_tokens(token VARCHAR(400) NOT NULL,user_id INT NOT NULL,platform VARCHAR(12) NOT NULL DEFAULT 'android',updated_at DATETIME NOT NULL,PRIMARY KEY(token(190)),KEY(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $db->prepare("INSERT INTO push_tokens(token,user_id,platform,updated_at) VALUES(?,?,?,NOW()) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id),updated_at=NOW()")->execute([$t,$uid,'android']);out(['ok'=>1]);
+  if(!$db->query("SHOW COLUMNS FROM push_tokens LIKE 'app'")->fetch())$db->exec("ALTER TABLE push_tokens ADD app VARCHAR(12) NOT NULL DEFAULT ''");
+  $db->prepare("INSERT INTO push_tokens(token,user_id,platform,updated_at,app) VALUES(?,?,?,NOW(),?) ON DUPLICATE KEY UPDATE user_id=VALUES(user_id),updated_at=NOW(),app=VALUES(app)")->execute([$t,$uid,'android',(($in['app']??'')==='chat')?'chat':'']);out(['ok'=>1]);
 case 'push_test':
   $db->exec("CREATE TABLE IF NOT EXISTS push_tokens(token VARCHAR(400) NOT NULL,user_id INT NOT NULL,platform VARCHAR(12) NOT NULL DEFAULT 'android',updated_at DATETIME NOT NULL,PRIMARY KEY(token(190)),KEY(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $n=(int)$db->query("SELECT COUNT(*) FROM push_tokens WHERE user_id=".(int)$uid)->fetchColumn();
@@ -740,20 +751,38 @@ case 'msg_users':
   $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
   $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
-  $us=[];foreach($db->query("SELECT id,name FROM users ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0];
-  out(['users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]]);
+  $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
+  foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
+  $us=[];foreach($db->query("SELECT id,name,role FROM users ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
+  out(['users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
   if($peer){$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
   else{$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
-  $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;}unset($m);
+  $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;$m['files']=[];}unset($m);
+  if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
+  $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
   if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
-  out(['messages'=>$ms]);
+  out(['messages'=>$ms,'peer_seen'=>$seen]);
 case 'msg_send':
-  $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);if($b==='')out(['error'=>'Write a message first']);
+  $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);$fl=is_array($in['files']??null)?array_slice($in['files'],0,6):[];
+  if($b===''&&!$fl)out(['error'=>'Write a message first']);
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
-  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();push_q($peer,$peer?($me['name']??'Message'):'Team chat: '.($me['name']??''),$b);
+  $raws=[];$tot=0;foreach($fl as $f){$raw=base64_decode((string)($f['data']??''),true);if($raw===false||$raw==='')continue;$tot+=strlen($raw);if(strlen($raw)>6*1048576||$tot>10*1048576)out(['error'=>'Files are too large (max 6 MB each, 10 MB in total)']);
+    $mime=(string)($f['mime']??'');$inf=@getimagesizefromstring($raw);if($inf&&in_array($inf['mime'],['image/png','image/jpeg','image/gif','image/webp'],true))$mime=$inf['mime'];elseif(preg_match('/\.(exe|bat|cmd|com|scr|msi|js|vbs|ps1|php|html?|svg)$/i',(string)($f['name']??'')))out(['error'=>'That file type cannot be sent']);
+    $raws[]=[mb_substr(basename((string)($f['name']??'file')),0,150),mb_substr($mime,0,80),$raw];}
+  if($b===''&&!$raws)out(['error'=>'Write a message first']);
+  $db->prepare("INSERT INTO messages(from_id,to_id,body,created_at) VALUES(?,?,?,NOW())")->execute([$uid,$peer,$b]);$id=(int)$db->lastInsertId();
+  foreach($raws as $r)$db->prepare("INSERT INTO msg_files(msg_id,name,mime,size,data) VALUES(?,?,?,?,?)")->execute([$id,$r[0],$r[1],strlen($r[2]),$r[2]]);
+  $pb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',$b);if(trim($pb)==='')$pb="\u{1F4CE} ".($raws[0][0]??'Attachment');
+  push_q($peer,$peer?($me['name']??'Message'):'Team chat: '.($me['name']??''),$pb,'chat');
   $db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$id]);out(['ok'=>1,'id'=>$id]);
+case 'chat_me':
+  out(['me'=>['id'=>$uid,'name'=>$me['name'],'role'=>$me['role']]]);
+case 'chat_tasks':
+  $qq=trim((string)($in['q']??''));$ids=array_map(fn($w)=>(int)$w['id'],$WS);if(!$ids)out(['tasks'=>[]]);
+  $st=$db->prepare("SELECT t.id,t.ws_id,t.title,t.order_no,w.name AS company FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.ws_id IN(".implode(',',$ids).") AND (?='' OR t.title LIKE ? OR t.order_no LIKE ?) ORDER BY t.updated_at DESC LIMIT 25");$like='%'.str_replace(['%','_'],['\\%','\\_'],$qq).'%';$st->execute([$qq,$like,$like]);
+  out(['tasks'=>$st->fetchAll()]);
 case 'hours_gap':
   $td=(string)($in['today']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$td))$td=date('Y-m-d');
   $q=$db->prepare("SELECT MIN(work_date) FROM time_logs WHERE user_id=?");$q->execute([$uid]);$first=$q->fetchColumn();

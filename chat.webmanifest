@@ -1,0 +1,29 @@
+{
+  "id": "/chat.php",
+  "name": "TaskFlow Chat",
+  "short_name": "TF Chat",
+  "description": "Team chat for the GURUCADD team",
+  "start_url": "chat.php",
+  "scope": "./chat.php",
+  "display": "standalone",
+  "background_color": "#0f2a5c",
+  "theme_color": "#0f2a5c",
+  "icons": [
+    {
+      "src": "chat-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "chat-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "chat-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

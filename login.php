@@ -87,14 +87,14 @@ footer{background:var(--navy2);color:#94a3b8;padding:30px 0;font-size:13px;text-
 TFDISCOVER;
 exit;}
 require 'config.php';require 'remember.php';
-if(isset($_GET['logout'])){if(!empty($_SESSION['uid'])){$lq=$db->prepare("SELECT username FROM users WHERE id=?");$lq->execute([(int)$_SESSION['uid']]);aud_log($db,(int)$_SESSION['uid'],(string)$lq->fetchColumn(),'login','logout','Signed out');}rm_forget($db);session_destroy();header('Location: login.php');exit;}
+if(isset($_GET['logout'])){if(!empty($_SESSION['uid'])){$lq=$db->prepare("SELECT username FROM users WHERE id=?");$lq->execute([(int)$_SESSION['uid']]);aud_log($db,(int)$_SESSION['uid'],(string)$lq->fetchColumn(),'login','logout','Signed out');}rm_forget($db);session_destroy();header('Location: login.php'.((($_GET['next']??'')==='chat')?'?next=chat':''));exit;}
 $err='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
   $lid=trim($_POST['username']??'');
   // Sign in with the username or the email address saved in the user's details.
   $s=$db->prepare("SELECT id,pass_hash,(username=?) AS exact FROM users WHERE username=? OR (email<>'' AND LOWER(email)=LOWER(?)) ORDER BY (username=?) DESC LIMIT 2");$s->execute([$lid,$lid,$lid,$lid]);$rows=$s->fetchAll();
   $u=$rows?$rows[0]:false;if($u&&count($rows)>1&&!(int)$u['exact'])$u=false;
-  if($u&&password_verify($_POST['password']??'',$u['pass_hash'])){session_regenerate_id(true);$_SESSION['uid']=$u['id'];if(!empty($_POST['keep']))rm_issue($db,(int)$u['id']);aud_log($db,(int)$u['id'],trim($_POST['username']??''),'login','login','Signed in');header('Location: index.php');exit;}
+  if($u&&password_verify($_POST['password']??'',$u['pass_hash'])){session_regenerate_id(true);$_SESSION['uid']=$u['id'];if(!empty($_POST['keep']))rm_issue($db,(int)$u['id']);aud_log($db,(int)$u['id'],trim($_POST['username']??''),'login','login','Signed in');header('Location: '.((($_GET['next']??'')==='chat')?'chat.php':'index.php'));exit;}
   aud_log($db,$u?(int)$u['id']:0,trim($_POST['username']??''),'fail','login_failed',$u?'Wrong password':'Unknown username');
   sleep(1);$err='Wrong username or password.';
 }
@@ -187,7 +187,7 @@ body.leaving .bar{filter:brightness(1.12);transition:filter .4s}
  <div class="card">
   <h2>Welcome back</h2><p class="sub">Log in to continue to your tasks.</p>
   <?php if($err)echo "<div class='err' role='alert'>".htmlspecialchars($err)."</div>"; ?>
-  <form method="post">
+  <form method="post"<?=(($_GET['next']??'')==='chat')?' action="login.php?next=chat"':''?>>
    <label class="f" for="un">Username or email</label>
    <div class="in"><input id="un" name="username" autocomplete="username" autofocus autocapitalize="none" spellcheck="false"></div>
    <label class="f" for="pw">Password</label>

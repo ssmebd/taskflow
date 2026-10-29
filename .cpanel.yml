@@ -2,4 +2,5 @@
 deployment:
   tasks:
     - export DEPLOYPATH=$HOME/public_html/taskflow/
-    - /bin/cp index.php api.php login.php logo.php remember.php deploy.php $DEPLOYPATH
+    - /bin/cp index.php api.php login.php logo.php remember.php deploy.php chat.php $DEPLOYPATH
+    - /bin/cp chat.webmanifest chat-192.png chat-512.png chat-maskable-512.png $DEPLOYPATH
