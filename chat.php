@@ -10,14 +10,14 @@
 <link rel="icon" type="image/png" href="chat-192.png">
 <link rel="apple-touch-icon" href="chat-192.png">
 <style>
-:root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--col:#f1f5f9;--pri:#0f2a5c;--acc:#38bdf8;--grn:#22c55e;--me:#e4e8fb;--meink:#1b1f3a;--them:#f1f1f1;--avbg:#dfe3d6;--avink:#3d4a35;--sel:#e8f1ff;--shadow:0 2px 10px rgba(15,42,92,.08)}
-@media(prefers-color-scheme:dark){:root{--bg:#0c0f16;--card:#171b26;--ink:#e8eaf2;--mut:#98a0b5;--line:#272c3b;--col:#1d2230;--pri:#7cb4ff;--me:#3a3f8f;--meink:#fff;--them:#262a38;--avbg:#3a4a46;--avink:#d6efe6;--sel:#1c2540;--shadow:0 2px 10px rgba(0,0,0,.4)}}
+:root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--col:#f1f5f9;--pri:#0f2a5c;--acc:#38bdf8;--grn:#22c55e;--me:#e4e8fb;--meink:#1b1f3a;--them:#f1f1f1;--avbg:#dfe3d6;--avink:#3d4a35;--sel:#e8f1ff;--side:#f1f2f5;--shadow:0 2px 10px rgba(15,42,92,.08)}
+@media(prefers-color-scheme:dark){:root{--bg:#0c0f16;--card:#171b26;--ink:#e8eaf2;--mut:#98a0b5;--line:#272c3b;--col:#1d2230;--pri:#7cb4ff;--me:#3a3f8f;--meink:#fff;--them:#262a38;--avbg:#3a4a46;--avink:#d6efe6;--sel:#1c2540;--side:#10131b;--shadow:0 2px 10px rgba(0,0,0,.4)}}
 *{box-sizing:border-box}html,body{height:100%;margin:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;-webkit-tap-highlight-color:transparent}
 button{font:inherit;color:inherit;cursor:pointer}
 #app{height:100dvh;display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr)}
 /* sidebar */
-#side{display:flex;flex-direction:column;background:var(--card);border-right:1px solid var(--line);min-height:0}
+#side{display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--line);min-height:0}
 .sh{display:flex;align-items:center;gap:10px;padding:14px 14px 10px;background:linear-gradient(135deg,#0a1d44,#0f2a5c);color:#fff;padding-top:calc(14px + env(safe-area-inset-top,0px))}
 .sh img{width:34px;height:34px;border-radius:9px}
 .sh .t{flex:1;min-width:0}.sh b{display:block;font-size:16px;letter-spacing:.2px}.sh small{display:block;font-size:11px;color:#9fc4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -27,14 +27,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 #menu[hidden]{display:none}#menu a,#menu button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:9px 11px;border-radius:8px;text-decoration:none;font-size:14px}
 #menu a:hover,#menu button:hover{background:var(--col)}
 .sr{padding:10px 12px;border-bottom:1px solid var(--line)}
-.sr input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:12px;background:var(--col) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") 11px center no-repeat;color:var(--ink);font:inherit;font-size:14px;outline:0}
+.sr input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:12px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l3.5 3.5'/%3E%3C/svg%3E") 11px center no-repeat;color:var(--ink);font:inherit;font-size:14px;outline:0}
 .sr input:focus{border-color:var(--acc)}
 #list{flex:1;overflow:auto;min-height:0}
-#bld{border:0;border-top:1px solid var(--line);background:var(--card);color:var(--mut);font-size:12px;padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));text-align:center;opacity:.85}#bld.new{background:#fff4d6;color:#7a5200;font-weight:700;opacity:1}
-.cv{display:grid;grid-template-columns:46px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:11px 14px;border:0;border-bottom:1px solid var(--line);background:none;width:100%;text-align:left}
-.cv:hover{background:var(--col)}.cv.on{background:var(--sel)}
-.av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;grid-row:1/3;flex:none}
-.av.sm{width:38px;height:38px;font-size:13px}
+#bld{border:0;border-top:1px solid var(--line);background:var(--side);color:var(--mut);font-size:12px;padding:9px 12px calc(9px + env(safe-area-inset-bottom,0px));text-align:center;opacity:.85}#bld.new{background:#fff4d6;color:#7a5200;font-weight:700;opacity:1}
+.cv{display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:1px 11px;align-items:center;padding:9px 14px;border:0;border-bottom:1px solid transparent;background:none;width:100%;text-align:left}
+.cv:hover{background:rgba(127,127,127,.12)}.cv.on{background:var(--card);box-shadow:inset 3px 0 0 var(--acc)}
+.avw{position:relative;grid-row:1/3;flex:none;width:36px;height:36px}.avw.sm{width:34px;height:34px;grid-row:auto}
+.av{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12.5px}
+.av.sm{font-size:12px}
+.stt{position:absolute;right:-3px;bottom:-3px;width:15px;height:15px;border-radius:50%;box-sizing:border-box;border:2px solid var(--side);background:#13a10e;display:grid;place-items:center}.avw.sm .stt{border-color:var(--card)}
+.stt.on:after{content:"";width:3.5px;height:6.5px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translate(-.5px,-.5px)}
+.stt.off{background:var(--card);border-color:#9aa3b2}
+.cv.on .stt{border-color:var(--card)}
 .cv b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
 .cv b i{font-style:normal;font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:var(--col);color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
 .cv small{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;grid-column:2}
@@ -50,14 +55,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .th{display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--card);border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))}
 .th .t{flex:1;min-width:0}.th b{display:block;font-size:16px}.th small{color:var(--mut);font-size:12px}
 .bk{display:none;border:0;background:none;font-size:22px;width:34px;height:34px;color:var(--ink)}
-#msgs{background:var(--card);flex:1;overflow:auto;padding:6px 16px 8px;display:flex;flex-direction:column;gap:0;min-height:0;overscroll-behavior:contain}
+#msgs{background:var(--card);flex:1;overflow:auto;padding:6px max(16px,calc((100% - 1000px)/2)) 8px;display:flex;flex-direction:column;gap:0;min-height:0;overscroll-behavior:contain}
 .hd{display:flex;gap:8px;align-items:baseline;font-size:12px;color:var(--mut);margin:14px 0 3px}.hd b{font-weight:400}
 .g{display:grid;grid-template-columns:40px minmax(0,1fr);column-gap:8px;align-items:start;max-width:100%}
 .g.me{display:block}
 .gav{width:34px;height:34px;border-radius:50%;background:var(--avbg);color:var(--avink);display:grid;place-items:center;font-size:12px;font-weight:600;margin-top:2px}
-.gc{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}.g.me .gc{align-items:flex-end}
+.gc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0}.g.me .gc{align-items:flex-end}
 .g.me .hd{justify-content:flex-end}
-.bb{max-width:min(70%,640px);background:var(--them);color:var(--ink);border-radius:4px;padding:8px 12px;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
+.bb{max-width:min(82%,840px);background:var(--them);color:var(--ink);border-radius:4px;padding:8px 12px;overflow-wrap:anywhere;font-size:14px;line-height:1.45}
 .me .bb{background:var(--me);color:var(--meink)}
 .bb .tx{white-space:pre-wrap}.bb a{color:inherit;text-decoration:underline}
 .bb .ex{margin-top:4px;font-size:11px;opacity:.65}
@@ -79,7 +84,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tk{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:12px;margin:4px 0;text-decoration:none!important;background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(34,197,94,.16));border:1px solid rgba(56,189,248,.45)}
 .tk i{font-style:normal;font-size:20px}.tk b{display:block;font-size:14px}.tk small{opacity:.75;font-size:11.5px}
 /* composer */
-#cmp{background:var(--card);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px))}
+#cmp{background:var(--card);border-top:1px solid var(--line);padding:8px max(10px,calc((100% - 1000px)/2)) calc(8px + env(safe-area-inset-bottom,0px))}
 #pend{display:flex;gap:8px;flex-wrap:wrap;padding:0 2px 8px}#pend:empty{display:none}
 .pc{position:relative;display:flex;align-items:center;gap:8px;padding:6px 26px 6px 8px;background:var(--col);border:1px solid var(--line);border-radius:10px;font-size:12.5px;max-width:220px}
 .pc img{width:38px;height:38px;object-fit:cover;border-radius:6px}.pc span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -136,7 +141,7 @@ button{font:inherit;color:inherit;cursor:pointer}
  <main id="main">
   <div id="ph"><div><img src="chat-512.png" alt=""><h2>TaskFlow Chat</h2><div>Pick a person or the team chat to start.</div></div></div>
   <section id="thr">
-   <div class="th"><button class="bk" id="bk" aria-label="Back">‹</button><div class="av sm" id="tav"></div><div class="t"><b id="tn"></b><small id="ts"></small></div></div>
+   <div class="th"><button class="bk" id="bk" aria-label="Back">‹</button><div class="avw sm" id="tav"></div><div class="t"><b id="tn"></b><small id="ts"></small></div></div>
    <div id="msgs"></div>
    <div id="cmp">
     <div id="pend"></div>
@@ -171,14 +176,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=264;
+const BUILD=265;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
 const PAL=["#2563eb","#0891b2","#16a34a","#d97706","#9333ea","#dc2626","#0d9488","#db2777"];
 const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;return PAL[h%PAL.length]};
 const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();
-const avHtml=(n,team_,sm)=>team_?`<div class="av${sm?" sm":""}" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div>`:`<div class="av${sm?" sm":""}" style="background:${col(n)}">${esc(ini(n))}</div>`;
+const avHtml=(n,team_,sm,on)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div></div>`:`<div class="avw${sm?" sm":""}"><div class="av" style="background:${col(n)}">${esc(ini(n))}</div><i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
 async function api(a,data){
   const r=await fetch("api.php?a="+a,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{}),credentials:"same-origin"});
   if(r.status===401){location="login.php?next=chat";throw new Error("auth")}
@@ -200,12 +205,15 @@ function body(b){
 /* sidebar */
 function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.classList.add("new")}else{e.textContent="TaskFlow Chat · Build "+BUILD;e.classList.remove("new")}}
 $("#bld").onclick=()=>location.reload();chkBuild(0);
-function renderList(){
+function headStat(force){if(!cur)return;const c=cur.team?null:conv.find(x=>x.id===cur.id),on=!!(c&&c.online),k=cur.team+"|"+on+"|"+cur.name;if(!force&&headStat.k===k)return;headStat.k=k;
+  const t=$("#tav");if(t)t.outerHTML=avHtml(cur.name,cur.team,true,on).replace('<div class="avw sm"','<div id="tav" class="avw sm"');
+  $("#ts").textContent=cur.team?"Everyone at GURUCADD":(on?"Online":"Offline")+(cur.role==="guest"?" · Guest":"")}
+function renderList(){headStat();
   const q=$("#q").value.trim().toLowerCase();
   const rows=[{id:0,name:"Team chat",team:true,...team}].concat(conv);
   rows.sort((a,b)=>{if(a.team)return -1;if(b.team)return 1;const A=a.at||"",B=b.at||"";return A===B?a.name.localeCompare(b.name):(A<B?1:-1)});
   const f=rows.filter(r=>!q||r.name.toLowerCase().includes(q)||(r.team&&"team chat everyone".includes(q)));
-  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
+  $("#list").innerHTML=f.map(r=>`<button class="cv${cur&&cur.id===r.id?" on":""}${r.n?" un":""}" data-id="${r.id}">${avHtml(r.name,r.team,false,r.online)}<b>${esc(r.name)}${r.role==="guest"?"<i>guest</i>":""}</b><span class="tm">${esc(listTime(r.at))}</span><small>${r.lb?(r.lm?"You: ":"")+esc(r.lb):(r.team?"Everyone at GURUCADD":"No messages yet")}</small>${r.n?`<span class="ub">${r.n>99?"99+":r.n}</span>`:""}</button>`).join("")||'<div class="empty">No one found</div>'}
 async function loadList(){
   const r=await api("msg_users");conv=r.users||[];team=r.team||{};chkBuild(r.build);
   const tot=conv.reduce((a,c)=>a+c.n,0)+(team.n||0);
@@ -224,8 +232,8 @@ const byId=id=>id?conv.find(c=>c.id===id):{id:0,name:"Team chat",team:true};
 async function open_(id){
   const c=byId(id);if(!c)return;cur={id:c.id,name:c.name,team:!!c.team||!c.id,role:c.role};lastId=0;peerSeen=0;msgs=[];
   $("#msgs").innerHTML="";$("#main").classList.add("open");
-  $("#tav").outerHTML=avHtml(cur.name,cur.team,true).replace('class="av sm"','class="av sm" id="tav"');
-  $("#tn").textContent=cur.name;$("#ts").textContent=cur.team?"Everyone at GURUCADD":(cur.role==="guest"?"Guest":"Team member");
+  headStat(true);
+  $("#tn").textContent=cur.name;
   pending=[];setRich(false);renderPend();renderList();await pull(true);$("#tx").focus()}
 const QUICK=["👍","❤️","😆","😮","😢"],MORE=["👍","❤️","😆","😮","😢","🙏","👏","🔥","✅","❌","🎉","💡","👀","😅","🤝","💯"];
 function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
