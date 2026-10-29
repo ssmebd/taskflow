@@ -62,6 +62,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .bb .tx{white-space:pre-wrap}.bb a{color:inherit;text-decoration:underline}
 .bb .ex{margin-top:4px;font-size:11px;opacity:.65}
 .sn{font-size:11px;color:var(--mut);margin:1px 2px 0 0;align-self:flex-end}
+.bb{position:relative}
+.bt{display:none;position:absolute;bottom:calc(100% - 5px);right:6px;z-index:8;align-items:center;gap:1px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px 4px;box-shadow:0 4px 16px rgba(0,0,0,.22);color:var(--ink)}
+.bb:hover .bt,.bb.hv .bt{display:flex}
+.bt button{border:0;background:none;width:32px;height:30px;border-radius:7px;font-size:17px;line-height:1;color:inherit;display:grid;place-items:center}.bt button:hover{background:var(--col)}
+.bt .sp{width:1px;height:20px;background:var(--line);margin:0 3px}.bt .tb2{font-size:14px;font-weight:700;width:auto;padding:0 8px}
+.rx{display:flex;flex-wrap:wrap;gap:4px;margin:1px 0 2px}
+.rp{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:1px 8px;font-size:13px;display:flex;gap:4px;align-items:center;color:var(--ink)}.rp.on{background:var(--sel);border-color:var(--acc)}.rp b{font-size:12px;font-weight:700}
+#rpop{position:fixed;z-index:40;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:6px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;width:300px;max-width:96vw}#rpop[hidden]{display:none}
+#rpop button{border:0;background:none;font-size:21px;height:34px;border-radius:8px}#rpop button:hover{background:var(--col)}
+
 .im{display:block;max-width:100%;max-height:300px;border-radius:10px;margin:2px 0 4px;cursor:zoom-in;object-fit:cover}
 .fl{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(127,127,127,.14);border-radius:10px;text-decoration:none!important;margin:3px 0}
 .fl i{font-style:normal;font-size:22px}.fl span{display:block;font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px}.fl small{opacity:.7;font-size:11.5px}
@@ -152,10 +162,11 @@ button{font:inherit;color:inherit;cursor:pointer}
  </div>
  <div id="annw"><canvas id="annc"></canvas><input id="annt" hidden placeholder="Type, press Enter"></div>
 </div>
+<div id="rpop" hidden></div>
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=247;
+const BUILD=248;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -211,6 +222,7 @@ async function open_(id){
   $("#tav").outerHTML=avHtml(cur.name,cur.team,true).replace('class="av sm"','class="av sm" id="tav"');
   $("#tn").textContent=cur.name;$("#ts").textContent=cur.team?"Everyone at GURUCADD":(cur.role==="guest"?"Guest":"Team member");
   pending=[];renderPend();renderList();await pull(true);$("#tx").focus()}
+const QUICK=["👍","❤️","😆","😮","😢"],MORE=["👍","❤️","😆","😮","😢","🙏","👏","🔥","✅","❌","🎉","💡","👀","😅","🤝","💯"];
 function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
   if(n-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"short"})+" "+t;return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+" "+t}
 function bubble(m){
@@ -218,7 +230,10 @@ function bubble(m){
   const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
   const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<div class="ex" title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</div>`:"";
-  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${exp}</div>`}
+  const fs=(m.files||[]).filter(f=>!f.gone),hasImg=fs.some(f=>/^image\//.test(f.mime));
+  const bt=`<div class="bt">${QUICK.map(e=>`<button type="button" data-r="${e}" title="React">${e}</button>`).join("")}<button type="button" data-more="1" title="More reactions">☺</button>${fs.length?`<span class="sp"></span><button type="button" data-dlm="1" title="Download${fs.length>1?" all":""}">⬇</button>`:""}${hasImg?`<button type="button" data-anm="1" title="Annotate picture">✎</button>`:""}</div>`;
+  const rx=(m.reacts||[]).length?`<div class="rx" data-m="${m.id}">${m.reacts.map(r=>`<button type="button" class="rp${r.mine?" on":""}" data-r="${esc(r.e)}" title="${esc(r.names.join(", "))}">${esc(r.e)} <b>${r.n}</b></button>`).join("")}</div>`:"";
+  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${bt}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${exp}</div>${rx}`}
 function paint(all){
   const el=$("#msgs");let h="",prev=null,open="";
   let openMine=false;const close=()=>{if(open){h+=open+(openMine?"</div></div>":"</div></div></div>");open=""}};
@@ -240,8 +255,10 @@ async function pull(first){
   if(!cur)return;const id=cur.id;
   const r=await api("msg_list",{peer:id,after:first?0:lastId});if(!cur||cur.id!==id)return;
   const nu=r.messages||[];const seenChanged=!cur.team&&r.peer_seen!==peerSeen;peerSeen=r.peer_seen||0;
-  if(!nu.length&&!first&&!seenChanged)return;
+  const rm=r.reacts||{};let rxChanged=false;
   if(first)msgs=nu;else{const have=new Set(msgs.map(m=>m.id));nu.forEach(m=>{if(!have.has(m.id))msgs.push(m)})}
+  msgs.forEach(m=>{const nr=rm[m.id]||[];if(JSON.stringify(nr)!==JSON.stringify(m.reacts||[])){m.reacts=nr;rxChanged=true}});
+  if(!nu.length&&!first&&!seenChanged&&!rxChanged)return;
   lastId=msgs.length?msgs[msgs.length-1].id:0;
   const el=$("#msgs"),wasNear=el.scrollHeight-el.scrollTop-el.clientHeight<140;paint(msgs);
   if(first||wasNear||nu.some(m=>m.mine))el.scrollTop=el.scrollHeight;
@@ -340,6 +357,23 @@ function annExport(addIt){
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#ann").hidden&&$("#annt").hidden){$("#ann").hidden=true;A.img=null}$("#lb").hidden=true;$("#tkp").hidden=true;$("#emp").hidden=true;$("#menu").hidden=true}});
 $("#mb").onclick=e=>{e.stopPropagation();$("#menu").hidden=!$("#menu").hidden};
 document.addEventListener("click",e=>{if(!e.target.closest("#menu,#mb"))$("#menu").hidden=true;if(!e.target.closest("#tkp,#btk"))$("#tkp").hidden=true;if(!e.target.closest("#emp,#bem"))$("#emp").hidden=true});
+/* hover toolbar: reactions, download, annotate */
+const msgOf=id=>msgs.find(m=>m.id==id);
+async function react(id,e){try{const r=await api("msg_react",{id,e});const m=msgOf(id);if(m){m.reacts=r.reacts||[];const el=$("#msgs"),st=el.scrollTop;paint(msgs);el.scrollTop=st}}catch(x){toast(x.message)}}
+function rpopClose(){$("#rpop").hidden=true}
+$("#msgs").addEventListener("click",async e=>{
+  const bt=e.target.closest(".bt button,.rx .rp");
+  if(bt){e.stopPropagation();const row=bt.closest("[data-m]"),id=row&&+row.dataset.m;
+    if(bt.dataset.r){react(id,bt.dataset.r);return}
+    if(bt.dataset.more){const r=bt.getBoundingClientRect(),p=$("#rpop");p.innerHTML=MORE.map(x=>`<button type="button" data-id="${id}" data-e="${x}">${x}</button>`).join("");p.hidden=false;
+      const w=p.offsetWidth,h=p.offsetHeight;p.style.left=Math.max(6,Math.min(innerWidth-w-6,r.left-w+40))+"px";p.style.top=(r.top-h-6<6?r.bottom+6:r.top-h-6)+"px";return}
+    const m=msgOf(id),fs=m?(m.files||[]).filter(f=>!f.gone):[];
+    if(bt.dataset.dlm){for(const f of fs)await download(f.id,f.name);return}
+    if(bt.dataset.anm){const f=fs.find(f=>/^image\//.test(f.mime));if(f)annOpen({id:f.id,name:f.name,src:"api.php?a=msg_file&id="+f.id});return}}
+  if(matchMedia("(hover:none)").matches){const bb=e.target.closest(".bb");if(bb&&!e.target.closest("a,img,button")){const on=bb.classList.contains("hv");document.querySelectorAll(".bb.hv").forEach(x=>x.classList.remove("hv"));if(!on)bb.classList.add("hv")}}
+},true);
+$("#rpop").onclick=e=>{const b=e.target.closest("button");if(!b)return;rpopClose();react(+b.dataset.id,b.dataset.e)};
+document.addEventListener("click",e=>{if(!e.target.closest("#rpop,[data-more]"))rpopClose()});
 /* emoji */
 $("#emo").innerHTML=["😀","😂","🙂","😉","😍","🤝","👍","👎","🙏","👏","🔥","✅","❌","⚠️","❓","🎉","💡","📐","📎","⏰","☕","😅","😢","❤️"].map(e=>`<button type="button">${e}</button>`).join("");
 $("#bem").onclick=e=>{e.stopPropagation();$("#tkp").hidden=true;$("#emp").hidden=!$("#emp").hidden};

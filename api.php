@@ -1,5 +1,5 @@
 <?php
-const BUILD=247;
+const BUILD=248;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -419,6 +419,12 @@ function msg_purge($db,$force=false){
     return (int)$n;
   }catch(Throwable $e){return 0;}
 }
+function msg_reacts($db,$ids,$uid){
+  $ids=array_values(array_filter(array_map('intval',$ids)));if(!$ids)return [];
+  $by=[];$q=$db->query("SELECT r.msg_id,r.emoji,r.user_id,u.name FROM msg_reacts r LEFT JOIN users u ON u.id=r.user_id WHERE r.msg_id IN(".implode(',',$ids).") ORDER BY r.created_at");
+  foreach($q->fetchAll() as $r){$m=(int)$r['msg_id'];$e=$r['emoji'];if(!isset($by[$m][$e]))$by[$m][$e]=['e'=>$e,'n'=>0,'mine'=>false,'names'=>[]];
+    $by[$m][$e]['n']++;if((int)$r['user_id']===$uid)$by[$m][$e]['mine']=true;if(count($by[$m][$e]['names'])<8)$by[$m][$e]['names'][]=(string)$r['name'];}
+  $o=[];foreach($by as $m=>$l)$o[$m]=array_values($l);return $o;}
 function out($d){
   global $a,$db,$WRITEA,$uid,$me,$W,$in,$AUD_T;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -501,7 +507,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v33']))return;
+  if(!empty($_SESSION['schema_v34']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -548,6 +554,7 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS messages(id INT AUTO_INCREMENT PRIMARY KEY,from_id INT NOT NULL,to_id INT NOT NULL DEFAULT 0,body TEXT NOT NULL,created_at DATETIME NOT NULL,KEY(to_id,id),KEY(from_id,to_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_files(id INT AUTO_INCREMENT PRIMARY KEY,msg_id INT NOT NULL,name VARCHAR(160) NOT NULL DEFAULT '',mime VARCHAR(80) NOT NULL DEFAULT '',size INT NOT NULL DEFAULT 0,data MEDIUMBLOB NOT NULL,KEY(msg_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM msg_files LIKE 'gone'")->fetch())$db->exec("ALTER TABLE msg_files ADD gone TINYINT NOT NULL DEFAULT 0");
+  $db->exec("CREATE TABLE IF NOT EXISTS msg_reacts(msg_id INT NOT NULL,user_id INT NOT NULL,emoji VARCHAR(16) NOT NULL,created_at DATETIME NOT NULL,PRIMARY KEY(msg_id,user_id,emoji),KEY(msg_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS msg_reads(user_id INT NOT NULL,peer_id INT NOT NULL,last_id INT NOT NULL DEFAULT 0,PRIMARY KEY(user_id,peer_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   try{$c=$db->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();if($c&&stripos($c['Type'],'enum')!==false)$db->exec("ALTER TABLE users MODIFY role VARCHAR(20) NOT NULL DEFAULT 'member'");}catch(Throwable $e){}
   $db->exec("CREATE TABLE IF NOT EXISTS delete_requests(id INT AUTO_INCREMENT PRIMARY KEY,ws_id INT NOT NULL,kind VARCHAR(12) NOT NULL,target_id INT NOT NULL,target_name VARCHAR(255) NOT NULL DEFAULT '',requested_by INT NOT NULL,status VARCHAR(10) NOT NULL DEFAULT 'pending',decided_by INT NULL,created_at DATETIME NOT NULL,decided_at DATETIME NULL,KEY st(status)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -556,7 +563,7 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'col_grp'")->fetch())$db->exec("ALTER TABLE workspaces ADD col_grp INT NOT NULL DEFAULT 0");
   foreach(["cat VARCHAR(80) NOT NULL DEFAULT ''","tags VARCHAR(400) NOT NULL DEFAULT ''","src VARCHAR(40) NOT NULL DEFAULT ''"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM wiki_pages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE wiki_pages ADD $cd");}
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_media(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(120) NOT NULL DEFAULT '',mime VARCHAR(40) NOT NULL,data MEDIUMBLOB NOT NULL,created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-  $_SESSION['schema_v33']=1;
+  $_SESSION['schema_v34']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -777,7 +784,18 @@ case 'msg_list':
   if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size,gone FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size'],'gone'=>(int)$f['gone']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
   $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
   if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
-  out(['messages'=>$ms,'peer_seen'=>$seen]);
+  if($peer){$qi=$db->prepare("SELECT id FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id DESC LIMIT 150");$qi->execute([$uid,$peer,$peer,$uid]);}
+  else{$qi=$db->query("SELECT id FROM messages WHERE to_id=0 ORDER BY id DESC LIMIT 150");}
+  $rc=msg_reacts($db,$qi->fetchAll(PDO::FETCH_COLUMN),$uid);
+  out(['messages'=>$ms,'peer_seen'=>$seen,'reacts'=>(object)$rc]);
+case 'msg_react':
+  $mid=(int)($in['id']??0);$em=trim((string)($in['e']??''));
+  if($mid<=0||$em===''||mb_strlen($em)>8||preg_match('/[<>&"\'\s]/u',$em))out(['error'=>'Pick an emoji']);
+  $q=$db->prepare("SELECT COUNT(*) FROM messages WHERE id=? AND (to_id=0 OR from_id=? OR to_id=?)");$q->execute([$mid,$uid,$uid]);if(!(int)$q->fetchColumn())out(['error'=>'Message not found']);
+  $q=$db->prepare("SELECT COUNT(*) FROM msg_reacts WHERE msg_id=? AND user_id=? AND emoji=?");$q->execute([$mid,$uid,$em]);
+  if((int)$q->fetchColumn())$db->prepare("DELETE FROM msg_reacts WHERE msg_id=? AND user_id=? AND emoji=?")->execute([$mid,$uid,$em]);
+  else $db->prepare("INSERT IGNORE INTO msg_reacts(msg_id,user_id,emoji,created_at) VALUES(?,?,?,NOW())")->execute([$mid,$uid,$em]);
+  $r=msg_reacts($db,[$mid],$uid);out(['ok'=>1,'reacts'=>$r[$mid]??[]]);
 case 'msg_send':
   $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);$fl=is_array($in['files']??null)?array_slice($in['files'],0,6):[];
   if($b===''&&!$fl)out(['error'=>'Write a message first']);
