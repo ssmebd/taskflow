@@ -26,6 +26,7 @@ const ui = () => win && !win.isDestroyed() && win.webContents;
 function pushState() {
   const c = ui(); if (!c) return;
   c.send('tabs', { active: activeId, tabs: tabs.map((t) => ({ id: t.id, title: t.title, home: t.home, pinned: !!t.pinned })) });
+  const a = tabs.find((t) => t.id === activeId); c.send('status', (a && a.status) || { ok: false, build: '', warn: false, n: 0 });
   scheduleSave();
 }
 let lastSize = '', layoutQ = false;
@@ -250,6 +251,9 @@ ipcMain.on('tab-new', async (e, x, y) => {
   await refreshCompanies();
   Menu.buildFromTemplate([...companyItems(), { type: 'separator' }, { label: 'Blank tab (Home)', click: () => newTab(URL_HOME) }]).popup({ window: win, x: x | 0, y: y | 0 });
 });
+ipcMain.on('desk-status', (e, st) => { const t = tabs.find((q) => q.view.webContents === e.sender); if (!t) return; t.status = st; if (t.id === activeId) { const c = ui(); if (c) c.send('status', st); } });
+ipcMain.on('bell-click', (e) => { if (e.sender !== ui()) return; const a = active(); if (a) a.view.webContents.send('desk-bell'); });
+ipcMain.on('build-click', (e) => { if (e.sender !== ui()) return; const a = active(); if (a) a.view.webContents.reload(); });
 ipcMain.on('tab-activate', (e, id) => { if (e.sender === ui()) activate(id | 0); });
 ipcMain.on('tab-close', (e, id) => { if (e.sender === ui()) closeTab(id | 0); });
 ipcMain.on('chrome-ready', (e) => { if (e.sender === ui()) pushState(); });

@@ -6,5 +6,8 @@ contextBridge.exposeInMainWorld('tf', {
   tabMenu: (id, x, y) => ipcRenderer.send('tab-menu', id, x, y),
   newTab: (x, y) => ipcRenderer.send('tab-new', x, y),
   onTabs: (cb) => ipcRenderer.on('tabs', (e, s) => cb(s)),
+  onStatus: (cb) => ipcRenderer.on('status', (e, s) => cb(s)),
+  bell: () => ipcRenderer.send('bell-click'),
+  reload: () => ipcRenderer.send('build-click'),
   ready: () => ipcRenderer.send('chrome-ready')
 });
