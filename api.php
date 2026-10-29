@@ -1,5 +1,5 @@
 <?php
-const BUILD=259;
+const BUILD=260;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -519,7 +519,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v35']))return;
+  if(!empty($_SESSION['schema_v36']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -575,8 +575,9 @@ function ensure_schema($db){
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'col_grp'")->fetch())$db->exec("ALTER TABLE workspaces ADD col_grp INT NOT NULL DEFAULT 0");
   foreach(["cat VARCHAR(80) NOT NULL DEFAULT ''","tags VARCHAR(400) NOT NULL DEFAULT ''","src VARCHAR(40) NOT NULL DEFAULT ''"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM wiki_pages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE wiki_pages ADD $cd");}
   $db->exec("CREATE TABLE IF NOT EXISTS wiki_media(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(120) NOT NULL DEFAULT '',mime VARCHAR(40) NOT NULL,data MEDIUMBLOB NOT NULL,created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  foreach(["edited_at DATETIME NULL","deleted TINYINT NOT NULL DEFAULT 0"] as $cd){$cn=strtok($cd,' ');if(!$db->query("SHOW COLUMNS FROM messages LIKE '$cn'")->fetch())$db->exec("ALTER TABLE messages ADD $cd");}
   notices_ddl($db);
-  $_SESSION['schema_v35']=1;
+  $_SESSION['schema_v36']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -785,22 +786,37 @@ case 'msg_users':
   $q=$db->prepare("SELECT IF(m.to_id=0,0,m.from_id) AS peer,COUNT(*) AS n FROM messages m LEFT JOIN msg_reads r ON r.user_id=? AND r.peer_id=IF(m.to_id=0,0,m.from_id) WHERE m.from_id<>? AND (m.to_id=? OR m.to_id=0) AND m.id>COALESCE(r.last_id,0) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$un=[];foreach($q->fetchAll() as $r)$un[(int)$r['peer']]=(int)$r['n'];
   $q=$db->prepare("SELECT IF(from_id=?,to_id,from_id) AS peer,MAX(id) AS last FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY peer");$q->execute([$uid,$uid,$uid]);$la=[];foreach($q->fetchAll() as $r)$la[(int)$r['peer']]=(int)$r['last'];
   $q=$db->prepare("SELECT MAX(id) FROM messages WHERE to_id=0");$q->execute();$la[0]=(int)$q->fetchColumn();
-  $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
-  foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
+  $pv=[];$q=$db->prepare("SELECT m.id,m.from_id,m.to_id,m.body,m.created_at,m.deleted,(SELECT COUNT(*) FROM msg_files f WHERE f.msg_id=m.id) AS nf FROM messages m WHERE m.id IN(SELECT MAX(id) FROM messages WHERE to_id=0 UNION SELECT MAX(id) FROM messages WHERE to_id<>0 AND (from_id=? OR to_id=?) GROUP BY IF(from_id=?,to_id,from_id))");$q->execute([$uid,$uid,$uid]);
+  foreach($q->fetchAll() as $m){$pr=(int)$m['to_id']===0?0:((int)$m['from_id']===$uid?(int)$m['to_id']:(int)$m['from_id']);$bb=preg_replace('/\[\[task:\d+:\d+:([^\]]*)\]\]/u','Task: $1',(string)$m['body']);if(trim($bb)===''&&(int)$m['nf'])$bb="\u{1F4CE} Attachment";if((int)$m['deleted'])$bb='Message deleted';$pv[$pr]=['lb'=>mb_substr($bb,0,90),'at'=>$m['created_at'],'lm'=>(int)$m['from_id']===$uid];}
   $us=[];foreach($db->query("SELECT id,name,role FROM users WHERE role<>'guest' ORDER BY name")->fetchAll() as $u)if((int)$u['id']!==$uid)$us[]=['id'=>(int)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'n'=>$un[(int)$u['id']]??0,'last'=>$la[(int)$u['id']]??0]+($pv[(int)$u['id']]??[]);
   out(['build'=>BUILD,'users'=>$us,'team'=>['n'=>$un[0]??0,'last'=>$la[0]]+($pv[0]??[])]);
 case 'msg_list':
   $peer=(int)($in['peer']??0);$after=(int)($in['after']??0);
-  if($peer){$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
-  else{$q=$db->prepare("SELECT m.id,m.from_id,m.body,m.created_at,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
-  $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;$m['files']=[];}unset($m);
+  if($peer){$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND ((m.from_id=? AND m.to_id=?) OR (m.from_id=? AND m.to_id=?)) ORDER BY m.id DESC LIMIT 150");$q->execute([$after,$uid,$peer,$peer,$uid]);}
+  else{$q=$db->prepare("SELECT m.id,m.from_id,IF(m.deleted=1,'',m.body) AS body,m.created_at,m.deleted,(m.edited_at IS NOT NULL) AS edited,COALESCE(u.name,'Former member') AS name FROM messages m LEFT JOIN users u ON u.id=m.from_id WHERE m.id>? AND m.to_id=0 ORDER BY m.id DESC LIMIT 150");$q->execute([$after]);}
+  $ms=array_reverse($q->fetchAll());foreach($ms as &$m){$m['id']=(int)$m['id'];$m['mine']=(int)$m['from_id']===$uid;$m['deleted']=(int)$m['deleted'];$m['edited']=(int)$m['edited'];$m['files']=[];}unset($m);
   if($ms){$fi=implode(',',array_map(fn($m)=>$m['id'],$ms));$by=[];foreach($db->query("SELECT id,msg_id,name,mime,size,gone FROM msg_files WHERE msg_id IN($fi) ORDER BY id")->fetchAll() as $f)$by[(int)$f['msg_id']][]=['id'=>(int)$f['id'],'name'=>$f['name'],'mime'=>$f['mime'],'size'=>(int)$f['size'],'gone'=>(int)$f['gone']];foreach($ms as &$m)$m['files']=$by[$m['id']]??[];unset($m);}
   $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
   if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
   if($peer){$qi=$db->prepare("SELECT id FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id DESC LIMIT 150");$qi->execute([$uid,$peer,$peer,$uid]);}
   else{$qi=$db->query("SELECT id FROM messages WHERE to_id=0 ORDER BY id DESC LIMIT 150");}
-  $rc=msg_reacts($db,$qi->fetchAll(PDO::FETCH_COLUMN),$uid);
-  out(['messages'=>$ms,'peer_seen'=>$seen,'reacts'=>(object)$rc]);
+  $ids=$qi->fetchAll(PDO::FETCH_COLUMN);$rc=msg_reacts($db,$ids,$uid);
+  $ch=[];if($ids){foreach($db->query("SELECT id,IF(deleted=1,'',body) AS body,deleted,(edited_at IS NOT NULL) AS e FROM messages WHERE id IN(".implode(',',array_map('intval',$ids)).") AND (deleted=1 OR edited_at IS NOT NULL)")->fetchAll() as $r)$ch[(int)$r['id']]=['b'=>$r['body'],'d'=>(int)$r['deleted'],'e'=>(int)$r['e']];}
+  out(['messages'=>$ms,'peer_seen'=>$seen,'reacts'=>(object)$rc,'changes'=>(object)$ch]);
+case 'msg_edit':
+  $id=(int)($in['id']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);
+  $q=$db->prepare("SELECT id,from_id,deleted FROM messages WHERE id=?");$q->execute([$id]);$m=$q->fetch();
+  if(!$m||(int)$m['from_id']!==$uid||(int)$m['deleted'])out(['error'=>'You can only edit your own messages']);
+  $nf=$db->prepare("SELECT COUNT(*) FROM msg_files WHERE msg_id=? AND gone=0");$nf->execute([$id]);
+  if($b===''&&!(int)$nf->fetchColumn())out(['error'=>'A message cannot be empty. Use delete instead.']);
+  $db->prepare("UPDATE messages SET body=?,edited_at=NOW() WHERE id=?")->execute([$b,$id]);out(['ok'=>1,'body'=>$b]);
+case 'msg_del':
+  $id=(int)($in['id']??0);
+  $q=$db->prepare("SELECT id,from_id FROM messages WHERE id=?");$q->execute([$id]);$m=$q->fetch();
+  if(!$m||(int)$m['from_id']!==$uid)out(['error'=>'You can only delete your own messages']);
+  $db->prepare("UPDATE messages SET deleted=1,body='',edited_at=NULL WHERE id=?")->execute([$id]);
+  try{$db->prepare("DELETE FROM msg_files WHERE msg_id=?")->execute([$id]);$db->prepare("DELETE FROM msg_reacts WHERE msg_id=?")->execute([$id]);}catch(Throwable $e){}
+  out(['ok'=>1]);
 case 'msg_react':
   $mid=(int)($in['id']??0);$em=trim((string)($in['e']??''));
   if($mid<=0||$em===''||mb_strlen($em)>8||preg_match('/[<>&"\'\s]/u',$em))out(['error'=>'Pick an emoji']);

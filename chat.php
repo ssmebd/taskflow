@@ -61,6 +61,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .me .bb{background:var(--me);color:var(--meink)}
 .bb .tx{white-space:pre-wrap}.bb a{color:inherit;text-decoration:underline}
 .bb .ex{margin-top:4px;font-size:11px;opacity:.65}
+.bb.dl{background:transparent!important;border:1px dashed var(--line);color:var(--mut);font-size:13px}.bb .ed{font-size:11px;opacity:.6;margin-top:2px}.eded{display:flex;flex-direction:column;gap:6px;min-width:min(420px,70vw)}.eded textarea{width:100%;border:1px solid var(--acc);border-radius:8px;padding:8px;font:inherit;background:var(--card);color:var(--ink);resize:vertical;min-height:60px}.eded div{display:flex;gap:6px;justify-content:flex-end}.eded button{border:0;border-radius:8px;padding:6px 12px;font-weight:600;cursor:pointer;background:var(--col);color:var(--ink)}.eded button.p{background:var(--acc);color:#fff}
 .sn{font-size:11px;color:var(--mut);margin:1px 2px 0 0;align-self:flex-end}
 .bb{position:relative}
 .bt{display:none;position:absolute;bottom:calc(100% - 5px);right:6px;z-index:8;align-items:center;gap:1px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:3px 4px;box-shadow:0 4px 16px rgba(0,0,0,.22);color:var(--ink)}
@@ -166,7 +167,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=259;
+const BUILD=260;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -226,14 +227,15 @@ const QUICK=["👍","❤️","😆","😮","😢"],MORE=["👍","❤️","😆",
 function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
   if(n-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"short"})+" "+t;return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+" "+t}
 function bubble(m){
+  if(m.deleted)return `<div class="bb dl" data-m="${m.id}"><i>🚫 This message was deleted</i></div>`;
   const b=body(m.body);
   const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
   const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<div class="ex" title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</div>`:"";
   const fs=(m.files||[]).filter(f=>!f.gone),hasImg=fs.some(f=>/^image\//.test(f.mime));
-  const bt=`<div class="bt">${QUICK.map(e=>`<button type="button" data-r="${e}" title="React">${e}</button>`).join("")}<button type="button" data-more="1" title="More reactions">☺</button>${fs.length?`<span class="sp"></span><button type="button" data-dlm="1" title="Download${fs.length>1?" all":""}">⬇</button>`:""}${hasImg?`<button type="button" data-anm="1" title="Annotate picture">✎</button>`:""}</div>`;
+  const bt=`<div class="bt">${QUICK.map(e=>`<button type="button" data-r="${e}" title="React">${e}</button>`).join("")}<button type="button" data-more="1" title="More reactions">☺</button>${fs.length?`<span class="sp"></span><button type="button" data-dlm="1" title="Download${fs.length>1?" all":""}">⬇</button>`:""}${hasImg?`<button type="button" data-anm="1" title="Annotate picture">✎</button>`:""}${m.mine?`<span class="sp"></span><button type="button" data-ed="1" title="Edit message">✏️</button><button type="button" data-del="1" title="Delete message">🗑</button>`:""}</div>`;
   const rx=(m.reacts||[]).length?`<div class="rx" data-m="${m.id}">${m.reacts.map(r=>`<button type="button" class="rp${r.mine?" on":""}" data-r="${esc(r.e)}" title="${esc(r.names.join(", "))}">${esc(r.e)} <b>${r.n}</b></button>`).join("")}</div>`:"";
-  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${bt}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${exp}</div>${rx}`}
+  return `<div class="bb" data-m="${m.id}" title="${esc(hdrTime(D(m.created_at)))}">${bt}${fl}${b.text?`<div class="tx">${b.text}</div>`:""}${tk}${m.edited?`<div class="ed">(edited)</div>`:""}${exp}</div>${rx}`}
 function paint(all){
   const el=$("#msgs");let h="",prev=null,open="";
   let openMine=false;const close=()=>{if(open){h+=open+(openMine?"</div></div>":"</div></div></div>");open=""}};
@@ -257,6 +259,7 @@ async function pull(first){
   const nu=r.messages||[];const seenChanged=!cur.team&&r.peer_seen!==peerSeen;peerSeen=r.peer_seen||0;
   const rm=r.reacts||{};let rxChanged=false;
   if(first)msgs=nu;else{const have=new Set(msgs.map(m=>m.id));nu.forEach(m=>{if(!have.has(m.id))msgs.push(m)})}
+  const chg=r.changes||{};msgs.forEach(m=>{const k=chg[m.id];if(k){if(k.d&&!m.deleted){m.deleted=1;m.body="";m.files=[];m.reacts=[];rxChanged=true}else if(!k.d&&(k.b!==m.body||!m.edited)){m.body=k.b;m.edited=1;rxChanged=true}}});
   msgs.forEach(m=>{const nr=rm[m.id]||[];if(JSON.stringify(nr)!==JSON.stringify(m.reacts||[])){m.reacts=nr;rxChanged=true}});
   if(!nu.length&&!first&&!seenChanged&&!rxChanged)return;
   lastId=msgs.length?msgs[msgs.length-1].id:0;
@@ -380,6 +383,11 @@ $("#msgs").addEventListener("click",async e=>{
     if(bt.dataset.r){react(id,bt.dataset.r);return}
     if(bt.dataset.more){const r=bt.getBoundingClientRect(),p=$("#rpop");p.innerHTML=MORE.map(x=>`<button type="button" data-id="${id}" data-e="${x}">${x}</button>`).join("");p.hidden=false;
       const w=p.offsetWidth,h=p.offsetHeight;p.style.left=Math.max(6,Math.min(innerWidth-w-6,r.left-w+40))+"px";p.style.top=(r.top-h-6<6?r.bottom+6:r.top-h-6)+"px";return}
+    if(bt.dataset.del){if(!confirm("Delete this message for everyone?"))return;try{await api("msg_del",{id});const m0=msgOf(id);if(m0){m0.deleted=1;m0.body="";m0.files=[];m0.reacts=[];const el=$("#msgs"),st=el.scrollTop;paint(msgs);el.scrollTop=st}loadList().catch(()=>{})}catch(x){toast(x.message)}return}
+    if(bt.dataset.ed){const m0=msgOf(id);if(!m0)return;const bb=$("#msgs").querySelector('.bb[data-m="'+id+'"]');if(!bb)return;
+      bb.innerHTML=`<div class="eded"><textarea maxlength="2000"></textarea><div><button type="button" data-ec="1">Cancel</button><button type="button" class="p" data-es="1">Save</button></div></div>`;const ta=bb.querySelector("textarea");ta.value=m0.body;ta.focus();
+      const done=()=>{const el=$("#msgs"),st=el.scrollTop;paint(msgs);el.scrollTop=st},save=async()=>{const v=ta.value.trim();if(v===m0.body.trim()){done();return}try{const r=await api("msg_edit",{id,body:v});m0.body=r.body;m0.edited=1;done()}catch(x){toast(x.message)}};
+      bb.querySelector("[data-ec]").onclick=done;bb.querySelector("[data-es]").onclick=save;ta.addEventListener("keydown",k=>{if(k.key==="Escape")done();else if(k.key==="Enter"&&!k.shiftKey){k.preventDefault();save()}});return}
     const m=msgOf(id),fs=m?(m.files||[]).filter(f=>!f.gone):[];
     if(bt.dataset.dlm){for(const f of fs)await download(f.id,f.name);return}
     if(bt.dataset.anm){const f=fs.find(f=>/^image\//.test(f.mime));if(f)annOpen({id:f.id,name:f.name,src:"api.php?a=msg_file&id="+f.id});return}}
