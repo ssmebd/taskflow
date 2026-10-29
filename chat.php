@@ -82,7 +82,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 .pop .it{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 14px;border-bottom:1px solid var(--line)}.pop .it:hover{background:var(--col)}
 .pop .it b{display:block;font-size:14px}.pop .it small{color:var(--mut);font-size:12px}
 #emo{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;padding:8px}#emo button{border:0;background:none;font-size:22px;border-radius:8px;height:38px}#emo button:hover{background:var(--col)}
-#lb{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:50;display:grid;place-items:center;cursor:zoom-out}#lb[hidden]{display:none}#lb img{max-width:96vw;max-height:92vh;border-radius:8px}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:50;display:grid;place-items:center;cursor:zoom-out}#lb[hidden]{display:none}#lb img{max-width:96vw;max-height:84vh;border-radius:8px}
+#lbt{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:12px;display:flex;gap:8px;cursor:default}
+.lbb{border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px;background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(6px)}.lbb:hover{background:rgba(255,255,255,.28)}.lbb.p{background:linear-gradient(135deg,#38bdf8,#22c55e);color:#062a4a}
+#ann{position:fixed;inset:0;z-index:55;background:#0b0e14;display:flex;flex-direction:column}#ann[hidden]{display:none}
+#annb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 10px calc(8px) 10px;padding-top:calc(8px + env(safe-area-inset-top,0px));background:#151a26;border-bottom:1px solid #2a3042}
+#annb .g{display:flex;gap:4px;align-items:center;padding-right:8px;margin-right:2px;border-right:1px solid #2a3042}#annb .g:last-child{border:0;margin-left:auto;padding:0}
+.at{border:1px solid transparent;background:#1f2536;color:#e8eaf2;border-radius:9px;padding:7px 11px;font-size:14px;font-weight:700}.at.on{background:#1d4694;border-color:#38bdf8}.at:disabled{opacity:.4}
+.sw{width:26px;height:26px;border-radius:50%;border:2px solid #fff3;padding:0}.sw.on{border-color:#fff;box-shadow:0 0 0 2px #38bdf8}
+#annw{flex:1;min-height:0;display:grid;place-items:center;padding:10px;overflow:hidden;position:relative}
+#annc{touch-action:none;cursor:crosshair;background:#fff;border-radius:4px;box-shadow:0 6px 30px rgba(0,0,0,.5)}
+#annt{position:absolute;z-index:3;background:rgba(255,255,255,.92);border:2px solid #38bdf8;border-radius:6px;padding:3px 6px;font:700 18px system-ui;min-width:90px;outline:0}#annt[hidden]{display:none}
 #toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 16px;border-radius:10px;font-size:13.5px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.35)}#toast[hidden]{display:none}
 #drop{position:absolute;inset:0;background:rgba(56,189,248,.18);border:3px dashed var(--acc);z-index:15;display:grid;place-items:center;font-weight:800;font-size:18px;color:var(--pri)}#drop[hidden]{display:none}
 @media(max-width:760px){
@@ -127,7 +137,17 @@ button{font:inherit;color:inherit;cursor:pointer}
   <div id="drop" hidden>Drop to attach</div>
  </main>
 </div>
-<div id="lb" hidden><img alt=""></div>
+<div id="lb" hidden><div id="lbt"><button class="lbb" id="lbd" type="button">⬇ Download</button><button class="lbb p" id="lba" type="button">✎ Annotate</button><button class="lbb" id="lbx" type="button" aria-label="Close">✕</button></div><img alt=""></div>
+<div id="ann" hidden>
+ <div id="annb">
+  <div class="g"><button class="at on" data-tool="pen" type="button">✏ Pen</button><button class="at" data-tool="arrow" type="button">➜ Arrow</button><button class="at" data-tool="rect" type="button">▭ Box</button><button class="at" data-tool="text" type="button">T Text</button></div>
+  <div class="g" id="annco"></div>
+  <div class="g"><button class="at" data-sz="3" type="button">S</button><button class="at on" data-sz="6" type="button">M</button><button class="at" data-sz="11" type="button">L</button></div>
+  <div class="g"><button class="at" id="annun" type="button">↶ Undo</button><button class="at" id="anncl" type="button">Clear</button></div>
+  <div class="g"><button class="at" id="anndl" type="button">⬇ Save</button><button class="at on" id="annsd" type="button">➤ Add to message</button><button class="at" id="annx" type="button">Cancel</button></div>
+ </div>
+ <div id="annw"><canvas id="annc"></canvas><input id="annt" hidden placeholder="Type, press Enter"></div>
+</div>
 <div id="toast" hidden></div>
 <script>
 "use strict";
@@ -186,7 +206,7 @@ async function open_(id){
   pending=[];renderPend();renderList();await pull(true);$("#tx").focus()}
 function bubble(m,showName){
   const b=body(m.body);
-  const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
+  const fl=(m.files||[]).map(f=>f.gone?`<div class="fl" style="opacity:.65"><i>🗑</i><div><span>${esc(f.name)}</span><small>Removed after 48 hours</small></div></div>`:/^image\//.test(f.mime)?`<img class="im" src="api.php?a=msg_file&id=${f.id}" alt="${esc(f.name)}" data-big="api.php?a=msg_file&id=${f.id}" data-fid="${f.id}" data-name="${esc(f.name)}" loading="lazy">`:`<a class="fl" href="api.php?a=msg_file&id=${f.id}&dl=1" data-dl="${f.id}" data-name="${esc(f.name)}"><i>📄</i><div><span>${esc(f.name)}</span><small>${esc(fmtSize(f.size))}</small></div></a>`).join("");
   const tk=b.tasks.map(t=>`<a class="tk" href="index.php?w=${t[0]}&t=${t[1]}" target="_blank" rel="noopener"><i>📋</i><div><b>${esc(t[2]||"Task")}</b><small>Open task in TaskFlow ↗</small></div></a>`).join("");
   const live=(m.files||[]).some(f=>!f.gone),hl=Math.ceil(48-(Date.now()-D(m.created_at).getTime())/36e5),exp=live&&hl>0?`<span title="Attachments are deleted 48 hours after sending">📎 deleted in ${hl>=2?hl+" h":"<2 h"}</span>`:"";
   const sn=(m.mine&&!cur.team&&m.id<=peerSeen)?'<span class="sn">✓✓ Seen</span>':(m.mine&&!cur.team?"<span>✓</span>":"");
@@ -240,9 +260,65 @@ $("#pend").onclick=e=>{const b=e.target.closest("[data-rm]");if(!b)return;const 
 $("#list").onclick=e=>{const b=e.target.closest(".cv");if(b)open_(+b.dataset.id)};
 $("#q").oninput=renderList;
 $("#bk").onclick=()=>{$("#main").classList.remove("open");cur=null;renderList()};
-$("#msgs").onclick=e=>{const i=e.target.closest(".im");if(i){$("#lb img").src=i.dataset.big;$("#lb").hidden=false}};
-$("#lb").onclick=()=>{$("#lb").hidden=true};
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#lb").hidden=true;$("#tkp").hidden=true;$("#emp").hidden=true;$("#menu").hidden=true}});
+let lbCur=null;
+$("#msgs").onclick=e=>{const d=e.target.closest("[data-dl]");if(d){e.preventDefault();download(d.dataset.dl,d.dataset.name);return}const i=e.target.closest(".im");if(i){lbCur={id:i.dataset.fid,name:i.dataset.name,src:i.dataset.big};$("#lb img").src=i.dataset.big;$("#lb").hidden=false}};
+$("#lb").onclick=e=>{if(!e.target.closest("#lbt"))$("#lb").hidden=true};
+$("#lbx").onclick=()=>{$("#lb").hidden=true};
+$("#lbd").onclick=()=>lbCur&&download(lbCur.id,lbCur.name);
+$("#lba").onclick=()=>{if(lbCur){$("#lb").hidden=true;annOpen(lbCur)}};
+/* download: works in the browser, Windows app and Android app */
+async function download(id,name){
+  try{const r=await fetch("api.php?a=msg_file&id="+id+"&dl=1",{credentials:"same-origin"});if(r.status===410){toast("This file was removed after 48 hours");return}if(!r.ok)throw new Error("Download failed");
+    const blob=await r.blob();await saveBlob(blob,name||"file")}catch(e){toast(e.message||"Download failed")}}
+async function saveBlob(blob,name){
+  const C=window.Capacitor,P=C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins;
+  if(P&&P.Filesystem&&P.Share){const b64=await toB64(blob);const w=await P.Filesystem.writeFile({path:name,data:b64,directory:"CACHE"});await P.Share.share({title:name,url:w.uri,dialogTitle:"Save or share"});return}
+  const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);toast("Saved: "+name)}
+/* annotate a picture, then add it to the message as feedback */
+const A={img:null,name:"",shapes:[],tool:"pen",color:"#ef4444",sz:6,cur:null,W:0,H:0};
+["#ef4444","#f59e0b","#22c55e","#38bdf8","#ffffff","#111827"].forEach((c,i)=>{const b=document.createElement("button");b.type="button";b.className="sw"+(i?"":" on");b.style.background=c;b.dataset.c=c;$("#annco").appendChild(b)});
+function annOpen(f){
+  const im=new Image();im.onload=()=>{A.img=im;A.name=f.name||"image";A.shapes=[];A.cur=null;
+    const sc=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight));A.W=Math.round(im.naturalWidth*sc);A.H=Math.round(im.naturalHeight*sc);
+    const cv=$("#annc");cv.width=A.W;cv.height=A.H;$("#annt").hidden=true;$("#ann").hidden=false;annFit();annDraw();annTools()};
+  im.onerror=()=>toast("Could not open the picture");im.src=f.src}
+function annFit(){const w=$("#annw"),cv=$("#annc");if(!A.W)return;const s=Math.min((w.clientWidth-20)/A.W,(w.clientHeight-20)/A.H,3);cv.style.width=Math.round(A.W*s)+"px";cv.style.height=Math.round(A.H*s)+"px"}
+window.addEventListener("resize",()=>{if(!$("#ann").hidden)annFit()});
+function annTools(){document.querySelectorAll("#annb [data-tool]").forEach(b=>b.classList.toggle("on",b.dataset.tool===A.tool));document.querySelectorAll("#annb [data-sz]").forEach(b=>b.classList.toggle("on",+b.dataset.sz===A.sz));document.querySelectorAll("#annco .sw").forEach(b=>b.classList.toggle("on",b.dataset.c===A.color));$("#annun").disabled=!A.shapes.length}
+function annShape(g,s){
+  const k=Math.max(.6,Math.max(A.W,A.H)/1000),lw=s.sz*k;g.strokeStyle=s.color;g.fillStyle=s.color;g.lineWidth=lw;g.lineCap="round";g.lineJoin="round";
+  if(s.t==="pen"){g.beginPath();s.p.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));if(s.p.length===1)g.lineTo(s.p[0][0]+.1,s.p[0][1]);g.stroke()}
+  else if(s.t==="rect"){g.strokeRect(s.a[0],s.a[1],s.b[0]-s.a[0],s.b[1]-s.a[1])}
+  else if(s.t==="arrow"){const[dx,dy]=[s.b[0]-s.a[0],s.b[1]-s.a[1]],L=Math.hypot(dx,dy);if(L<2)return;const an=Math.atan2(dy,dx),h=Math.max(14*k,lw*3.2);
+    g.beginPath();g.moveTo(s.a[0],s.a[1]);g.lineTo(s.b[0]-Math.cos(an)*h*.6,s.b[1]-Math.sin(an)*h*.6);g.stroke();
+    g.beginPath();g.moveTo(s.b[0],s.b[1]);g.lineTo(s.b[0]-h*Math.cos(an-.42),s.b[1]-h*Math.sin(an-.42));g.lineTo(s.b[0]-h*Math.cos(an+.42),s.b[1]-h*Math.sin(an+.42));g.closePath();g.fill()}
+  else if(s.t==="text"){const fs=Math.max(18*k,s.sz*k*3.4);g.font="800 "+fs+"px system-ui,Segoe UI,Arial";g.textBaseline="top";g.lineWidth=fs/6;g.strokeStyle=s.color==="#ffffff"?"#111827":"#ffffff";g.strokeText(s.s,s.a[0],s.a[1]);g.fillText(s.s,s.a[0],s.a[1])}}
+function annDraw(){const cv=$("#annc"),g=cv.getContext("2d");g.clearRect(0,0,A.W,A.H);g.drawImage(A.img,0,0,A.W,A.H);A.shapes.forEach(s=>annShape(g,s));if(A.cur)annShape(g,A.cur)}
+function annPt(e){const r=$("#annc").getBoundingClientRect();return[(e.clientX-r.left)*A.W/r.width,(e.clientY-r.top)*A.H/r.height]}
+const ac=$("#annc");
+ac.addEventListener("pointerdown",e=>{if(!A.img)return;e.preventDefault();const p=annPt(e);
+  if(A.tool==="text"){annText(e,p);return}
+  ac.setPointerCapture(e.pointerId);A.cur=A.tool==="pen"?{t:"pen",color:A.color,sz:A.sz,p:[p]}:{t:A.tool,color:A.color,sz:A.sz,a:p,b:p};annDraw()});
+ac.addEventListener("pointermove",e=>{if(!A.cur)return;const p=annPt(e);if(A.cur.t==="pen")A.cur.p.push(p);else A.cur.b=p;annDraw()});
+const annEnd=()=>{if(!A.cur)return;A.shapes.push(A.cur);A.cur=null;annDraw();annTools()};
+ac.addEventListener("pointerup",annEnd);ac.addEventListener("pointercancel",annEnd);
+function annText(e,p){const t=$("#annt"),w=$("#annw").getBoundingClientRect();t.hidden=false;t.value="";t.style.left=(e.clientX-w.left)+"px";t.style.top=(e.clientY-w.top-14)+"px";t.style.color=A.color==="#ffffff"?"#111":A.color;t.dataset.x=p[0];t.dataset.y=p[1];setTimeout(()=>t.focus(),30)}
+function annCommit(){const t=$("#annt");if(t.hidden)return;const s=t.value.trim();t.hidden=true;if(s){A.shapes.push({t:"text",color:A.color,sz:A.sz,a:[+t.dataset.x,+t.dataset.y],s});annDraw();annTools()}}
+$("#annt").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();annCommit()}if(e.key==="Escape")$("#annt").hidden=true});
+$("#annt").addEventListener("blur",annCommit);
+$("#annb").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.tool){A.tool=b.dataset.tool}else if(b.dataset.sz){A.sz=+b.dataset.sz}else if(b.dataset.c){A.color=b.dataset.c}
+  else if(b.id==="annun"){A.shapes.pop()}else if(b.id==="anncl"){A.shapes=[]}
+  else if(b.id==="annx"){$("#ann").hidden=true;A.img=null;return}
+  else if(b.id==="anndl"||b.id==="annsd"){annCommit();annDraw();annExport(b.id==="annsd");return}
+  annDraw();annTools()});
+function annExport(addIt){
+  $("#annc").toBlob(async bl=>{if(!bl){toast("Could not save the picture");return}
+    const base=String(A.name).replace(/\.\w+$/,"")||"image",fn="annotated-"+base+".jpg";
+    if(!addIt){await saveBlob(bl,fn);return}
+    if(!cur){toast("Open a chat first");return}
+    await addFiles([new File([bl],fn,{type:"image/jpeg"})]);$("#ann").hidden=true;A.img=null;toast("Annotated picture added. Write your feedback and press send.");$("#tx").focus()},"image/jpeg",.88)}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#ann").hidden&&$("#annt").hidden){$("#ann").hidden=true;A.img=null}$("#lb").hidden=true;$("#tkp").hidden=true;$("#emp").hidden=true;$("#menu").hidden=true}});
 $("#mb").onclick=e=>{e.stopPropagation();$("#menu").hidden=!$("#menu").hidden};
 document.addEventListener("click",e=>{if(!e.target.closest("#menu,#mb"))$("#menu").hidden=true;if(!e.target.closest("#tkp,#btk"))$("#tkp").hidden=true;if(!e.target.closest("#emp,#bem"))$("#emp").hidden=true});
 /* emoji */

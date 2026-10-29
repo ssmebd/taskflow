@@ -27,7 +27,7 @@ function create() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/i.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => {
     let u; try { u = new URL(url); } catch (x) { return; }
-    const own = u.host === HOST && (/\/chat\.php$/.test(u.pathname) || /\/login\.php$/.test(u.pathname));
+    const own = u.host === HOST && (/\/(chat|login|api)\.php$/.test(u.pathname));
     if (!own) { e.preventDefault(); if (/^https?:/i.test(url)) shell.openExternal(url); }
   });
   win.webContents.on('did-fail-load', (e, code, desc, url, isMain) => {
