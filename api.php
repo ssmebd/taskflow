@@ -1,5 +1,5 @@
 <?php
-const BUILD=240;
+const BUILD=241;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1023,7 +1023,7 @@ case 'guest_home':
   if($me['role']==='admin'&&$as>0){$q=$db->prepare("SELECT name FROM users WHERE id=?");$q->execute([$as]);$asName=(string)$q->fetchColumn();$q=$db->prepare("SELECT ws_id FROM ws_users WHERE user_id=?");$q->execute([$as]);$ids=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
   else $ids=array_map(fn($w)=>(int)$w['id'],$WS);
   $wn=[];if($ids){$q=$db->query("SELECT id,name,CRC32(COALESCE(logo,'')) AS lv,(logo IS NOT NULL AND logo<>'') AS hl FROM workspaces WHERE id IN(".implode(',',$ids).") ORDER BY sort_no,id");$wn=$q->fetchAll();}
-  $res=['companies'=>$wn,'as'=>$as,'asName'=>$asName,'from'=>'','to'=>'','done'=>[],'going'=>[],'soon'=>[],'people'=>[]];
+  $qe=$db->prepare("SELECT email FROM users WHERE id=?");$qe->execute([(int)$me['id']]);$res=['email'=>trim((string)$qe->fetchColumn()),'companies'=>$wn,'as'=>$as,'asName'=>$asName,'from'=>'','to'=>'','done'=>[],'going'=>[],'soon'=>[],'people'=>[]];
   if($me['role']==='admin'){$res['guests']=$db->query("SELECT id,name FROM users WHERE role='guest' ORDER BY name")->fetchAll();}
   if(!$ids)out($res);
   gh_ddl($db);$hu=$me['role']==='guest'?(int)$me['id']:($as>0?$as:0);$hide=[];
@@ -1046,6 +1046,22 @@ case 'guest_home':
   uasort($ppl,fn($a,$b)=>($a['name']==='Unassigned')<=>($b['name']==='Unassigned')?:strcmp($a['name'],$b['name']));
   $res['people']=array_values($ppl);
   out($res);
+case 'guest_email_report':
+  // Emails the viewer a status report for one of their companies, to the address on their own account only.
+  $as=(int)($in['as']??0);$wid=(int)($in['ws']??0);
+  $qe=$db->prepare("SELECT email FROM users WHERE id=?");$qe->execute([(int)$me['id']]);$to=trim((string)$qe->fetchColumn());
+  if(!filter_var($to,FILTER_VALIDATE_EMAIL))out(['error'=>'There is no email address on your account yet. Please ask the admin to add it.']);
+  $hu=$me['role']==='guest'?(int)$me['id']:0;
+  if($me['role']==='admin'&&$as>0){$q=$db->prepare("SELECT ws_id FROM ws_users WHERE user_id=?");$q->execute([$as]);$ids=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));$hu=$as;}
+  elseif($me['role']==='admin'){$ids=array_map('intval',$db->query("SELECT id FROM workspaces")->fetchAll(PDO::FETCH_COLUMN));}
+  else $ids=array_map(fn($w)=>(int)$w['id'],$WS);
+  if(!in_array($wid,$ids,true))out(['error'=>'That company is not available to you']);
+  $lk=sys_get_temp_dir().'/tf_ghm_'.(int)$me['id'];if(is_file($lk)&&time()-filemtime($lk)<60)out(['error'=>'A report was just sent. Please wait a minute before sending another.']);
+  gh_ddl($db);$hide=[];if($hu){$q=$db->prepare("SELECT gid FROM guest_hide WHERE user_id=?");$q->execute([$hu]);$hide=array_map('intval',$q->fetchAll(PDO::FETCH_COLUMN));}
+  $wq=$db->prepare("SELECT name FROM workspaces WHERE id=?");$wq->execute([$wid]);$cn=(string)$wq->fetchColumn();
+  $r=sr_send($db,['emails'=>$to,'ws_ids'=>(string)$wid,'excl_g'=>implode(',',$hide),'excl_t'=>'','name'=>'Task status report'.($cn!==''?' - '.$cn:'')]);
+  if(empty($r['ok']))out(['error'=>'The email could not be sent'.(!empty($r['err'])?': '.$r['err']:'')]);
+  @touch($lk);out(['ok'=>1,'to'=>$to]);
 case 'guest_hide_save':
   admin();gh_ddl($db);$u=(int)($in['user_id']??0);$g=sr_ids($in['hide']??[]);
   if(!$u)out(['error'=>'Pick a guest first']);

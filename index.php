@@ -251,6 +251,7 @@ tr.gh th{background:color-mix(in srgb,var(--gc,#888) 22%,var(--card));border-lef
 .gh-tchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.gh-tchips span{font-size:11.5px;font-weight:700;background:var(--col);border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--ink)}
 .hsec .gh-th{border:0;border-radius:8px;margin:10px 0 6px;padding:6px 12px}#ghdg .hw{padding:8px 0 0;max-width:none}#ghdg .hl{position:relative;top:0}
 body.guest #rpw,body.guest #tbtn,body.guest #rtools,body.guest #mhm,body.guest #tfwl,body.guest #gm,body.guest #sm,body.guest #cm,body.guest #dm,body.guest #xm,body.guest #rm,body.guest #ivm,body.guest #tmw,body.guest #om,body.guest #apm{display:none!important}
+.gh-em{margin:14px 0 4px;text-align:center}.gh-em button{width:100%;padding:12px 14px;border:0;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#22c55e);color:#062a4a;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}.gh-em button:disabled{opacity:.6;cursor:default}.gh-em small{display:block;margin-top:6px;font-size:12px;color:#cbd5e1;word-break:break-all}.gh-em small.ok{color:#86efac}.gh-em small.er{color:#fca5a5}
 .hrow .d{justify-self:end}.gh-tb{min-width:640px}@media(max-width:600px){.hrow .d{grid-column:2;grid-row:1;align-self:start}.hrow>div:nth-child(2){grid-column:1;grid-row:2;justify-content:flex-start!important}}
 .gh-tg{margin-bottom:10px}.gh-th{padding:8px 14px;background:var(--col);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);border-bottom:1px solid var(--line)}.gh-th small{font-weight:600;letter-spacing:0;color:var(--mut);margin-left:6px;text-transform:none}
 .gh-tg .gh-r:first-of-type{border-top:0}
@@ -2259,7 +2260,7 @@ function ghHtml(r0){
   const wk=fd(r.from)+" – "+fd(r.to);
   return `<div class="hw"><aside class="hl"><div class="hlt"><div class="hgr">${gem} ${greet}</div><h2>${esc(String(who).split(" ")[0])} <span class="wv">\u{1F44B}</span></h2><p>Week of ${esc(wk)}: <b>${r.going.length}</b> ongoing task${r.going.length===1?"":"s"} across <b>${(r.companies||[]).length}</b> compan${(r.companies||[]).length===1?"y":"ies"}.</p>
   <div class="hch"><span class="gn"><b>${r.done.length}</b>Completed</span><span><b>${r.going.length}</b>Ongoing</span><span><b>${r.soon.length}</b>Starting soon</span><span class="${late?"rd":""}"><b>${late}</b>Overdue</span></div></div>
-  <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div><div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
+  <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div>${(r0.companies||[]).length?`<div class="gh-em"><button type="button" id="ghem">\u2709 Email me this report${allC.length>1?" ("+esc((allC.find(w=>w.id==ghSel)||{}).name||"")+")":""}</button><small id="ghemt">${r0.email?"Sent to "+esc(r0.email):"No email address on your account yet"}</small></div>`:""}<div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
   <section class="hrr">${pick}${sec("Completed this week","#16a34a",r.done,"done")}${sec("Ongoing now","#2563eb",r.going,"going")}${sec("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
   <div class="hsec" style="--c:#7c3aed"><h3><i></i>Who is working on what <em>${np}</em></h3>${ppl||'<div class="hrow" style="color:var(--mut)">No one has an ongoing task right now.</div>'}</div></section></div>`}
 async function renderGuestHome(){
@@ -2267,6 +2268,9 @@ async function renderGuestHome(){
   try{const r=await api("guest_home",{});m.innerHTML=ghHtml(r)}catch(e){m.innerHTML='<div class="gho"><div class="empty">'+esc(e.message)+'</div></div>'}}
 document.addEventListener("click",e=>{const b=e.target.closest("[data-ghc]");if(!b||!ghR)return;ghSel=+b.dataset.ghc;try{localStorage.setItem("tf_ghsel",ghSel)}catch(x){}
   const gb=b.closest("#ghb");if(gb){const p=ghPanel(ghR,+$("#ghas").value||0);gb.innerHTML=p+ghHtml(ghR)}else $("#main").innerHTML=ghHtml(ghR)});
+document.addEventListener("click",async e=>{const b=e.target.closest("#ghem");if(!b||!ghSel)return;const t=b.parentNode.querySelector("small"),old=b.textContent;b.disabled=true;b.textContent="Sending\u2026";t.className="";
+  try{const r=await api("guest_email_report",{ws:ghSel,as:+($("#ghas")&&$("#ghas").value)||0});t.textContent="Sent to "+r.to+". Please check your inbox.";t.className="ok"}catch(x){t.textContent=x.message;t.className="er"}
+  b.textContent=old;setTimeout(()=>{b.disabled=false},3000)});
 let ghInit=false;
 async function ghLoad(){const as=+$("#ghas").value||0;$("#ghb").innerHTML='<div class="empty">Loading…</div>';
   try{const r=await api("guest_home",{as});if(!ghInit){ghInit=true;$("#ghas").innerHTML='<option value="0">Admin (all companies)</option>'+(r.guests||[]).map(g=>`<option value="${g.id}">${esc(g.name)} (guest)</option>`).join("")}$("#ghb").innerHTML=ghPanel(r,as)+ghHtml(r)}catch(e){$("#ghb").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
@@ -2391,7 +2395,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=240;
+const BUILD=241;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
