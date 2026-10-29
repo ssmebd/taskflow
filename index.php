@@ -2260,7 +2260,7 @@ function ghHtml(r0){
   const wk=fd(r.from)+" – "+fd(r.to);
   return `<div class="hw"><aside class="hl"><div class="hlt"><div class="hgr">${gem} ${greet}</div><h2>${esc(String(who).split(" ")[0])} <span class="wv">\u{1F44B}</span></h2><p>Week of ${esc(wk)}: <b>${r.going.length}</b> ongoing task${r.going.length===1?"":"s"} across <b>${(r.companies||[]).length}</b> compan${(r.companies||[]).length===1?"y":"ies"}.</p>
   <div class="hch"><span class="gn"><b>${r.done.length}</b>Completed</span><span><b>${r.going.length}</b>Ongoing</span><span><b>${r.soon.length}</b>Starting soon</span><span class="${late?"rd":""}"><b>${late}</b>Overdue</span></div></div>
-  <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div>${(r0.companies||[]).length?`<div class="gh-em"><button type="button" id="ghem">\u2709 Email me this report${allC.length>1?" ("+esc((allC.find(w=>w.id==ghSel)||{}).name||"")+")":""}</button><small id="ghemt">${r0.email?"Sent to "+esc(r0.email):"No email address on your account yet"}</small></div>`:""}<div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
+  <div class="hlc"><div class="hlh">Companies</div><div class="hcg">${cards}</div></div>${(r0.companies||[]).length?`<div class="gh-em"><button type="button" id="ghem">\u2709 Email me Status Report</button><small id="ghemt">${r0.email?(allC.length>1?esc((allC.find(w=>w.id==ghSel)||{}).name||"")+" report will be sent to ":"Will be sent to ")+esc(r0.email):"No email address on your account yet"}</small></div>`:""}<div class="hlf">Updated live from TaskFlow. <i>»</i></div></aside>
   <section class="hrr">${pick}${sec("Completed this week","#16a34a",r.done,"done")}${sec("Ongoing now","#2563eb",r.going,"going")}${sec("Starting in the next 3 days","#f59e0b",r.soon,"soon")}
   <div class="hsec" style="--c:#7c3aed"><h3><i></i>Who is working on what <em>${np}</em></h3>${ppl||'<div class="hrow" style="color:var(--mut)">No one has an ongoing task right now.</div>'}</div></section></div>`}
 async function renderGuestHome(){
@@ -2395,7 +2395,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=241;
+const BUILD=242;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
