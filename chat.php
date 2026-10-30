@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=276;
+const BUILD=277;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -238,7 +238,7 @@ async function open_(id){
   $("#msgs").innerHTML="";$("#main").classList.add("open");
   headStat(true);
   $("#tn").textContent=cur.name;
-  pending=[];setRich(false);renderPend();renderList();await pull(true);$("#tx").focus()}
+  pending=[];setRich(false);renderPend();renderList();await pull(true);if(matchMedia("(pointer:fine)").matches)$("#tx").focus();{const m=$("#msgs");if(m)m.scrollTop=m.scrollHeight}}
 const QUICK=["👍","❤️","😆","😮","😢"],MORE=["👍","❤️","😆","😮","😢","🙏","👏","🔥","✅","❌","🎉","💡","👀","😅","🤝","💯"];
 function hdrTime(d){const t=hm(d),n=new Date();if(sameDay(d,n))return"Today "+t;if(sameDay(d,new Date(Date.now()-864e5)))return"Yesterday "+t;
   if(n-d<6*864e5)return d.toLocaleDateString(undefined,{weekday:"short"})+" "+t;return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()===n.getFullYear()?undefined:"numeric"})+" "+t}
@@ -495,7 +495,13 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(
   notLabel();
   if("Notification" in window&&Notification.permission==="default")setTimeout(()=>{try{Notification.requestPermission().then(notLabel)}catch(e){}},3000);
   try{await loadList()}catch(e){$("#list").innerHTML='<div class="empty">'+esc(e.message)+"</div>"}
-  const h=new URLSearchParams(location.search).get("u");if(h!==null)open_(+h||0);
+  const h=new URLSearchParams(location.search).get("u");
+  if(h!==null)open_(+h||0);
+  else{/* open on the conversation with the newest message, so the last message is the first thing you see */
+    const all=[{id:0,...team}].concat(conv).filter(c=>c.at);
+    const unread=all.filter(c=>c.n>0).sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0];
+    const pick=unread||all.sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0];
+    if(pick){try{await open_(pick.id);const m=$("#msgs");if(m)m.scrollTop=m.scrollHeight}catch(e){}}}
 })();
 </script>
 </body>
