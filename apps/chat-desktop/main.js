@@ -23,6 +23,19 @@ function create() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, backgroundThrottling: false, autoplayPolicy: 'no-user-gesture-required' }
   });
   win.setMenuBarVisibility(false);
+  // Spell check: red underline while typing; right-click shows suggestions, "Add to dictionary" and the usual edit commands.
+  try { session.defaultSession.setSpellCheckerLanguages(['en-US']); } catch (e) {}
+  win.webContents.on('context-menu', (e, params) => {
+    const items = [];
+    if (params.misspelledWord) {
+      (params.dictionarySuggestions || []).slice(0, 6).forEach((sug) => items.push({ label: sug, click: () => win.webContents.replaceMisspelling(sug) }));
+      if (!(params.dictionarySuggestions || []).length) items.push({ label: 'No suggestions', enabled: false });
+      items.push({ label: 'Add to dictionary', click: () => win.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord) }, { type: 'separator' });
+    }
+    if (params.isEditable) items.push({ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' });
+    else if (params.selectionText) items.push({ role: 'copy' });
+    if (items.length) Menu.buildFromTemplate(items).popup({ window: win });
+  });
   win.loadURL(URL_CHAT);
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/i.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (e, url) => {

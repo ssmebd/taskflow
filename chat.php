@@ -151,7 +151,7 @@ button{font:inherit;color:inherit;cursor:pointer}
      <button class="tb" id="bat" title="Attach photo or file (deleted after 48 hours)">📎</button>
      <button class="tb" id="btk" title="Share a task">📋</button>
      <button class="tb" id="bem" title="Emoji">😊</button>
-     <textarea id="tx" rows="1" placeholder="Write a message" enterkeyhint="send"></textarea><div id="rtx" contenteditable="true" role="textbox" aria-label="Write a message" data-ph="Write a message" hidden></div>
+     <textarea id="tx" rows="1" placeholder="Write a message" enterkeyhint="send" spellcheck="true" autocorrect="on" autocapitalize="sentences" lang="en"></textarea><div id="rtx" contenteditable="true" spellcheck="true" lang="en" role="textbox" aria-label="Write a message" data-ph="Write a message" hidden></div>
      <button id="snd" title="Send" aria-label="Send">➤</button>
     </div>
     <input type="file" id="fi" multiple hidden>
@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=278;
+const BUILD=279;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
