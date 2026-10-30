@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=273;
+const BUILD=274;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -187,7 +187,7 @@ const col=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))>>>0;retu
 const ini=n=>String(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase();
 const phUrl=(id,v)=>"api.php?a=photo&id="+id+"&v="+v;
 const phOf=id=>{if(ME&&ME.id===id)return ME.ph||0;const c=conv.find(x=>x.id===id);return c&&c.ph||0};
-const avHtml=(n,team_,sm,on,id,ph)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#0f2a5c,#22c55e)">👥</div></div>`:`<div class="avw${sm?" sm":""}">${ph?`<img class="av" src="${phUrl(id,ph)}" alt="" onerror="this.outerHTML='<div class=&quot;av&quot; style=&quot;background:#ddd&quot;></div>'">`:`<div class="av" style="background:${col(n)}">${esc(ini(n))}</div>`}<i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
+const avHtml=(n,team_,sm,on,id,ph)=>team_?`<div class="avw${sm?" sm":""}"><div class="av" style="background:linear-gradient(135deg,#38bdf8,#22c55e);color:#fff"><svg viewBox="0 0 24 24" width="60%" height="60%" fill="#fff" aria-hidden="true"><circle cx="9" cy="8" r="3.3"/><path d="M2.5 19c0-3.4 2.9-5.6 6.5-5.6s6.5 2.2 6.5 5.6z"/><circle cx="17" cy="9" r="2.6" opacity=".85"/><path d="M16.2 13.6c3 0 5.3 1.8 5.3 4.6h-4.1c0-1.9-.5-3.4-1.8-4.4.2-.1.4-.2.6-.2z" opacity=".85"/></svg></div></div>`:`<div class="avw${sm?" sm":""}">${ph?`<img class="av" src="${phUrl(id,ph)}" alt="" onerror="this.outerHTML='<div class=&quot;av&quot; style=&quot;background:#ddd&quot;></div>'">`:`<div class="av" style="background:${col(n)}">${esc(ini(n))}</div>`}<i class="stt ${on?"on":"off"}" title="${on?"Online":"Offline"}"></i></div>`;
 async function api(a,data){
   const r=await fetch("api.php?a="+a,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{}),credentials:"same-origin"});
   if(r.status===401){location="login.php?next=chat";throw new Error("auth")}
