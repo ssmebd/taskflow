@@ -355,7 +355,7 @@ body,body.sc{padding-left:56px}
 #cpanel .cr .wl{width:40px;height:40px;border-radius:10px;border:0;padding:3px;background:#0f2a5c;flex:none;pointer-events:none}
 #cpanel .cr .ini{border-radius:8px;font-size:15px}
 #cpanel .cr span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home #fa,body.home #add,body.home #gtabs,body.home #stats,body.home #gcb,body.home #bar{display:none!important}
+body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home #fa,body.home #fme,body.home #add,body.home #gtabs,body.home #stats,body.home #gcb,body.home #bar{display:none!important}
 .hm{max-width:900px;margin:0 auto;padding:18px 16px 40px}.hm h2{margin:0 0 2px;font-size:22px}.hm .sub{color:var(--mut);margin-bottom:16px}
 .hmc{margin-top:16px}.hmc h3{display:flex;align-items:center;gap:8px;margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut)}.hmc h3 i{width:9px;height:9px;border-radius:50%;background:#7c3aed}.hmc h3 em{font-style:normal;background:var(--col);padding:0 7px;border-radius:9px;font-size:11px}
 .hmr{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:6px;color:var(--ink);cursor:pointer;font:inherit}.hmr:hover{border-color:#7c3aed}.hmr .av{flex:none}.hmr .hmb{flex:1;min-width:0}.hmr .hmb b{display:block}.hmr .hmb small{display:block;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hmr .hmt{font-size:11px;color:var(--mut);white-space:nowrap;text-align:right}.hmr .hmu{display:inline-block;min-width:18px;padding:1px 6px;border-radius:9px;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;margin-top:3px}
@@ -433,8 +433,8 @@ body.home .tabs,body.home #dv,body.home #q,body.home #fs,body.home #fp,body.home
  #wlogo{height:28px;max-width:70px}
  header h1{font-size:15px;flex:1 1 auto;min-width:0}header h1 #wname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:34vw}
  header .sp{display:none}
- body:not(.mf) #q,body:not(.mf) #fs,body:not(.mf) #fp,body:not(.mf) #fa{display:none}
- body.mf #q,body.mf #fs,body.mf #fp,body.mf #fa{display:block;flex:1 1 100%;width:100%;min-width:0}
+ body:not(.mf) #q,body:not(.mf) #fs,body:not(.mf) #fp,body:not(.mf) #fme{display:none}
+ body.mf #q,body.mf #fs,body.mf #fp,body.mf #fme{display:block;flex:1 1 100%;width:100%;min-width:0}
  #add{padding:6px 10px}
  .tabs button{padding:6px 10px}
  .gtabs{overflow-x:auto;flex-wrap:nowrap;white-space:nowrap;padding-left:10px;padding-right:10px;-webkit-overflow-scrolling:touch}
@@ -595,12 +595,13 @@ header .bk{display:flex;padding-right:18px;margin-right:6px;border-right:1px sol
 html.indesk header .bk2{display:none!important}html.indesk body header{padding-right:20px!important}
 @media(min-width:701px){header .fl{display:flex;flex:1 1 380px;min-width:0;max-width:760px;gap:10px;align-items:center}header .fl #q{flex:1 1 110px;min-width:80px;width:auto}header .fl select{flex:0 1 auto;min-width:64px;max-width:190px;text-overflow:ellipsis}}
 @media(max-width:700px){header .fl{display:contents}header .fl #q{min-width:140px}}
+.fme{font:inherit;font-weight:600;font-size:13px;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--col,#fff);color:var(--txt,inherit);cursor:pointer;white-space:nowrap}.fme:hover{border-color:#2557b5}.fme.on{background:#2557b5;border-color:#2557b5;color:#fff}#fa{display:none!important}
 </style><script>try{sessionStorage.removeItem("tf_enter")}catch(e){}</script></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="tfbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2557b5"/><stop offset=".55" stop-color="#12337a"/><stop offset="1" stop-color="#081a40"/></linearGradient><radialGradient id="tfhl" cx=".2" cy=".08" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><linearGradient id="tfgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ee7a0"/><stop offset="1" stop-color="#16a34a"/></linearGradient><linearGradient id="tfsk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bae6fd"/><stop offset="1" stop-color="#38bdf8"/></linearGradient><filter id="tfsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020b22" flood-opacity=".35"/></filter></defs></svg>
 <header>
  <span class="bk"><span class="bk1"><svg class="tfm tfh" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(0.00,0.00) scale(1.0)"><g filter="url(#tfsh)"><rect x="84" y="118" width="226" height="68" rx="34" fill="#fff"/><rect x="150" y="222" width="226" height="68" rx="34" fill="url(#tfsk)"/><path d="M216 326 H372 L426 360 L372 394 H216 a34 34 0 0 1 0-68z" fill="url(#tfgr)"/></g><path d="M120 152 l22 22 l40 -44" fill="none" stroke="#12337a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span></span><span class="bk2"><span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button><button id="bell" title="Flow – your notifications">🔔<b id="bn" hidden></b></button></span></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
  <button id="mfb" class="mobonly" type="button" title="Search and filters">⌕ Filter</button><span class="tabs"><button id="vl" class="on">List</button><button id="vb">Board</button><button id="vg">Gantt</button></span>
  <button id="dv" title="Choose which view opens first"></button>
- <span class="fl"><input id="q" placeholder="Search tasks"><select id="fs"></select><select id="fp"></select><select id="fa"></select></span>
+ <span class="fl"><input id="q" placeholder="Search tasks"><select id="fs"></select><select id="fp"></select><select id="fa" hidden></select><button type="button" id="fme" class="fme" title="Show only the tasks assigned to me, including ones I help with">Tasks For Me</button></span>
  <span class="sp"></span>
  <span id="pres" title="Online now"></span>
  <button class="p" id="add">+ New task</button>
@@ -920,11 +921,12 @@ const today=()=>new Date().toISOString().slice(0,10);
 const dcell=(c,t)=>{const v=xv(t,c);return `<button type="button" class="drng ${v&&v<today()&&t.status!=="done"?"late":""}${v?"":" empty"}" data-rngx="x_${c.id}">${v?esc(fmtD(v)):"Set date"}</button>`};
 const late=t=>t.end_date&&t.end_date<today()&&t.status!=="done";
 
+const syncFme=()=>{const f=$("#fme"),a=$("#fa");if(f&&a)f.classList.toggle("on",!!a.value&&String(a.value)===String(me.id))};
 function syncFilters(){
   const f=$("#fs"),fv=f.value;f.innerHTML=`<option value="">All statuses</option>`+ST.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join("");f.value=fv;
   const p=$("#fp"),a=$("#fa"),pv=p.value,av=a.value;
   p.innerHTML=`<option value="">All customers</option>`+uniq("customer").map(v=>`<option>${esc(v)}</option>`).join("");p.value=pv;
-  a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;
+  a.innerHTML=`<option value="">Everyone</option>`+users.map(u=>`<option value="${u.id}">${esc(u.name)}</option>`).join("");a.value=av;syncFme();
   $("#pjl").innerHTML=uniq("customer").map(v=>`<option value="${ea(v)}">`).join("");
   $("#who").textContent=me.name||"";$("#tmw").hidden=me.role!=="admin";$("#rm").hidden=me.role!=="admin";$("#ivm").hidden=me.role!=="admin";$("#om").hidden=me.role!=="admin";$("#apm").hidden=me.role!=="admin";{const n=+(window.__drq||0);$("#apn").hidden=!n;$("#apn").textContent=n}
 }
@@ -1694,6 +1696,7 @@ $("#vb").onclick=()=>{view="board";syncViewBtns();render()};
 $("#vl").onclick=()=>{view="list";syncViewBtns();render()};
 $("#vg").onclick=()=>{view="gantt";syncViewBtns();render()};
 for(const id of ["q","fs","fp","fa"])$("#"+id).addEventListener("input",render);
+$("#fme").addEventListener("click",()=>{const a=$("#fa");const on=String(a.value)===String(me.id);if(!on&&![...a.options].some(o=>o.value==String(me.id)))a.insertAdjacentHTML("beforeend",`<option value="${me.id}">${esc(me.name||"Me")}</option>`);a.value=on?"":String(me.id);syncFme();a.dispatchEvent(new Event("input"))});
 
 $("#main").addEventListener("click",e=>{
   const sdh=e.target.closest(".dh[data-dh]");if(sdh){toggleCC(sdh.dataset.dh);return}
@@ -2457,7 +2460,7 @@ $("#tlist").addEventListener("click",async e=>{
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 load(true);
-const BUILD=271;
+const BUILD=272;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
