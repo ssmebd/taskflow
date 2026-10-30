@@ -1,5 +1,5 @@
 <?php
-const BUILD=284;
+const BUILD=285;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -255,7 +255,8 @@ function sr_order($v){$ok=['done','going','soon'];$o=[];foreach((is_array($v)?$v
 function sr_off($v,$lo,$hi){if($v===null||$v===''||!is_numeric($v))return null;return max($lo,min($hi,(int)$v));}
 function sr_data($db,$ws=[],$exg=[],$ext=[],$ahead=3,$order=[],$rf=null,$rt=null,$mode=''){
   $now=sr_now();$today=$now->format('Y-m-d');$mon=date('Y-m-d',strtotime($today.' -'.((int)$now->format('N')-1).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$ahead=sr_ahead($ahead);$rf=sr_off($rf,-28,14);$rt=sr_off($rt,-28,14);$custom=($rf!==null&&$rt!==null);
-  if($mode==='nweek'){$custom=true;$dn=(int)$now->format('N');$mon=date('Y-m-d',strtotime($today.' +'.(8-$dn).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$ahead=sr_ahead(max(1,(int)round((strtotime($sun)-strtotime($today))/86400)));$nx=$sun;}
+  if($mode==='twn'){$custom=true;$sun=date('Y-m-d',strtotime($mon.' +13 day'));$ahead=sr_ahead(max(1,(int)round((strtotime($sun)-strtotime($today))/86400)));$nx=$sun;}
+  elseif($mode==='nweek'){$custom=true;$dn=(int)$now->format('N');$mon=date('Y-m-d',strtotime($today.' +'.(8-$dn).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$ahead=sr_ahead(max(1,(int)round((strtotime($sun)-strtotime($today))/86400)));$nx=$sun;}
   elseif($custom){if($rt<$rf)$rt=$rf;$mon=date('Y-m-d',strtotime($today.' '.($rf>=0?'+':'').$rf.' day'));$sun=date('Y-m-d',strtotime($today.' '.($rt>=0?'+':'').$rt.' day'));$ahead=sr_ahead(max(1,$rt));$nx=$sun;}else{$nx=date('Y-m-d',strtotime($today.' +'.$ahead.' day'));}
   $ws=array_values(array_filter(array_map('intval',(array)$ws)));
   $wh=$ws?" AND t.ws_id IN(".implode(',',$ws).")":"";
@@ -1238,13 +1239,13 @@ case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t,ahead,COALESCE(grp_order,'') AS grp_order,rng_from,rng_to,rng_mode FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
-  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[],$in['rf']??null,$in['rt']??null,(($in['mode']??'')==='nweek'?'nweek':''));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'next'=>$d['next'],'from'=>$d['from'],'to'=>$d['to'],'custom'=>$d['custom'],'today'=>$d['today']]);
+  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[],$in['rf']??null,$in['rt']??null,(in_array($in['mode']??'',['nweek','twn'],true)?$in['mode']:''));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'next'=>$d['next'],'from'=>$d['from'],'to'=>$d['to'],'custom'=>$d['custom'],'today'=>$d['today']]);
 case 'sr_save':
   admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
   $ws=implode(',',array_values(array_unique(array_filter(array_map('intval',(array)($in['ws']??[]))))));
   $dw=max(1,min(7,(int)($in['dow']??4)));$hm=max(0,min(1439,(int)($in['hhmm']??900)));$ac=empty($in['active'])?0:1;
-  $xg=implode(',',sr_ids($in['exg']??[]));$xt=implode(',',sr_ids($in['ext']??[]));$ah=sr_ahead($in['ahead']??3);$go=implode('|',sr_order($in['order']??[]));$rf=sr_off($in['rf']??null,-28,14);$rt=sr_off($in['rt']??null,-28,14);if($rf===null||$rt===null){$rf=null;$rt=null;}elseif($rt<$rf)$rt=$rf;$rm=(($in['mode']??'')==='nweek')?'nweek':'';if($rm){$rf=null;$rt=null;}
+  $xg=implode(',',sr_ids($in['exg']??[]));$xt=implode(',',sr_ids($in['ext']??[]));$ah=sr_ahead($in['ahead']??3);$go=implode('|',sr_order($in['order']??[]));$rf=sr_off($in['rf']??null,-28,14);$rt=sr_off($in['rt']??null,-28,14);if($rf===null||$rt===null){$rf=null;$rt=null;}elseif($rt<$rf)$rt=$rf;$rm=in_array($in['mode']??'',['nweek','twn'],true)?$in['mode']:'';if($rm){$rf=null;$rt=null;}
   if($id){$db->prepare("UPDATE status_reports SET name=?,ws_ids=?,emails=?,dow=?,hhmm=?,active=?,excl_g=?,excl_t=?,ahead=?,grp_order=?,rng_from=?,rng_to=?,rng_mode=? WHERE id=?")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$ah,$go,$rf,$rt,$rm,$id]);}
   else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,excl_g,excl_t,ahead,grp_order,rng_from,rng_to,rng_mode,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$ah,$go,$rf,$rt,$rm]);}
   out(['ok'=>1,'id'=>$id?:(int)$db->lastInsertId()]);
