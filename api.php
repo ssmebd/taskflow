@@ -1,5 +1,5 @@
 <?php
-const BUILD=269;
+const BUILD=270;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -832,7 +832,7 @@ case 'msg_list':
   msg_dlv_mark($db,$uid);
   $dlv=0;if($peer){$qd=$db->prepare("SELECT last_id FROM msg_dlv WHERE user_id=?");$qd->execute([$peer]);$dlv=(int)$qd->fetchColumn();}
   $seen=0;if($peer){$qs=$db->prepare("SELECT last_id FROM msg_reads WHERE user_id=? AND peer_id=?");$qs->execute([$peer,$uid]);$seen=(int)$qs->fetchColumn();}
-  if($ms){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
+  if($ms&&empty($in['noread'])){$mx=end($ms)['id'];$db->prepare("INSERT INTO msg_reads(user_id,peer_id,last_id) VALUES(?,?,?) ON DUPLICATE KEY UPDATE last_id=GREATEST(last_id,VALUES(last_id))")->execute([$uid,$peer,$mx]);}
   if($peer){$qi=$db->prepare("SELECT id FROM messages WHERE (from_id=? AND to_id=?) OR (from_id=? AND to_id=?) ORDER BY id DESC LIMIT 150");$qi->execute([$uid,$peer,$peer,$uid]);}
   else{$qi=$db->query("SELECT id FROM messages WHERE to_id=0 ORDER BY id DESC LIMIT 150");}
   $ids=$qi->fetchAll(PDO::FETCH_COLUMN);$rc=msg_reacts($db,$ids,$uid);

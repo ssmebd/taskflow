@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=269;
+const BUILD=270;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -273,7 +273,7 @@ function paint(all){
   return near}
 async function pull(first){
   if(!cur)return;const id=cur.id;
-  const r=await api("msg_list",{peer:id,after:first?0:lastId});if(!cur||cur.id!==id)return;
+  const away=document.hidden||!document.hasFocus();const r=await api("msg_list",{peer:id,after:first?0:lastId,noread:away?1:0});if(!cur||cur.id!==id)return;
   const nu=r.messages||[];const seenChanged=!cur.team&&(r.peer_seen!==peerSeen||(r.peer_dlv||0)!==peerDlv);peerSeen=r.peer_seen||0;peerDlv=r.peer_dlv||0;
   const rm=r.reacts||{};let rxChanged=false;
   if(first)msgs=nu;else{const have=new Set(msgs.map(m=>m.id));nu.forEach(m=>{if(!have.has(m.id))msgs.push(m)})}
@@ -484,6 +484,9 @@ let busy=false;
 async function tick(){if(busy)return;busy=true;try{await loadList();if(cur)await pull(false)}catch(e){}busy=false}
 setInterval(tick,window.tfNative?4000:(document.hidden?15000:4000));if(window.tfNative&&tfNative.onOpen)tfNative.onOpen(id=>{try{if(id)open_(id)}catch(e){}});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)tick()});
+/* messages that arrived while the window was hidden or unfocused stay unread (taskbar count stays) until the chat is actually opened */
+function seenNow(){if(cur&&!document.hidden&&document.hasFocus()){pull(true).catch(()=>{})}}
+addEventListener("focus",seenNow);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(seenNow,150)});
 window.addEventListener("focus",tick);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 /* start */
