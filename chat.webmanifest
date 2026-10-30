@@ -1,7 +1,7 @@
 {
   "id": "/chat.php",
-  "name": "TaskFlow Chat",
-  "short_name": "TF Chat",
+  "name": "GC Chat",
+  "short_name": "GC Chat",
   "description": "Team chat for the GURUCADD team",
   "start_url": "chat.php",
   "scope": "./chat.php",

@@ -4,11 +4,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>TaskFlow Chat</title>
+<title>GC Chat</title>
 <meta name="theme-color" content="#0f2a5c">
 <link rel="manifest" href="chat.webmanifest">
-<link rel="icon" type="image/png" href="chat-192.png">
-<link rel="apple-touch-icon" href="chat-192.png">
+<link rel="icon" type="image/png" href="chat-192.png?v=2">
+<link rel="apple-touch-icon" href="chat-192.png?v=2">
 <style>
 :root{--bg:#eef2f7;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e2e8f0;--col:#f1f5f9;--pri:#0f2a5c;--acc:#38bdf8;--grn:#22c55e;--me:#e4e8fb;--meink:#1b1f3a;--them:#f1f1f1;--avbg:#dfe3d6;--avink:#3d4a35;--sel:#e8f1ff;--side:#f1f2f5;--shadow:0 2px 10px rgba(15,42,92,.08)}
 @media(prefers-color-scheme:dark){:root{--bg:#0c0f16;--card:#171b26;--ink:#e8eaf2;--mut:#98a0b5;--line:#272c3b;--col:#1d2230;--pri:#7cb4ff;--me:#3a3f8f;--meink:#fff;--them:#262a38;--avbg:#3a4a46;--avink:#d6efe6;--sel:#1c2540;--side:#10131b;--shadow:0 2px 10px rgba(0,0,0,.4)}}
@@ -129,7 +129,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <body>
 <div id="app">
  <aside id="side">
-  <div class="sh"><img src="chat-192.png" alt=""><div class="t"><b>TaskFlow Chat</b><small id="who"></small></div><button class="ib" id="mb" title="Menu" aria-haspopup="true">⋯</button></div>
+  <div class="sh"><img src="chat-192.png?v=2" alt=""><div class="t"><b>GC Chat</b><small id="who"></small></div><button class="ib" id="mb" title="Menu" aria-haspopup="true">⋯</button></div>
   <div id="menu" hidden>
    <button id="mnot">🔔 Notifications: …</button>
    <button id="mph">📷 My profile photo</button><input type="file" id="phf" accept="image/*" hidden>
@@ -141,7 +141,7 @@ button{font:inherit;color:inherit;cursor:pointer}
   <button id="bld" type="button" title="Version of this app. Tap to reload and get the newest version.">Build</button>
  </aside>
  <main id="main">
-  <div id="ph"><div><img src="chat-512.png" alt=""><h2>TaskFlow Chat</h2><div>Pick a person or the team chat to start.</div></div></div>
+  <div id="ph"><div><img src="chat-512.png?v=2" alt=""><h2>GC Chat</h2><div>Pick a person or the team chat to start.</div></div></div>
   <section id="thr">
    <div class="th"><button class="bk" id="bk" aria-label="Back">‹</button><div class="avw sm" id="tav"></div><div class="t"><b id="tn"></b><small id="ts"></small></div></div>
    <div id="msgs"></div>
@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=270;
+const BUILD=271;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -207,7 +207,7 @@ function body(b){
   h=esc(rest).replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)\]])/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
   return {text:h,tasks}}
 /* sidebar */
-function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.classList.add("new")}else{e.textContent="TaskFlow Chat · Build "+BUILD;e.classList.remove("new")}}
+function chkBuild(b){const e=$("#bld");if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.classList.add("new")}else{e.textContent="GC Chat · Build "+BUILD;e.classList.remove("new")}}
 $("#bld").onclick=()=>location.reload();chkBuild(0);
 function headStat(force){if(!cur)return;const c=cur.team?null:conv.find(x=>x.id===cur.id),on=!!(c&&c.online),k=cur.team+"|"+on+"|"+cur.name+"|"+((c&&c.ph)||0);if(!force&&headStat.k===k)return;headStat.k=k;
   const t=$("#tav");if(t)t.outerHTML=avHtml(cur.name,cur.team,true,on,cur.id,(c&&c.ph)||0).replace('<div class="avw sm"','<div id="tav" class="avw sm"');
@@ -227,10 +227,10 @@ async function loadList(){
     if(!firstLoad&&old!==undefined&&k>old&&c.n>0&&(!cur||cur.id!==c.id||document.hidden||!document.hasFocus()))notify(c);
     knownLast[c.id]=k}
   firstLoad=false;badge(tot);renderList()}
-function badge(n){unreadTotal=n;document.title=(n?"("+(n>99?"99+":n)+") ":"")+"TaskFlow Chat";try{if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}try{window.tfNative&&window.tfNative.badge&&window.tfNative.badge(n)}catch(e){}}
+function badge(n){unreadTotal=n;document.title=(n?"("+(n>99?"99+":n)+") ":"")+"GC Chat";try{if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}try{window.tfNative&&window.tfNative.badge&&window.tfNative.badge(n)}catch(e){}}
 function beep(){try{const a=new (window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.value=880;g.gain.value=.05;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.12)}catch(e){}}
 function notify(c){if(window.tfNative&&tfNative.notify){try{tfNative.notify(c.id?c.name:"Team chat",c.lb||"New message",c.id)}catch(e){}if(document.hidden||!document.hasFocus())beep();return}beep();if(!("Notification" in window)||Notification.permission!=="granted")return;
-  try{const n=new Notification(c.id?c.name:"Team chat",{body:(c.lb||"New message"),icon:"chat-192.png",tag:"c"+c.id});n.onclick=()=>{window.focus();open_(c.id)}}catch(e){}}
+  try{const n=new Notification(c.id?c.name:"Team chat",{body:(c.lb||"New message"),icon:"chat-192.png?v=2",tag:"c"+c.id});n.onclick=()=>{window.focus();open_(c.id)}}catch(e){}}
 /* thread */
 const byId=id=>id?conv.find(c=>c.id===id):{id:0,name:"Team chat",team:true};
 async function open_(id){

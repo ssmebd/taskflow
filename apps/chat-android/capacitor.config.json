@@ -1,6 +1,6 @@
 {
   "appId": "com.gurucadd.taskflow.chat",
-  "appName": "TaskFlow Chat",
+  "appName": "GC Chat",
   "webDir": "www",
   "server": {
     "url": "https://taskflow.gurucadd.com/chat.php",

@@ -1,7 +1,7 @@
 {
   "name": "taskflow-chat-desktop",
   "version": "1.0.0",
-  "description": "TaskFlow Chat for Windows",
+  "description": "GC Chat for Windows",
   "author": "GURUCADD",
   "main": "main.js",
   "private": true,
@@ -9,7 +9,7 @@
   "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" },
   "build": {
     "appId": "com.gurucadd.taskflow.chat",
-    "productName": "TaskFlow Chat",
+    "productName": "GC Chat",
     "icon": "icon.ico",
     "files": ["main.js", "preload.js", "icon.png", "icon.ico", "badge-*.png", "package.json"],
     "win": { "target": "nsis", "icon": "icon.ico" },
