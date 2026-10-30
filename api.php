@@ -1,5 +1,5 @@
 <?php
-const BUILD=280;
+const BUILD=281;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -251,7 +251,7 @@ function sr_now(){$tz=new DateTimeZone('Asia/Dhaka');return new DateTime('now',$
 function sr_ids($v){return array_values(array_unique(array_filter(array_map('intval',is_array($v)?$v:explode(',',(string)$v)))));}
 function sr_gid($r){return (int)$r['top_id']?:-1;}
 function sr_ahead($v){$v=(int)$v;return $v<1?3:min(60,$v);}
-function sr_order($v){$o=[];foreach((is_array($v)?$v:explode('|',(string)$v)) as $x){$x=strtoupper(trim((string)$x));if($x!==''&&!in_array($x,$o,true))$o[]=mb_substr($x,0,60);}return array_slice($o,0,80);}
+function sr_order($v){$ok=['done','going','soon'];$o=[];foreach((is_array($v)?$v:explode('|',(string)$v)) as $x){$x=strtolower(trim((string)$x));if(in_array($x,$ok,true)&&!in_array($x,$o,true))$o[]=$x;}foreach($ok as $x)if(!in_array($x,$o,true))$o[]=$x;return $o;}
 function sr_data($db,$ws=[],$exg=[],$ext=[],$ahead=3,$order=[]){
   $now=sr_now();$today=$now->format('Y-m-d');$mon=date('Y-m-d',strtotime($today.' -'.((int)$now->format('N')-1).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$ahead=sr_ahead($ahead);$nx=date('Y-m-d',strtotime($today.' +'.$ahead.' day'));
   $ws=array_values(array_filter(array_map('intval',(array)$ws)));
@@ -333,15 +333,16 @@ function sr_html($d,$title='Task status report',$as=null){
   // KPI
   $bk=function($rows)use($e){$t=[];foreach(sr_types($rows) as $k=>$v)$t[]=$e($k).' <b>'.count($v).'</b>';return $t?implode(' &nbsp;·&nbsp; ',$t):'&nbsp;';};
   $k=function($n,$l,$c,$bg,$rows)use($F,$bk){return '<td width="33%" valign="top" style="padding:0 5px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:'.$bg.';border-radius:10px;border-top:3px solid '.$c.'"><tr><td align="center" style="'.$F.'padding:12px 4px"><div style="font-size:34px;font-weight:800;color:'.$c.';line-height:1">'.$n.'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:600">'.$l.'</div><div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.4">'.$bk($rows).'</div></td></tr></table></td>';};
-  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4',$d['done']).$k($ng,'Ongoing now','#2563eb','#eff6ff',$d['going']).$k($ns,'Starting in '.($ah===1?'1 day':$ah.' days'),'#d97706','#fffbeb',$d['soon']).'</tr></table></td></tr>';
+  $kp=['done'=>$k($nd,'Completed this week','#16a34a','#f0fdf4',$d['done']),'going'=>$k($ng,'Ongoing now','#2563eb','#eff6ff',$d['going']),'soon'=>$k($ns,'Starting in '.($ah===1?'1 day':$ah.' days'),'#d97706','#fffbeb',$d['soon'])];$o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.implode('',array_map(fn($x)=>$kp[$x],$ord)).'</tr></table></td></tr>';
   if($tot>0){$p=fn($n)=>max(0,(int)round($n*100/$tot));
-    $o.='<tr><td style="padding:10px 26px 2px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:6px;overflow:hidden"><tr>'.($nd?'<td width="'.$p($nd).'%" height="8" bgcolor="#22c55e" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ng?'<td width="'.$p($ng).'%" height="8" bgcolor="#3b82f6" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ns?'<td width="'.$p($ns).'%" height="8" bgcolor="#f59e0b" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').'</tr></table></td></tr>';}
+    $pb=['done'=>$nd?'<td width="'.$p($nd).'%" height="8" bgcolor="#22c55e" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'','going'=>$ng?'<td width="'.$p($ng).'%" height="8" bgcolor="#3b82f6" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'','soon'=>$ns?'<td width="'.$p($ns).'%" height="8" bgcolor="#f59e0b" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':''];
+    $o.='<tr><td style="padding:10px 26px 2px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:6px;overflow:hidden"><tr>'.implode('',array_map(fn($x)=>$pb[$x],$ord)).'</tr></table></td></tr>';}
   // sections
-  $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi,$ord){
+  $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi){
     $h='<tr><td style="'.$F.'padding:22px 26px 6px"><table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="'.$F.'font-size:17px;color:'.$col.';padding-right:8px" valign="middle">&#9679;</td><td style="'.$F.'font-size:17px;font-weight:800;color:#0f172a;white-space:nowrap" valign="middle">'.$e($name).'</td><td width="8">&nbsp;</td><td bgcolor="'.$col.'" align="center" valign="middle" style="'.$F.'background:'.$col.';color:#ffffff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap">'.count($rows).'</td></tr></table><div style="font-size:12px;color:#64748b;padding-top:2px">'.$e($sub).'</div>'.($rows?'<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:8px"><tr>'.implode('<td width="6">&nbsp;</td>',array_map(fn($t,$v)=>'<td bgcolor="#f1f5f9" valign="middle" style="'.$F.'background:#f1f5f9;border:1px solid #e2e8f0;color:#0f172a;font-size:11px;font-weight:700;padding:3px 9px;white-space:nowrap">'.$e($t).' <span style="color:'.$col.'">'.count($v).'</span></td>',array_keys(sr_types($rows)),sr_types($rows))).'</tr></table>':'').'</td></tr>';
     if(!$rows)return $h.'<tr><td style="'.$F.'padding:6px 26px 4px;font-size:13px;color:#94a3b8">Nothing to show here right now.</td></tr>';
     $h.='<tr><td style="padding:4px 20px 0"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">';
-    $i=0;foreach(sr_types($rows,$ord) as $tn=>$trs){
+    $i=0;foreach(sr_types($rows) as $tn=>$trs){
      $h.='<tr><td colspan="3" bgcolor="#eaf1fb" style="'.$F.'background:#eaf1fb;padding:7px 12px;border-bottom:1px solid #dbe5f3;font-size:11px;font-weight:800;letter-spacing:1px;color:#0f2a5c">'.$e($tn).' <span style="font-weight:600;color:#64748b;letter-spacing:0">&nbsp;'.count($trs).' task'.(count($trs)>1?'s':'').'</span></td></tr>';
      foreach($trs as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
       $td=$d['today']??date('Y-m-d');$pill=function($lab,$dtx,$col,$bgc,$bdc)use($e){return '<div style="font-size:9px;font-weight:800;letter-spacing:1px;color:'.$col.'">'.$lab.'</div><div style="display:inline-block;margin-top:2px;background:'.$bgc.';border:1px solid '.$bdc.';border-radius:8px;padding:3px 8px;font-size:14px;font-weight:900;color:'.$col.';white-space:nowrap">'.$e($dtx).'</div>';};
@@ -354,9 +355,8 @@ function sr_html($d,$title='Task status report',$as=null){
         .'<td bgcolor="'.$bg.'" width="150" style="'.$F.'background:'.$bg.';padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$av($r['person']).'</td>'
         .'<td bgcolor="'.$bg.'" width="120" align="right" style="'.$F.'background:'.$bg.';padding:10px 12px;border-bottom:1px solid #eef2f7;font-size:12px;color:#334155" valign="top">'.$dt.'</td></tr>';}}
     return $h.'</table></td></tr>';};
-  $o.=$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done');
-  $o.=$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going');
-  $o.=$sec('Starting in '.$ahT,'Scheduled to kick off by '.$fd($d['next']),'#d97706',$d['soon'],'soon');
+  $sc=['done'=>fn()=>$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done'),'going'=>fn()=>$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going'),'soon'=>fn()=>$sec('Starting in '.$ahT,'Scheduled to kick off by '.$fd($d['next']),'#d97706',$d['soon'],'soon')];
+  foreach($ord as $x)$o.=$sc[$x]();
   // footer
   $o.='<tr><td style="height:26px;font-size:0;line-height:0">&nbsp;</td></tr><tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;'.$F.'padding:18px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
     .($tfimg?'<td width="40" valign="middle"><img src="'.$e($as['tf']).'" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:8px;display:block;border:0"></td>':'')
@@ -396,7 +396,7 @@ function sr_send($db,$s){
   $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'',$s['ahead']??3,$s['grp_order']??'');
   $title=($s['name']!==''?$s['name']:'Task status report');$as=sr_assets($db,$ws,'cid');$html='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,$as).'</body></html>';$htmlPlain='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,['tf'=>'','co'=>[],'names'=>$as['names']]).'</body></html>';
   $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
-  foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN '.strtoupper(($d['ahead']??3)===1?'THE NEXT DAY':'THE NEXT '.($d['ahead']??3).' DAYS'),'soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
+  $tx=['done'=>['COMPLETED THIS WEEK','done'],'going'=>['ONGOING','going'],'soon'=>['STARTING IN '.strtoupper(($d['ahead']??3)===1?'THE NEXT DAY':'THE NEXT '.($d['ahead']??3).' DAYS'),'soon']];foreach(array_map(fn($x)=>$tx[$x],$d['order']??['done','going','soon']) as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
   $viaMs=ms_cfg()!==null;
   foreach($to as $m){
@@ -1235,7 +1235,7 @@ case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t,ahead,COALESCE(grp_order,'') AS grp_order FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
-  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[]);$ty=[];foreach(array_merge($d['done'],$d['going'],$d['soon']) as $r){$k=strtoupper(trim((string)$r['drawing_type']));$ty[$k===''?'OTHER':$k]=1;}$ty=array_keys(sr_types(array_map(fn($k)=>['drawing_type'=>$k==='OTHER'?'':$k],array_keys($ty)),$d['order']));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'types'=>$ty,'next'=>$d['next']]);
+  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[]);out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'next'=>$d['next']]);
 case 'sr_save':
   admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
