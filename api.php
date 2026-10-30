@@ -1,5 +1,5 @@
 <?php
-const BUILD=279;
+const BUILD=280;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -245,17 +245,19 @@ function wl_build($db,$path,$days=15){
 }
 function wl_files($dir){$o=[];foreach(glob($dir.'/worklog-????-??-??_??-??.xlsx')?:[] as $f)$o[]=['name'=>basename($f),'size'=>filesize($f),'time'=>filemtime($f)];usort($o,fn($x,$y)=>$y['time']<=>$x['time']);return $o;}
 // ---- Task status report: completed this week, ongoing, starting in the next 3 days; emailed to guests on a weekly schedule ----
-function sr_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS status_reports(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL DEFAULT '',ws_ids VARCHAR(200) NOT NULL DEFAULT '',emails TEXT NOT NULL,dow TINYINT NOT NULL DEFAULT 4,hhmm INT NOT NULL DEFAULT 900,active TINYINT NOT NULL DEFAULT 1,last_sent VARCHAR(10) NOT NULL DEFAULT '',created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");if(!$db->query("SHOW COLUMNS FROM status_reports LIKE 'excl_g'")->fetch())$db->exec("ALTER TABLE status_reports ADD excl_g TEXT NULL, ADD excl_t TEXT NULL");}
+function sr_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS status_reports(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL DEFAULT '',ws_ids VARCHAR(200) NOT NULL DEFAULT '',emails TEXT NOT NULL,dow TINYINT NOT NULL DEFAULT 4,hhmm INT NOT NULL DEFAULT 900,active TINYINT NOT NULL DEFAULT 1,last_sent VARCHAR(10) NOT NULL DEFAULT '',created_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");if(!$db->query("SHOW COLUMNS FROM status_reports LIKE 'excl_g'")->fetch())$db->exec("ALTER TABLE status_reports ADD excl_g TEXT NULL, ADD excl_t TEXT NULL");if(!$db->query("SHOW COLUMNS FROM status_reports LIKE 'ahead'")->fetch())$db->exec("ALTER TABLE status_reports ADD ahead INT NOT NULL DEFAULT 3, ADD grp_order TEXT NULL");}
 function gh_ddl($db){$db->exec("CREATE TABLE IF NOT EXISTS guest_hide(user_id INT NOT NULL,gid INT NOT NULL,PRIMARY KEY(user_id,gid)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
 function sr_now(){$tz=new DateTimeZone('Asia/Dhaka');return new DateTime('now',$tz);}
 function sr_ids($v){return array_values(array_unique(array_filter(array_map('intval',is_array($v)?$v:explode(',',(string)$v)))));}
 function sr_gid($r){return (int)$r['top_id']?:-1;}
-function sr_data($db,$ws=[],$exg=[],$ext=[]){
-  $now=sr_now();$today=$now->format('Y-m-d');$mon=date('Y-m-d',strtotime($today.' -'.((int)$now->format('N')-1).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$nx=date('Y-m-d',strtotime($today.' +3 day'));
+function sr_ahead($v){$v=(int)$v;return $v<1?3:min(60,$v);}
+function sr_order($v){$o=[];foreach((is_array($v)?$v:explode('|',(string)$v)) as $x){$x=strtoupper(trim((string)$x));if($x!==''&&!in_array($x,$o,true))$o[]=mb_substr($x,0,60);}return array_slice($o,0,80);}
+function sr_data($db,$ws=[],$exg=[],$ext=[],$ahead=3,$order=[]){
+  $now=sr_now();$today=$now->format('Y-m-d');$mon=date('Y-m-d',strtotime($today.' -'.((int)$now->format('N')-1).' day'));$sun=date('Y-m-d',strtotime($mon.' +6 day'));$ahead=sr_ahead($ahead);$nx=date('Y-m-d',strtotime($today.' +'.$ahead.' day'));
   $ws=array_values(array_filter(array_map('intval',(array)$ws)));
   $wh=$ws?" AND t.ws_id IN(".implode(',',$ws).")":"";
   $rows=$db->query("SELECT t.id,t.ws_id,COALESCE(w.name,'') AS company,t.title,t.order_no,t.customer,t.drawing_type,t.start_date,t.end_date,DATE(t.updated_at) AS upd,t.status,COALESCE(s.name,t.status) AS sname,COALESCE(u.name,'') AS person,COALESCE(pg.id,g.id) AS top_id,COALESCE(pg.name,g.name,'(No group)') AS grp FROM tasks t LEFT JOIN workspaces w ON w.id=t.ws_id LEFT JOIN statuses s ON s.ws_id=t.ws_id AND s.skey=t.status LEFT JOIN users u ON u.id=t.assigned_to LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE 1=1".$wh." ORDER BY w.sort_no,w.name,t.order_no,t.title")->fetchAll();
-  $exg=sr_ids($exg);$ext=sr_ids($ext);$d=['done'=>[],'going'=>[],'soon'=>[],'tree'=>[],'from'=>$mon,'to'=>$sun,'today'=>$today,'next'=>$nx];
+  $exg=sr_ids($exg);$ext=sr_ids($ext);$d=['done'=>[],'going'=>[],'soon'=>[],'tree'=>[],'from'=>$mon,'to'=>$sun,'today'=>$today,'next'=>$nx,'ahead'=>$ahead,'order'=>sr_order($order)];
   foreach($rows as $r){
     $nm=(string)$r['sname'];$sec='';
     if($r['status']==='done'){
@@ -275,8 +277,9 @@ function sr_data($db,$ws=[],$exg=[],$ext=[]){
   return $d;
 }
 function sr_site(){if(PHP_SAPI==='cli')return 'https://taskflow.gurucadd.com';$h=$_SERVER['HTTP_HOST']??'taskflow.gurucadd.com';$d=rtrim(str_replace('\\','/',dirname($_SERVER['SCRIPT_NAME']??'/api.php')),'/');return 'https://'.$h.$d;}
-function sr_types($rows){$m=[];foreach($rows as $r){$k=strtoupper(trim((string)$r['drawing_type']));if($k==='')$k='OTHER';$m[$k][]=$r;}
-  uksort($m,function($a,$b)use($m){if($a==='OTHER')return 1;if($b==='OTHER')return -1;$c=count($m[$b])<=>count($m[$a]);return $c?:strcmp($a,$b);});return $m;}
+function sr_types($rows,$order=[]){$m=[];foreach($rows as $r){$k=strtoupper(trim((string)$r['drawing_type']));if($k==='')$k='OTHER';$m[$k][]=$r;}
+  $pos=array_flip(array_values((array)$order));
+  uksort($m,function($a,$b)use($m,$pos){$pa=$pos[$a]??null;$pb=$pos[$b]??null;if($pa!==null||$pb!==null){if($pa===null)return 1;if($pb===null)return -1;return $pa<=>$pb;}if($a==='OTHER')return 1;if($b==='OTHER')return -1;$c=count($m[$b])<=>count($m[$a]);return $c?:strcmp($a,$b);});return $m;}
 function sr_whiten($b64){
   // Turns a transparent logo into a white silhouette so it reads on the dark header in light and dark mode. Returns '' if it can't (no GD, or the logo has no transparency).
   if(!function_exists('imagecreatefromstring'))return '';
@@ -309,7 +312,7 @@ function sr_assets($db,$ws,$mode){
 function sr_html($d,$title='Task status report',$as=null){
   $e=fn($s)=>htmlspecialchars((string)$s,ENT_QUOTES,'UTF-8');$fd=fn($s)=>($s&&$s!=='0000-00-00')?date('D j M',strtotime($s)):'';
   $as=$as?:['tf'=>'','co'=>[],'names'=>[]];$F="font-family:'Segoe UI',Arial,Helvetica,sans-serif;";
-  $nd=count($d['done']);$ng=count($d['going']);$ns=count($d['soon']);$tot=$nd+$ng+$ns;
+  $nd=count($d['done']);$ng=count($d['going']);$ns=count($d['soon']);$tot=$nd+$ng+$ns;$ah=sr_ahead($d['ahead']??3);$ahT=$ah===1?'the next day':'the next '.$ah.' days';$ord=$d['order']??[];
   $pal=['#2563eb','#0891b2','#16a34a','#d97706','#9333ea','#dc2626','#0d9488','#db2777'];
   $av=function($n)use($e,$pal){$n=trim((string)$n);if($n==='')return '<span style="color:#94a3b8">Unassigned</span>';$w=preg_split('/\s+/',$n);$in=strtoupper(mb_substr($w[0],0,1).(isset($w[1])?mb_substr($w[count($w)-1],0,1):''));$c=$pal[crc32($n)%count($pal)];
     return '<table role="presentation" cellspacing="0" cellpadding="0"><tr><td width="22" height="22" bgcolor="'.$c.'" align="center" valign="middle" style="font-family:Arial,sans-serif;width:22px;height:22px;background:'.$c.';color:#ffffff;font-size:10px;font-weight:700;border-radius:11px;text-align:center;white-space:nowrap">'.$e($in).'</td><td width="6">&nbsp;</td><td valign="middle" style="font-family:Arial,sans-serif;font-size:12px;color:#334155;white-space:nowrap">'.$e($n).'</td></tr></table>';};
@@ -317,7 +320,7 @@ function sr_html($d,$title='Task status report',$as=null){
   $logos='';foreach($as['co'] as $c)$logos.='<img src="'.$e($c[0]).'" alt="'.$e($c[1]).'" height="58" style="height:58px;max-width:230px;display:inline-block;vertical-align:middle;margin-right:14px;border:0">';
   if($logos==='')$logos='<span style="'.$F.'font-size:14px;font-weight:700;color:#0f2a5c">'.$e(implode('  ·  ',array_slice($as['names'],0,3))).(count($as['names'])>3?' +'.(count($as['names'])-3):'').'</span>';
   $tfimg=$as['tf']?'<img src="'.$e($as['tf']).'" alt="TaskFlow" width="34" height="34" style="width:34px;height:34px;border-radius:9px;display:block;border:0">':'';
-  $o='<div style="margin:0;padding:0;background:#eef2f7"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7">'.$nd.' completed, '.$ng.' ongoing, '.$ns.' starting in the next 3 days.</div>';
+  $o='<div style="margin:0;padding:0;background:#eef2f7"><div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#eef2f7">'.$nd.' completed, '.$ng.' ongoing, '.$ns.' starting in '.$ahT.'.</div>';
   $o.='<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef2f7"><tr><td align="center" style="padding:22px 10px">';
   $o.='<table role="presentation" width="680" cellspacing="0" cellpadding="0" style="width:100%;max-width:680px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 18px rgba(15,42,92,.12)">';
   // header
@@ -330,15 +333,15 @@ function sr_html($d,$title='Task status report',$as=null){
   // KPI
   $bk=function($rows)use($e){$t=[];foreach(sr_types($rows) as $k=>$v)$t[]=$e($k).' <b>'.count($v).'</b>';return $t?implode(' &nbsp;·&nbsp; ',$t):'&nbsp;';};
   $k=function($n,$l,$c,$bg,$rows)use($F,$bk){return '<td width="33%" valign="top" style="padding:0 5px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:'.$bg.';border-radius:10px;border-top:3px solid '.$c.'"><tr><td align="center" style="'.$F.'padding:12px 4px"><div style="font-size:34px;font-weight:800;color:'.$c.';line-height:1">'.$n.'</div><div style="font-size:11px;color:#475569;margin-top:5px;font-weight:600">'.$l.'</div><div style="font-size:10px;color:#64748b;margin-top:4px;line-height:1.4">'.$bk($rows).'</div></td></tr></table></td>';};
-  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4',$d['done']).$k($ng,'Ongoing now','#2563eb','#eff6ff',$d['going']).$k($ns,'Starting in 3 days','#d97706','#fffbeb',$d['soon']).'</tr></table></td></tr>';
+  $o.='<tr><td style="padding:12px 21px 4px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'.$k($nd,'Completed this week','#16a34a','#f0fdf4',$d['done']).$k($ng,'Ongoing now','#2563eb','#eff6ff',$d['going']).$k($ns,'Starting in '.($ah===1?'1 day':$ah.' days'),'#d97706','#fffbeb',$d['soon']).'</tr></table></td></tr>';
   if($tot>0){$p=fn($n)=>max(0,(int)round($n*100/$tot));
     $o.='<tr><td style="padding:10px 26px 2px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-radius:6px;overflow:hidden"><tr>'.($nd?'<td width="'.$p($nd).'%" height="8" bgcolor="#22c55e" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ng?'<td width="'.$p($ng).'%" height="8" bgcolor="#3b82f6" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').($ns?'<td width="'.$p($ns).'%" height="8" bgcolor="#f59e0b" style="height:8px;line-height:8px;font-size:0">&nbsp;</td>':'').'</tr></table></td></tr>';}
   // sections
-  $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi){
+  $sec=function($name,$sub,$col,$rows,$mode)use($e,$F,$fd,$av,$multi,$ord){
     $h='<tr><td style="'.$F.'padding:22px 26px 6px"><table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="'.$F.'font-size:17px;color:'.$col.';padding-right:8px" valign="middle">&#9679;</td><td style="'.$F.'font-size:17px;font-weight:800;color:#0f172a;white-space:nowrap" valign="middle">'.$e($name).'</td><td width="8">&nbsp;</td><td bgcolor="'.$col.'" align="center" valign="middle" style="'.$F.'background:'.$col.';color:#ffffff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;white-space:nowrap">'.count($rows).'</td></tr></table><div style="font-size:12px;color:#64748b;padding-top:2px">'.$e($sub).'</div>'.($rows?'<table role="presentation" cellspacing="0" cellpadding="0" style="margin-top:8px"><tr>'.implode('<td width="6">&nbsp;</td>',array_map(fn($t,$v)=>'<td bgcolor="#f1f5f9" valign="middle" style="'.$F.'background:#f1f5f9;border:1px solid #e2e8f0;color:#0f172a;font-size:11px;font-weight:700;padding:3px 9px;white-space:nowrap">'.$e($t).' <span style="color:'.$col.'">'.count($v).'</span></td>',array_keys(sr_types($rows)),sr_types($rows))).'</tr></table>':'').'</td></tr>';
     if(!$rows)return $h.'<tr><td style="'.$F.'padding:6px 26px 4px;font-size:13px;color:#94a3b8">Nothing to show here right now.</td></tr>';
     $h.='<tr><td style="padding:4px 20px 0"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">';
-    $i=0;foreach(sr_types($rows) as $tn=>$trs){
+    $i=0;foreach(sr_types($rows,$ord) as $tn=>$trs){
      $h.='<tr><td colspan="3" bgcolor="#eaf1fb" style="'.$F.'background:#eaf1fb;padding:7px 12px;border-bottom:1px solid #dbe5f3;font-size:11px;font-weight:800;letter-spacing:1px;color:#0f2a5c">'.$e($tn).' <span style="font-weight:600;color:#64748b;letter-spacing:0">&nbsp;'.count($trs).' task'.(count($trs)>1?'s':'').'</span></td></tr>';
      foreach($trs as $r){$bg=$i++%2?'#f8fafc':'#ffffff';
       $td=$d['today']??date('Y-m-d');$pill=function($lab,$dtx,$col,$bgc,$bdc)use($e){return '<div style="font-size:9px;font-weight:800;letter-spacing:1px;color:'.$col.'">'.$lab.'</div><div style="display:inline-block;margin-top:2px;background:'.$bgc.';border:1px solid '.$bdc.';border-radius:8px;padding:3px 8px;font-size:14px;font-weight:900;color:'.$col.';white-space:nowrap">'.$e($dtx).'</div>';};
@@ -353,7 +356,7 @@ function sr_html($d,$title='Task status report',$as=null){
     return $h.'</table></td></tr>';};
   $o.=$sec('Completed this week','Delivered since Monday','#16a34a',$d['done'],'done');
   $o.=$sec('Ongoing','Work in progress and in review right now','#2563eb',$d['going'],'going');
-  $o.=$sec('Starting in the next 3 days','Scheduled to kick off by '.$fd($d['next']),'#d97706',$d['soon'],'soon');
+  $o.=$sec('Starting in '.$ahT,'Scheduled to kick off by '.$fd($d['next']),'#d97706',$d['soon'],'soon');
   // footer
   $o.='<tr><td style="height:26px;font-size:0;line-height:0">&nbsp;</td></tr><tr><td bgcolor="#0f2a5c" style="background:#0f2a5c;'.$F.'padding:18px 26px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
     .($tfimg?'<td width="40" valign="middle"><img src="'.$e($as['tf']).'" alt="" width="30" height="30" style="width:30px;height:30px;border-radius:8px;display:block;border:0"></td>':'')
@@ -390,10 +393,10 @@ function ms_send($to,$subject,$html,$att=[]){
   $r=json_decode($o,true);return 'Microsoft refused it ('.$code.'): '.mb_substr((string)($r['error']['message']??$o),0,220);}
 function sr_send($db,$s){
   $to=sr_valid_emails($s['emails']);if(!$to)return ['ok'=>false,'sent'=>0,'err'=>'No valid email addresses'];
-  $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'');
+  $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'',$s['ahead']??3,$s['grp_order']??'');
   $title=($s['name']!==''?$s['name']:'Task status report');$as=sr_assets($db,$ws,'cid');$html='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,$as).'</body></html>';$htmlPlain='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,['tf'=>'','co'=>[],'names'=>$as['names']]).'</body></html>';
   $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
-  foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN THE NEXT 3 DAYS','soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
+  foreach([['COMPLETED THIS WEEK','done'],['ONGOING','going'],['STARTING IN '.strtoupper(($d['ahead']??3)===1?'THE NEXT DAY':'THE NEXT '.($d['ahead']??3).' DAYS'),'soon']] as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
   $viaMs=ms_cfg()!==null;
   foreach($to as $m){
@@ -1229,18 +1232,18 @@ case 'guest_hide_save':
   foreach(array_unique(array_merge($g,array_map('intval',(array)($in['hide_none']??[])))) as $x){if($x===0)continue;$db->prepare("INSERT IGNORE INTO guest_hide(user_id,gid) VALUES(?,?)")->execute([$u,$x]);}
   out(['ok'=>1]);
 case 'sr_list':
-  admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t FROM status_reports ORDER BY id");
+  admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t,ahead,COALESCE(grp_order,'') AS grp_order FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
-  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree']]);
+  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[]);$ty=[];foreach(array_merge($d['done'],$d['going'],$d['soon']) as $r){$k=strtoupper(trim((string)$r['drawing_type']));$ty[$k===''?'OTHER':$k]=1;}$ty=array_keys(sr_types(array_map(fn($k)=>['drawing_type'=>$k==='OTHER'?'':$k],array_keys($ty)),$d['order']));out(['html'=>sr_html($d,'Task status report',sr_assets($db,(array)($in['ws']??[]),'data')),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'types'=>$ty,'next'=>$d['next']]);
 case 'sr_save':
   admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
   $ws=implode(',',array_values(array_unique(array_filter(array_map('intval',(array)($in['ws']??[]))))));
   $dw=max(1,min(7,(int)($in['dow']??4)));$hm=max(0,min(1439,(int)($in['hhmm']??900)));$ac=empty($in['active'])?0:1;
-  $xg=implode(',',sr_ids($in['exg']??[]));$xt=implode(',',sr_ids($in['ext']??[]));
-  if($id){$db->prepare("UPDATE status_reports SET name=?,ws_ids=?,emails=?,dow=?,hhmm=?,active=?,excl_g=?,excl_t=? WHERE id=?")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$id]);}
-  else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,excl_g,excl_t,created_at) VALUES(?,?,?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt]);}
+  $xg=implode(',',sr_ids($in['exg']??[]));$xt=implode(',',sr_ids($in['ext']??[]));$ah=sr_ahead($in['ahead']??3);$go=implode('|',sr_order($in['order']??[]));
+  if($id){$db->prepare("UPDATE status_reports SET name=?,ws_ids=?,emails=?,dow=?,hhmm=?,active=?,excl_g=?,excl_t=?,ahead=?,grp_order=? WHERE id=?")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$ah,$go,$id]);}
+  else{$db->prepare("INSERT INTO status_reports(name,ws_ids,emails,dow,hhmm,active,excl_g,excl_t,ahead,grp_order,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,NOW())")->execute([$nm,$ws,$em,$dw,$hm,$ac,$xg,$xt,$ah,$go]);}
   out(['ok'=>1,'id'=>$id?:(int)$db->lastInsertId()]);
 case 'sr_del':
   admin();sr_ddl($db);$db->prepare("DELETE FROM status_reports WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
