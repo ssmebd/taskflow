@@ -596,6 +596,34 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
 @media(min-width:701px){header .fl{display:flex;flex:1 1 380px;min-width:0;max-width:760px;gap:10px;align-items:center}header .fl #q{flex:1 1 110px;min-width:80px;width:auto}header .fl select{flex:0 1 auto;min-width:64px;max-width:190px;text-overflow:ellipsis}}
 @media(max-width:700px){header .fl{display:contents}header .fl #q{min-width:140px}}
 .fme{font-weight:600;white-space:nowrap;cursor:pointer;border-radius:999px;flex:0 0 auto}header .fme{padding-left:16px;padding-right:16px;opacity:1}header .fme:hover{border-color:var(--hfg)}header .fme.on,html.lk-l header .fme.on{background:#2557b5;border-color:#7fb0ff;color:#fff;box-shadow:0 0 0 2px rgba(127,176,255,.35)}#fa{display:none!important}
+
+#mcd{width:min(680px,94vw);max-height:92vh;padding:0;border:0;border-radius:22px;overflow:hidden;resize:none!important;box-shadow:0 30px 90px rgba(10,25,60,.45);background:var(--card)}
+#mcd::backdrop{background:radial-gradient(circle at 30% 20%,rgba(37,87,181,.55),rgba(8,20,48,.78));backdrop-filter:blur(5px)}
+#mcd .mch{position:relative;padding:26px 28px 22px;color:#fff;background:linear-gradient(135deg,#12337a 0%,#2557b5 55%,#16a34a 140%);overflow:hidden}
+#mcd .mch::after{content:"";position:absolute;right:-40px;top:-60px;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,102,.55),rgba(255,214,102,0) 70%)}
+#mcd .mch small{display:block;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+#mcd .mch h2{margin:4px 0 2px;font-size:26px;line-height:1.15}
+#mcd .mch p{margin:0;opacity:.88;font-size:14px;position:relative;z-index:1}
+#mcd .mcs{position:absolute;right:22px;top:18px;font-size:40px;z-index:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.25))}
+#mcd .mcb{padding:16px 22px 6px;max-height:calc(92vh - 230px);overflow:auto;display:grid;gap:14px}
+#mcd .mcc{border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--col,var(--card))}
+#mcd .mcc h3{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}
+#mcd .mcc h3 i{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:14px;background:#e8efff}
+#mcd .mcc.ok{border-color:#bfe6cb;background:linear-gradient(135deg,#f1fbf4,#fff)}#mcd .mcc.ok h3 i{background:#d7f3df}
+#mcd .mcc.warn{border-color:#f3d9a0;background:linear-gradient(135deg,#fff9e8,#fff)}#mcd .mcc.warn h3 i{background:#ffe9b3}
+#mcd .mcc.bad{border-color:#f0c4c4;background:linear-gradient(135deg,#fff3f3,#fff)}#mcd .mcc.bad h3 i{background:#fdd}
+#mcd .mcr{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:9px 0;border-top:1px dashed var(--line)}#mcd .mcr:first-of-type{border-top:0}
+#mcd .mcr b{display:block;font-size:14px}#mcd .mcr small{color:var(--mut);font-size:12px}
+#mcd .mcd2{white-space:nowrap;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eef2fb;color:#2b3a67}#mcd .mcd2.late{background:#fde8e8;color:#b42318}
+#mcd .mcst{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+#mcd .mcst button{font:inherit;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid var(--pc,#94a3b8);background:transparent;color:var(--pc,#475569);cursor:pointer}
+#mcd .mcst button.on{background:var(--pc,#475569);color:#fff}
+#mcd .mcf{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}#mcd .mcf select,#mcd .mcf input{font:inherit;padding:7px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}#mcd .mcf select{flex:1 1 200px;min-width:0}#mcd .mcf input{width:84px}
+#mcd .mcft{padding:14px 22px 20px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-top:1px solid var(--line)}
+#mcd .mcft span{color:var(--mut);font-size:12.5px;flex:1 1 200px}
+#mcd .mcgo{font:inherit;font-weight:700;font-size:15px;padding:12px 26px;border-radius:999px;border:0;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2557b5,#16a34a);box-shadow:0 10px 24px rgba(37,87,181,.35)}
+#mcd .mcgo:hover{filter:brightness(1.06)}
+@media(max-width:700px){#mcd{width:100vw!important;max-width:100vw!important;border-radius:0}#mcd .mcb{max-height:calc(100dvh - 250px)}}
 </style><script>try{sessionStorage.removeItem("tf_enter")}catch(e){}</script></head><body><svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="tfbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2557b5"/><stop offset=".55" stop-color="#12337a"/><stop offset="1" stop-color="#081a40"/></linearGradient><radialGradient id="tfhl" cx=".2" cy=".08" r=".75"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><linearGradient id="tfgr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6ee7a0"/><stop offset="1" stop-color="#16a34a"/></linearGradient><linearGradient id="tfsk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bae6fd"/><stop offset="1" stop-color="#38bdf8"/></linearGradient><filter id="tfsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="9" stdDeviation="8" flood-color="#020b22" flood-opacity=".35"/></filter></defs></svg>
 <header>
  <span class="bk"><span class="bk1"><svg class="tfm tfh" viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="116" fill="url(#tfbg)"/><rect width="512" height="512" rx="116" fill="url(#tfhl)"/><g transform="translate(0.00,0.00) scale(1.0)"><g filter="url(#tfsh)"><rect x="84" y="118" width="226" height="68" rx="34" fill="#fff"/><rect x="150" y="222" width="226" height="68" rx="34" fill="url(#tfsk)"/><path d="M216 326 H372 L426 360 L372 394 H216 a34 34 0 0 1 0-68z" fill="url(#tfgr)"/></g><path d="M120 152 l22 22 l40 -44" fill="none" stroke="#12337a" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></g></svg><span class="brand"><b>TaskFlow</b><small>Powered by GURUCADD <span style="color:#22c55e;text-shadow:0 0 6px #22c55e;font-weight:900;letter-spacing:0;font-size:15px;line-height:0;vertical-align:-1px;margin-left:2px">»</span></small></span></span><span class="bk2"><span id="live" style="font-size:12px;color:var(--mut)">○ …</span><button id="bld" type="button" title="Version of this page. Tap to reload when a newer one is available." style="font-size:11px;padding:2px 7px;opacity:.8"></button><button id="bell" title="Flow – your notifications">🔔<b id="bn" hidden></b></button></span></span><span id="wlogo"></span><h1><span id="wname"></span></h1>
@@ -763,6 +791,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
   <div><small style="color:var(--mut)">Other email addresses, e.g. guests (separate with commas or new lines)</small><textarea id="sre" placeholder="client@example.com, manager@example.com"></textarea></div>
   <div class="row"><label>Send every</label><select id="srd"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select><label>at</label><select id="srt"></select><span style="color:var(--mut);font-size:12px">Dhaka time</span><label class="ck"><input type="checkbox" id="sra" checked> Active</label><span style="flex:1"></span><button id="srdel">Delete</button><button id="srsn">✉ Send now</button><button class="p" id="srsv">Save</button></div></div>
  <div id="srst" style="font-size:13px;margin:4px 0;min-height:1em"></div><div class="acts" style="margin:8px 0 4px"><b style="flex:1">Preview</b><span id="srpn" style="color:var(--mut);font-size:12px"></span><button id="srpr">Refresh</button></div><div id="srprev"></div></dialog>
+<dialog id="mcd" aria-label="Good morning"></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
@@ -2459,8 +2488,40 @@ $("#tlist").addEventListener("click",async e=>{
   }catch(err){alert(err.message)}
 });
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
+
+// ---- Morning welcome card: stays (centred) until the person says "Got it" ----
+(()=>{const dlg=$("#mcd");if(!dlg)return;let D=null,busy=false,warned=false;
+ const apiw=async(a,d,w)=>{const r=await fetch("api.php?a="+a+"&w="+(w||W),{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(d||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j};
+ const fdate=d=>new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}),fh=n=>(Math.round(n*100)/100).toString();
+ const meta=t=>[t.order_no,t.customer,t.drawing_type].filter(Boolean).map(esc).join(" · ");
+ const dueChip=(t,td)=>t.end_date?`<span class="mcd2${t.end_date<td?" late":""}">${t.end_date===td?"Due today":"Due "+esc(fdate(t.end_date))}</span>`:"";
+ function render(){
+  const td=ltoday(),h=new Date().getHours(),greet=h<12?"Good morning":h<17?"Good afternoon":"Good evening",first=String(D.name||"").split(" ")[0]||"there";
+  const nm=(w)=>esc(D.ws[w]||"");
+  let hc="";
+  if(D.hours){const m=Math.max(0,D.hours.need-D.hours.h),ok=m<.01,dd=fdate(D.hours.date),opts=[].concat(D.today,D.due,D.overdue);
+   if(ok)hc=`<div class="mcc ok"><h3><i>✓</i>Hours for ${esc(dd)}</h3><div style="font-size:14px">You logged <b>${fh(D.hours.h)} h</b>. All good, thank you!</div></div>`;
+   else hc=`<div class="mcc ${D.hours.h?"warn":"bad"}"><h3><i>⏱</i>Hours for ${esc(dd)}</h3><div style="font-size:14px">${D.hours.h?`You logged <b>${fh(D.hours.h)} h</b>, <b>${fh(m)} h</b> short of ${fh(D.hours.need)} h.`:`Nothing was logged. Please add your hours for this day.`}</div>
+    ${opts.length?`<div class="mcf"><select id="mcT">${opts.map(t=>`<option value="${t.id}" data-w="${t.ws_id}">${esc((t.order_no?t.order_no+" · ":"")+t.title)} (${esc(D.ws[t.ws_id]||"")})</option>`).join("")}</select><input id="mcH" type="number" step="0.25" min="0.25" max="24" value="${fh(m)}"><button class="p" id="mcA" type="button">Add hours</button></div>`:`<div style="font-size:12.5px;color:var(--mut);margin-top:6px">You have no open tasks to log against. You can add hours from the task itself.</div>`}</div>`}
+  const stBtns=t=>{const L=D.st[t.ws_id]||[];return `<div class="mcst" data-t="${t.id}" data-w="${t.ws_id}">${L.map(x=>`<button type="button" data-k="${esc(x.k)}" class="${x.k===t.status?"on":""}" style="--pc:${esc(x.c||"#64748b")}">${esc(x.n)}</button>`).join("")}${L.some(x=>x.k==="done")?"":`<button type="button" data-k="done" style="--pc:#16a34a">Done</button>`}</div>`};
+  const dueHtml=D.due.length?`<div class="mcc"><h3><i>📅</i>Due on ${esc(fdate(D.lw))}${D.lw!==D.due[D.due.length-1].end_date?" and after":""}: where do they stand?</h3>${D.due.map(t=>`<div class="mcr"><div style="min-width:0;flex:1"><b>${esc(t.title)}</b><small>${meta(t)}${meta(t)?" · ":""}${nm(t.ws_id)}</small>${stBtns(t)}</div>${dueChip(t,td)}</div>`).join("")}</div>`:"";
+  const todayHtml=`<div class="mcc"><h3><i>🎯</i>On your plate today <em style="font-style:normal;color:var(--mut);font-weight:500">${D.today.length}</em></h3>${D.today.length?D.today.map(t=>`<a class="mcr" style="text-decoration:none;color:inherit" href="index.php?w=${t.ws_id}&t=${t.id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${meta(t)}${meta(t)?" · ":""}${nm(t.ws_id)}</small></div>${dueChip(t,td)}</a>`).join(""):`<div style="font-size:14px;color:var(--mut)">Nothing is scheduled for you today. A good moment to plan ahead or help a teammate.</div>`}</div>`;
+  const odHtml=D.overdue.length?`<div class="mcc bad"><h3><i>⚠</i>Still overdue <em style="font-style:normal;color:var(--mut);font-weight:500">${D.overdue.length}</em></h3>${D.overdue.slice(0,6).map(t=>`<a class="mcr" style="text-decoration:none;color:inherit" href="index.php?w=${t.ws_id}&t=${t.id}"><div style="min-width:0"><b>${esc(t.title)}</b><small>${meta(t)}${meta(t)?" · ":""}${nm(t.ws_id)}</small></div>${dueChip(t,td)}</a>`).join("")}${D.overdue.length>6?`<small style="color:var(--mut)">+ ${D.overdue.length-6} more</small>`:""}</div>`:"";
+  dlg.innerHTML=`<div class="mch"><span class="mcs">${h<12?"☀️":h<17?"🌤️":"🌙"}</span><small>${esc(new Date().toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}))}</small><h2>${greet}, ${esc(first)}!</h2><p>Here is a quick look at where things stand before you start.</p></div><div class="mcb">${hc}${dueHtml}${todayHtml}${odHtml}</div><div class="mcft"><span>This card stays until you confirm. It comes back tomorrow morning.</span><button class="mcgo" id="mcG" type="button">Got it, let's start my day</button></div>`}
+ async function fetchData(){D=await api("morning_card",{today:ltoday()});return D}
+ async function open(){if(busy)return;busy=true;try{await fetchData();if(!D.show)return;render();if(!dlg.open)dlg.showModal()}catch(e){}finally{busy=false}}
+ dlg.addEventListener("cancel",e=>e.preventDefault());
+ dlg.addEventListener("click",async e=>{
+  const g=e.target.closest("#mcG");if(g){g.disabled=true;try{await api("morning_ack",{today:ltoday()});dlg.close();load(true)}catch(x){g.disabled=false;alert(x.message)}return}
+  const a=e.target.closest("#mcA");if(a){const sel=$("#mcT"),o=sel.selectedOptions[0],hv=parseFloat($("#mcH").value);if(!(hv>0&&hv<=24)){alert("Enter hours between 0.25 and 24");return}a.disabled=true;
+   try{await apiw("tl_add",{task_id:+sel.value,date:D.hours.date,hours:hv,kind:"R"},o&&o.dataset.w);const sc=dlg.querySelector(".mcb").scrollTop;await fetchData();render();dlg.querySelector(".mcb").scrollTop=sc}catch(x){a.disabled=false;alert(x.message)}return}
+  const b=e.target.closest(".mcst button");if(b){const bx=b.parentNode,k=b.dataset.k,tid=+bx.dataset.t,w=+bx.dataset.w;
+   try{await apiw("field",{id:tid,f:"status",v:k},w);const t=D.due.find(x=>x.id==tid);if(t)t.status=k;bx.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));b.insertAdjacentHTML("afterend",'<span class="mcd2" style="background:#d7f3df;color:#146c2e">Saved ✓</span>');setTimeout(()=>{const z=bx.querySelector("span.mcd2");z&&z.remove()},1800);load(true)}catch(x){alert(x.message)}}
+ });
+ let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
+})();
 load(true);
-const BUILD=277;
+const BUILD=278;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

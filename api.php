@@ -1,5 +1,5 @@
 <?php
-const BUILD=277;
+const BUILD=278;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -891,6 +891,29 @@ case 'chat_tasks':
   $qq=trim((string)($in['q']??''));$ids=array_map(fn($w)=>(int)$w['id'],$WS);if(!$ids)out(['tasks'=>[]]);
   $st=$db->prepare("SELECT t.id,t.ws_id,t.title,t.order_no,w.name AS company FROM tasks t JOIN workspaces w ON w.id=t.ws_id WHERE t.ws_id IN(".implode(',',$ids).") AND (?='' OR t.title LIKE ? OR t.order_no LIKE ?) ORDER BY t.updated_at DESC LIMIT 25");$like='%'.str_replace(['%','_'],['\\%','\\_'],$qq).'%';$st->execute([$qq,$like,$like]);
   out(['tasks'=>$st->fetchAll()]);
+case 'morning_card':
+case 'morning_ack':
+  try{$db->exec("CREATE TABLE IF NOT EXISTS morning_ack(user_id INT NOT NULL,day DATE NOT NULL,at DATETIME NOT NULL,PRIMARY KEY(user_id,day)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}catch(Throwable $e){}
+  $td=(string)($in['today']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$td))$td=date('Y-m-d');
+  if($me['role']==='guest')out(['show'=>false]);
+  if($a==='morning_ack'){$db->prepare("INSERT INTO morning_ack(user_id,day,at) VALUES(?,?,NOW()) ON DUPLICATE KEY UPDATE at=at")->execute([$uid,$td]);out(['ok'=>1]);}
+  $q=$db->prepare("SELECT COUNT(*) FROM morning_ack WHERE user_id=? AND day=?");$q->execute([$uid,$td]);if((int)$q->fetchColumn())out(['show'=>false]);
+  $ids=array_map(fn($w)=>(int)$w['id'],$WS);if(!$ids)out(['show'=>false]);$inl=implode(',',$ids);
+  $yday=date('Y-m-d',strtotime($td.' -1 day'));
+  // last working day (Mon-Fri) before today
+  $lw=null;for($t=strtotime($yday);$t>strtotime($td.' -8 day');$t-=86400){if((int)date('N',$t)>=6)continue;$lw=date('Y-m-d',$t);break;}
+  $q=$db->prepare("SELECT MIN(work_date) FROM time_logs WHERE user_id=?");$q->execute([$uid]);$first=$q->fetchColumn();
+  $hrs=null;if($lw&&$first&&$first<=$lw){$q=$db->prepare("SELECT COALESCE(SUM(hours),0) FROM time_logs WHERE user_id=? AND work_date=?");$q->execute([$uid,$lw]);$hrs=['date'=>$lw,'h'=>(float)$q->fetchColumn(),'need'=>WORK_H];}
+  $mine="(t.assigned_to=? OR t.id IN(SELECT task_id FROM task_assignees WHERE user_id=?))";
+  $cols="t.id,t.ws_id,t.title,t.order_no,t.customer,t.drawing_type,t.start_date,t.end_date,t.status";
+  $due=[];if($lw){$q=$db->prepare("SELECT $cols FROM tasks t WHERE $mine AND t.status<>'done' AND t.ws_id IN($inl) AND t.end_date BETWEEN ? AND ? ORDER BY t.end_date,t.id LIMIT 40");$q->execute([$uid,$uid,$lw,$yday]);$due=$q->fetchAll();}
+  $dueIds=array_map(fn($r)=>(int)$r['id'],$due);
+  $q=$db->prepare("SELECT $cols FROM tasks t WHERE $mine AND t.status<>'done' AND t.ws_id IN($inl) AND COALESCE(t.start_date,t.end_date)<=? AND COALESCE(t.end_date,t.start_date)>=? ORDER BY (t.end_date IS NULL),t.end_date,t.id LIMIT 60");$q->execute([$uid,$uid,$td,$td]);
+  $today=array_values(array_filter($q->fetchAll(),fn($r)=>!in_array((int)$r['id'],$dueIds,true)));
+  $od=[];$q=$db->prepare("SELECT $cols FROM tasks t WHERE $mine AND t.status<>'done' AND t.ws_id IN($inl) AND t.end_date<? ORDER BY t.end_date,t.id LIMIT 60");$q->execute([$uid,$uid,$lw?$lw:$td]);$od=array_values(array_filter($q->fetchAll(),fn($r)=>!in_array((int)$r['id'],$dueIds,true)));
+  $st=[];foreach($db->query("SELECT ws_id,skey,name,color FROM statuses WHERE ws_id IN($inl) ORDER BY ws_id,sort_no,id")->fetchAll() as $r)$st[$r['ws_id']][]=['k'=>$r['skey'],'n'=>$r['name'],'c'=>$r['color']];
+  $wn=[];foreach($WS as $w)$wn[$w['id']]=$w['name'];
+  out(['show'=>true,'name'=>$me['name'],'hours'=>$hrs,'due'=>$due,'today'=>$today,'overdue'=>$od,'st'=>(object)$st,'ws'=>(object)$wn,'lw'=>$lw]);
 case 'hours_gap':
   $td=(string)($in['today']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$td))$td=date('Y-m-d');
   $q=$db->prepare("SELECT MIN(work_date) FROM time_logs WHERE user_id=?");$q->execute([$uid]);$first=$q->fetchColumn();
