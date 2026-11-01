@@ -795,7 +795,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
   <div><small style="color:var(--mut)">Team members (email comes from their user details)</small><div class="row" id="sru"></div></div>
   <div><small style="color:var(--mut)">Other email addresses, e.g. guests (separate with commas or new lines)</small><textarea id="sre" placeholder="client@example.com, manager@example.com"></textarea></div>
   <div class="row"><label>Send every</label><select id="srd"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select><label>at</label><select id="srt"></select><span style="color:var(--mut);font-size:12px">Dhaka time</span><label class="ck"><input type="checkbox" id="sra" checked> Active</label><span style="flex:1"></span><button id="srdel">Delete</button><button id="srsn">✉ Send now</button><button class="p" id="srsv">Save</button></div></div>
- <div id="srst" style="font-size:13px;margin:4px 0;min-height:1em"></div><div class="acts" style="margin:8px 0 4px"><b style="flex:1">Preview</b><span id="srpn" style="color:var(--mut);font-size:12px"></span><button id="srpr">Refresh</button></div><div id="srprev"></div></dialog>
+ <div id="srst" style="font-size:13px;margin:4px 0;min-height:1em"></div><div class="acts" style="margin:8px 0 4px"><b style="flex:1">Preview</b><span id="srpn" style="color:var(--mut);font-size:12px"></span><button id="srpr">Refresh</button><button id="srpdf" type="button" title="Print, or choose Save as PDF in the print window">🖨 Print / PDF</button></div><div id="srprev"></div></dialog>
 <dialog id="mcd" aria-label="Good morning"></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
@@ -2418,6 +2418,7 @@ function srCol(on){$("#srdg").classList.toggle("srcol",on);$("#srcg").textConten
 $("#srcg").onclick=()=>srCol(!$("#srdg").classList.contains("srcol"));
 function srFs(on){const d=$("#srdg");d.classList.toggle("srfull",on);$("#srfs").textContent=on?"🗗 Normal size":"⛶ Full screen";try{localStorage.setItem("srfull",on?"1":"")}catch(e){}}
 $("#srfs").onclick=()=>srFs(!$("#srdg").classList.contains("srfull"));
+$("#srpdf").onclick=()=>{const h=$("#srprev").innerHTML;if(!h||/^<p>Loading/.test(h))return alert("The report is still loading.");const t=document.title,n=($("#srn").value||"Task status report").trim();$("#pbox").innerHTML=h;document.title=n+" - "+ltoday();window.print();setTimeout(()=>{document.title=t},500)};
 $("#srx").onclick=()=>$("#srdg").close();$("#srpr").onclick=srPrev;
 $("#srl").addEventListener("click",e=>{const c=e.target.closest("[data-sr]");if(c)srForm(+c.dataset.sr)});
 $("#srw").addEventListener("change",srPrev);$("#srah").addEventListener("change",srPrev);$("#srpm").addEventListener("change",()=>{srPm();srPrev()});
@@ -2546,7 +2547,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=288;
+const BUILD=289;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
