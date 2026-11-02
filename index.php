@@ -1022,7 +1022,7 @@ function coBtn(t){const n=(t.co||[]).length;
   return `<button type="button" class="coadd${n?" has":""}" data-co="${t.id}" title="${n?ea("Also: "+coNames(t)):"Add more people to this task"}">${n?"+"+n:"＋"}</button>`}
 function cadBtn(t){if(!t.id||LV==="view")return "";
   const q=new URLSearchParams({ws:t.ws_id||"",title:t.title||"",order:t.order_no||"",customer:t.customer||"",dtype:t.drawing_type||""}).toString();
-  return `<a class="cadb" href="cadman://task/${t.id}?${ea(q)}" onclick="event.stopPropagation()" title="Open / create the Cadman project for this task">⋯</a>`}
+  return `<a class="cadb" href="cadman://task/${t.id}?${ea(q)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open / create the Cadman project for this task">⋯</a>`}
 const BASE_COLS=[
  {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed${t.id?" tt":""}" data-f="title" value="${ea(t.title)}"${t.id?' readonly title="Open task"':""}>${cadBtn(t)}</div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
@@ -2551,7 +2551,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=293;
+const BUILD=294;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
