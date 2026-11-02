@@ -1,5 +1,5 @@
 <?php
-const BUILD=291;
+const BUILD=51;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -494,7 +494,7 @@ if(($_GET['a']??'')==='msg_file'){
   header('Content-Disposition: '.($img&&empty($_GET['dl'])?'inline':'attachment').'; filename="'.preg_replace('/[^A-Za-z0-9._ -]/','_',$r['name']).'"');echo $r['data'];exit;
 }
 if(($_SERVER['HTTP_X_REQUESTED_WITH']??'')!=='fetch'){http_response_code(400);out(['error'=>'bad request']);}
-$in=json_decode(file_get_contents('php://input'),true)?:[];
+$in=isset($_POST['j'])?(json_decode((string)$_POST['j'],true)?:[]):(json_decode(file_get_contents('php://input'),true)?:[]);
 $a=$_GET['a']??'';$uid=(int)$_SESSION['uid'];
 $q=$db->prepare("SELECT id,name,username,role FROM users WHERE id=?");$q->execute([$uid]);$me=$q->fetch();
 if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
@@ -872,7 +872,7 @@ case 'msg_send':
   $peer=(int)($in['peer']??0);$b=mb_substr(trim((string)($in['body']??'')),0,2000);$fl=is_array($in['files']??null)?array_slice($in['files'],0,6):[];
   if($b===''&&!$fl)out(['error'=>'Write a message first']);
   if($peer){$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$peer]);if(!(int)$q->fetchColumn()||$peer===$uid)out(['error'=>'Choose someone to message']);}
-  $raws=[];$tot=0;foreach($fl as $fx=>$f){$raw=base64_decode((string)($f['data']??''),true);if($raw===false||$raw==='')continue;$tot+=strlen($raw);if(strlen($raw)>6*1048576||$tot>10*1048576)out(['error'=>'Files are too large (max 6 MB each, 10 MB in total)']);
+  $raws=[];$tot=0;foreach($fl as $fx=>$f){if(($_FILES['f']['error'][$fx]??0)>0)out(['error'=>'UPLOAD_LIMIT']);$tn=$_FILES['f']['tmp_name'][$fx]??'';$raw=($tn!==''&&is_string($tn)&&is_uploaded_file($tn))?file_get_contents($tn):base64_decode((string)($f['data']??''),true);if($raw===false||$raw==='')continue;$tot+=strlen($raw);if(strlen($raw)>6*1048576||$tot>10*1048576)out(['error'=>'Files are too large (max 6 MB each, 10 MB in total)']);
     $mime=(string)($f['mime']??'');$inf=@getimagesizefromstring($raw);if($inf&&in_array($inf['mime'],['image/png','image/jpeg','image/gif','image/webp'],true))$mime=$inf['mime'];elseif(preg_match('/\.(exe|bat|cmd|com|scr|msi|js|vbs|ps1|php|html?|svg)$/i',(string)($f['name']??'')))out(['error'=>'That file type cannot be sent']);
     $raws[]=[mb_substr(basename((string)($f['name']??'file')),0,150),mb_substr($mime,0,80),$raw,$fx];}
   $html=isset($in['html'])?msg_clean_html($in['html']):'';

@@ -178,7 +178,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="toast" hidden></div>
 <script>
 "use strict";
-const BUILD=291;
+const BUILD=51;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let ME={id:0,name:""},conv=[],team={},cur=null,lastId=0,peerSeen=0,peerDlv=0,pending=[],sending=false,msgs=[],unreadTotal=0,firstLoad=true,knownLast={};
@@ -288,6 +288,11 @@ async function pull(first){
 function renderPend(){
   $("#pend").innerHTML=(pending.length?'<div style="flex-basis:100%;font-size:11.5px;color:var(--mut)">Attachments are deleted automatically 48 hours after sending.</div>':"")+pending.map((f,i)=>`<div class="pc">${f.thumb?`<img src="${f.thumb}" alt="">`:"<span>📄</span>"}<span>${esc(f.name)}</span><button data-rm="${i}" aria-label="Remove">×</button></div>`).join("");
   $("#snd").disabled=sending}
+function upSend(j,blobs){return new Promise((ok,no)=>{const fd=new FormData();fd.append("j",JSON.stringify(j));blobs.forEach((b,i)=>fd.append("f[]",b,(j.files[i]&&j.files[i].name)||"file"));
+  const x=new XMLHttpRequest();x.open("POST","api.php?a=msg_send");x.setRequestHeader("X-Requested-With","fetch");x.withCredentials=true;
+  if(blobs.length)x.upload.onprogress=e=>{if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);toast("Sending… "+p+"%");toast.t=clearTimeout(toast.t)||0}};
+  x.onload=()=>{$("#toast").hidden=true;if(x.status===401){location="login.php?next=chat";return no(new Error("auth"))}let r;try{r=JSON.parse(x.responseText)}catch(e){return no(new Error(x.status===413?"File is too large for the server":"Could not send, try again"))}r.error?no(new Error(r.error)):ok(r)};
+  x.onerror=()=>{$("#toast").hidden=true;no(new Error("Network problem, try again"))};x.send(fd)})}
 function toB64(blob){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(blob)})}
 async function shrink(file){
   if(!/^image\/(jpeg|png|webp)$/.test(file.type)||file.size<350*1024)return file;
@@ -307,8 +312,8 @@ async function send(){
     if(used.length+pending.length>6){toast("Up to 6 pictures and files per message");return}}
   else if(!b&&!pending.length)return;
   sending=true;renderPend();
-  try{const files=[];for(const f of used)files.push({name:f.name,mime:f.type||"image/png",data:await toB64(f)});for(const p of pending)files.push({name:p.name,mime:p.mime,data:await toB64(p.blob)});
-    await api("msg_send",rich?{peer:cur.id,body:b,html,files}:{peer:cur.id,body:b,files});tx.value="";tx.style.height="";setRich(false);pending.forEach(p=>p.thumb&&URL.revokeObjectURL(p.thumb));pending=[];
+  try{const files=[];const blobs=[];for(const f of used){files.push({name:f.name,mime:f.type||"image/png"});blobs.push(f)}for(const p of pending){files.push({name:p.name,mime:p.mime});blobs.push(p.blob)}
+    const pj=rich?{peer:cur.id,body:b,html,files}:{peer:cur.id,body:b,files};try{await upSend(pj,blobs)}catch(e){if(blobs.length&&(e.message==="UPLOAD_LIMIT"||e.message==="Write a message first")){for(let i=0;i<blobs.length;i++)files[i].data=await toB64(blobs[i]);await api("msg_send",pj)}else throw e}tx.value="";tx.style.height="";setRich(false);pending.forEach(p=>p.thumb&&URL.revokeObjectURL(p.thumb));pending=[];
     sending=false;renderPend();await pull(false);const el=$("#msgs");el.scrollTop=el.scrollHeight;loadList().catch(()=>{})}
   catch(e){sending=false;renderPend();toast(e.message)}}
 /* events */
