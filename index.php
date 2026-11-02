@@ -37,6 +37,7 @@ tr.row[style] td:first-child{box-shadow:inset 5px 0 0 var(--sc)}
 .card b{display:block;margin-bottom:4px}
 .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;color:var(--mut);font-size:12px}
 .tag{border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.cadb{flex:none;margin-left:4px;padding:0 7px;border:1px solid var(--line);border-radius:6px;color:var(--mut);text-decoration:none;font-weight:700;line-height:20px}.cadb:hover{background:var(--acc,#2563eb);color:#fff;border-color:transparent}
 .late{color:var(--hi);font-weight:600}
 .listwrap{padding:0 16px 16px;overflow-x:auto}
 @media(min-width:701px){body.lst{display:flex;flex-direction:column;height:100dvh;overflow:hidden}body.lst>*{flex:none}body.lst>#main{flex:1 1 0;min-height:0;display:flex;flex-direction:column}body.lst .listwrap{flex:1 1 0;min-height:0;max-height:none}
@@ -1019,8 +1020,11 @@ function coNames(t){return(t.co||[]).map(id=>uname(id)).join(", ")}
 function coBtn(t){const n=(t.co||[]).length;
   if(LV==="view")return n?`<span class="coN" title="${ea(coNames(t))}">+${n}</span>`:"";
   return `<button type="button" class="coadd${n?" has":""}" data-co="${t.id}" title="${n?ea("Also: "+coNames(t)):"Add more people to this task"}">${n?"+"+n:"＋"}</button>`}
+function cadBtn(t){if(!t.id||LV==="view")return "";
+  const q=new URLSearchParams({ws:t.ws_id||"",title:t.title||"",order:t.order_no||"",customer:t.customer||"",dtype:t.drawing_type||""}).toString();
+  return `<a class="cadb" href="cadman://task/${t.id}?${ea(q)}" onclick="event.stopPropagation()" title="Open / create the Cadman project for this task">⋯</a>`}
 const BASE_COLS=[
- {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed${t.id?" tt":""}" data-f="title" value="${ea(t.title)}"${t.id?' readonly title="Open task"':""}></div>`},
+ {id:"title",label:"Title",cell:t=>`<div class="tc">${ovBadge(t)}${cmBadge(t)}<input class="ed${t.id?" tt":""}" data-f="title" value="${ea(t.title)}"${t.id?' readonly title="Open task"':""}>${cadBtn(t)}</div>`},
  {id:"order_no",label:"Order No.",cell:t=>`<input class="ed" data-f="order_no" value="${ea(t.order_no)}">`},
  {id:"customer",label:"Customer",cell:t=>`<input class="ed" data-f="customer" list="pjl" value="${ea(t.customer)}">`},
  {id:"drawing_type",label:"Drawing type",cell:t=>`<select class="ed pill" data-f="drawing_type" style="--pc:${t.drawing_type?dtCol(t.drawing_type):"#94a3b8"}">${dtOpts(t.drawing_type)}</select>`},
@@ -2547,7 +2551,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=292;
+const BUILD=293;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
