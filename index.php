@@ -141,7 +141,7 @@ body.sc #wlinks{display:none}body.sc .sf{padding:4px}body.sc .sf .lbl{display:no
 header{--nv:#0f2a5c;--hfg:#ffffff;background:var(--nv);border-bottom:1px solid color-mix(in srgb,var(--nv) 80%,#000);color:var(--hfg)}
 header h1,header .app,header #who,header a.out,header #live{color:var(--hfg)!important}header .app{opacity:.75}
 header input,header select,header button{background:color-mix(in srgb,var(--hfg) 12%,transparent);color:var(--hfg);border-color:color-mix(in srgb,var(--hfg) 30%,transparent)}
-header input::placeholder{color:color-mix(in srgb,var(--hfg) 70%,transparent)}header option{color:#1d2433;background:#fff}
+header input::placeholder{color:color-mix(in srgb,var(--hfg) 70%,transparent)}header option{color:#1d2433;background:#fff}select.ed.pill option,select.ed option{background:var(--card);color:var(--ink);font-weight:400}
 header button:hover:not(:disabled){background:color-mix(in srgb,var(--hfg) 22%,transparent)}header button:disabled{opacity:.7}
 header .tabs button.on{background:var(--hfg);color:var(--nv);border-color:var(--hfg);font-weight:600}
 header button.p{background:var(--hfg);color:var(--nv);border-color:var(--hfg)}header button.p:hover{opacity:.88}
@@ -2551,7 +2551,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=294;
+const BUILD=290;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
