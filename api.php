@@ -1,5 +1,5 @@
 <?php
-const BUILD=291;
+const BUILD=292;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -504,8 +504,9 @@ const WORK_H=8.0;
 function ot_rebalance($db,$who,$d){
   try{
     $wk=(int)date('N',strtotime($d))>=6;$cum=0.0;
-    $q=$db->prepare("SELECT id,task_id,ws_id,user_id,logged_by,hours,kind,note,rev,work_date FROM time_logs WHERE user_id=? AND work_date=? ORDER BY id");$q->execute([$who,$d]);
+    $q=$db->prepare("SELECT id,task_id,ws_id,user_id,logged_by,hours,kind,note,rev,work_date,man FROM time_logs WHERE user_id=? AND work_date=? ORDER BY id");$q->execute([$who,$d]);
     foreach($q->fetchAll() as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
+      if(!empty($r['man'])){if($r['kind']!=='OT')$db->prepare("UPDATE time_logs SET kind='OT' WHERE id=?")->execute([$r['id']]);continue;} // manually added overtime: never re-split, not counted in the 8 regular hours
       if($wk)$k='OT';
       elseif($cum+$h<=WORK_H+0.001)$k='R';
       elseif($cum>=WORK_H-0.001)$k='OT';
@@ -571,6 +572,7 @@ function ensure_schema($db){
     foreach(array_keys($ix) as $k)$db->exec("ALTER TABLE users DROP INDEX `".str_replace('`','``',$k)."`");}catch(Throwable $e){}
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'rev'")->fetch())$db->exec("ALTER TABLE time_logs ADD rev VARCHAR(60) NOT NULL DEFAULT ''");
   if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'kind'")->fetch())$db->exec("ALTER TABLE time_logs ADD kind VARCHAR(4) NOT NULL DEFAULT 'R'");
+  if(!$db->query("SHOW COLUMNS FROM time_logs LIKE 'man'")->fetch())$db->exec("ALTER TABLE time_logs ADD man TINYINT NOT NULL DEFAULT 0");
   $db->exec("CREATE TABLE IF NOT EXISTS invoice_profiles(ws_id INT NOT NULL,slot TINYINT NOT NULL,data MEDIUMTEXT NOT NULL,PRIMARY KEY(ws_id,slot)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM task_groups LIKE 'parent_id'")->fetch())$db->exec("ALTER TABLE task_groups ADD parent_id INT NULL");
   if(!$db->query("SHOW COLUMNS FROM users LIKE 'pref_theme'")->fetch())$db->exec("ALTER TABLE users ADD pref_theme VARCHAR(20) NOT NULL DEFAULT ''");
@@ -1110,7 +1112,7 @@ case 'tl_list':
   $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.kind,l.logged_by,l.note,l.rev FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
   out(['logs'=>$q->fetchAll(),'me'=>(int)$uid]);
 case 'tl_add':
-  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';$rv=mb_substr(trim((string)($in['rev']??'')),0,60);
+  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';$mn=($kd==='OT'&&!empty($in['manual']))?1:0;$rv=mb_substr(trim((string)($in['rev']??'')),0,60);
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
@@ -1127,7 +1129,7 @@ case 'tl_add':
         $db->prepare("UPDATE tasks SET assigned_to=?,updated_at=NOW() WHERE id=? AND ws_id=?")->execute([$as,$tid,$W]);$who=$as;}
     }
   }
-  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,created_at) VALUES(?,?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n,$rv]);ot_rebalance($db,$who,$d);out(['ok'=>1]);
+  $db->prepare("INSERT INTO time_logs(task_id,ws_id,user_id,logged_by,work_date,hours,kind,note,rev,man,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,NOW())")->execute([$tid,$W,$who,$uid,$d,$h,$kd,$n,$rv,$mn]);ot_rebalance($db,$who,$d);out(['ok'=>1]);
 case 'tl_rev':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
