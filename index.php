@@ -612,7 +612,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
 #mcd .mcc h3 i{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-style:normal;font-size:14px;background:#e8efff}
 #mcd .mcc.ok{border-color:#bfe6cb;background:linear-gradient(135deg,#f1fbf4,#fff)}#mcd .mcc.ok h3 i{background:#d7f3df}
 #mcd .mcc.warn{border-color:#f3d9a0;background:linear-gradient(135deg,#fff9e8,#fff)}#mcd .mcc.warn h3 i{background:#ffe9b3}
-#mcd .mcc.bad{border-color:#f0c4c4;background:linear-gradient(135deg,#fff3f3,#fff)}#mcd .mcc.bad h3 i{background:#fdd}
+#mcd .mcc.bad{border-color:#f0c4c4;background:linear-gradient(135deg,#fff3f3,#fff)}#mcd .mcc.bad h3 i{background:#fdd}@media (prefers-color-scheme:dark){#mcd .mcc.ok{border-color:#245c39;background:linear-gradient(135deg,#12301e,#1a2a22)}#mcd .mcc.ok h3 i{background:#1f5a35}#mcd .mcc.warn{border-color:#6b5420;background:linear-gradient(135deg,#33290f,#2a2416)}#mcd .mcc.warn h3 i{background:#5c4813}#mcd .mcc.bad{border-color:#6e2c2c;background:linear-gradient(135deg,#3a1818,#2a1c1f)}#mcd .mcc.bad h3 i{background:#6b2222}#mcd .mcc h3 i{background:#27345c}#mcd .mcd2{background:#27345c;color:#c9d4f5}#mcd .mcd2.late{background:#4a1e1e;color:#ffb4ab}}
 #mcd .mcr{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:9px 0;border-top:1px dashed var(--line)}#mcd .mcr:first-of-type{border-top:0}
 #mcd .mcr b{display:block;font-size:14px}#mcd .mcr small{color:var(--mut);font-size:12px}
 #mcd .mcd2{white-space:nowrap;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eef2fb;color:#2b3a67}#mcd .mcd2.late{background:#fde8e8;color:#b42318}
@@ -2553,7 +2553,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=295;
+const BUILD=293;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
