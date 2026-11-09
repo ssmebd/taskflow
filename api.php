@@ -1,5 +1,5 @@
 <?php
-const BUILD=295;
+const BUILD=296;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -372,6 +372,33 @@ function sr_html($d,$title='Task status report',$as=null){
 function sr_valid_emails($s){$o=[];foreach(preg_split('/[\s,;]+/',(string)$s,-1,PREG_SPLIT_NO_EMPTY) as $m){$m=strtolower(trim($m));if(filter_var($m,FILTER_VALIDATE_EMAIL)&&!in_array($m,$o,true))$o[]=$m;}return array_slice($o,0,30);}
 // ---- Microsoft 365 mail (Graph API, app-only). Put taskflow-mail.json in your home folder (or define('MS_MAIL_FILE','/path') in config.php):
 // {"tenant_id":"...","client_id":"...","client_secret":"...","from":"taskflow@gurucadd.com"}
+function mi_ddl($db){static $d=0;if($d)return;$d=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS mail_inbox(id INT AUTO_INCREMENT PRIMARY KEY,gid VARCHAR(190) NOT NULL,from_email VARCHAR(190) NOT NULL DEFAULT '',from_name VARCHAR(190) NOT NULL DEFAULT '',subject VARCHAR(300) NOT NULL DEFAULT '',body MEDIUMTEXT NULL,recv DATETIME NULL,user_id INT NOT NULL DEFAULT 0,status VARCHAR(10) NOT NULL DEFAULT 'new',task_id INT NULL,UNIQUE KEY g(gid),KEY s(status,user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS mail_state(k VARCHAR(20) PRIMARY KEY,v TEXT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function mi_get($k,$db){$q=$db->prepare("SELECT v FROM mail_state WHERE k=?");$q->execute([$k]);$v=$q->fetchColumn();return $v===false?'':(string)$v;}
+function mi_set($k,$v,$db){$db->prepare("INSERT INTO mail_state(k,v) VALUES(?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)")->execute([$k,$v]);}
+// Reads forwarded emails from the taskflow mailbox (Microsoft Graph Mail.Read) and files them for the forwarder. Runs at most once a minute.
+function mi_poll($db){
+  mi_ddl($db);if(time()-(int)mi_get('poll',$db)<60)return;mi_set('poll',(string)time(),$db);
+  $c=ms_cfg();if(!$c){mi_set('err','Microsoft 365 is not set up on the server (taskflow-mail.json is missing).',$db);return;}
+  $err='';$tok=ms_token($c,$err);if($tok===''){mi_set('err',$err,$db);return;}
+  $since=gmdate('Y-m-d\TH:i:s\Z',time()-3*86400);
+  $url='https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/mailFolders/inbox/messages?$top=40&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,body&$filter='.rawurlencode('receivedDateTime ge '.$since);
+  $ch=curl_init($url);curl_setopt_array($ch,[CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$tok,'Prefer: outlook.body-content-type="text"'],CURLOPT_RETURNTRANSFER=>1,CURLOPT_TIMEOUT=>25,CURLOPT_CONNECTTIMEOUT=>8]);
+  $o=(string)curl_exec($ch);$code=(int)curl_getinfo($ch,CURLINFO_HTTP_CODE);curl_close($ch);$j=json_decode($o,true);
+  if($code!==200||!is_array($j)||!isset($j['value'])){
+    $m=is_array($j)?(string)($j['error']['message']??''):'';
+    mi_set('err',($code===401||$code===403)?'Microsoft 365 has not allowed TaskFlow to read mail yet. The app needs the Microsoft Graph application permission Mail.Read with admin consent. ('.mb_substr($m,0,120).')':'Could not read the mailbox (HTTP '.$code.'). '.mb_substr($m,0,160),$db);return;}
+  mi_set('err','',$db);
+  $um=[];foreach($db->query("SELECT id,LOWER(TRIM(email)) e FROM users WHERE email<>''")->fetchAll() as $r)$um[$r['e']]=(int)$r['id'];
+  $ins=$db->prepare("INSERT IGNORE INTO mail_inbox(gid,from_email,from_name,subject,body,recv,user_id) VALUES(?,?,?,?,?,?,?)");
+  foreach($j['value'] as $m){
+    $fe=strtolower(trim((string)($m['from']['emailAddress']['address']??'')));$fn=(string)($m['from']['emailAddress']['name']??'');
+    if($fe===''||strtolower($fe)===strtolower((string)$c['from']))continue;
+    $uidm=$um[$fe]??0;$b=(string)($m['body']['content']??'');$b=trim(preg_replace("/\r\n?/","\n",$b));$b=preg_replace("/\n{3,}/","\n\n",$b);
+    $rt=gmdate('Y-m-d H:i:s',strtotime((string)($m['receivedDateTime']??'now')));
+    $ins->execute([mb_substr((string)$m['id'],0,190),mb_substr($fe,0,190),mb_substr($fn,0,190),mb_substr((string)($m['subject']??''),0,300),mb_substr($b,0,20000),$rt,$uidm]);}
+}
 function ms_cfg(){
   $c=[];if(defined('MS_MAIL_FILE'))$c[]=MS_MAIL_FILE;$h=getenv('HOME');if($h)$c[]=rtrim($h,'/').'/taskflow-mail.json';$c[]=dirname(__DIR__,2).'/taskflow-mail.json';$c[]=__DIR__.'/../taskflow-mail.json';
   foreach($c as $f)if($f&&is_file($f)){$j=json_decode((string)file_get_contents($f),true);if(is_array($j)&&!empty($j['tenant_id'])&&!empty($j['client_id'])&&!empty($j['client_secret'])&&!empty($j['from']))return $j;}
@@ -787,6 +814,17 @@ case 'log_list':
   $fl=$db->query("SELECT COUNT(*) FROM audit_log WHERE kind='fail' AND created_at>=DATE_SUB(NOW(),INTERVAL 1 DAY)")->fetchColumn();
   $wl=$db->query("SELECT id,name FROM workspaces ORDER BY name")->fetchAll();
   out(['rows'=>$rows,'seen'=>$seen,'today'=>(int)$st,'fails'=>(int)$fl,'ws'=>$wl]);
+case 'mail_pending':
+  mi_ddl($db);mi_poll($db);$adm=$me['role']==='admin';
+  $q=$db->prepare("SELECT id,from_email,from_name,subject,body,recv,user_id FROM mail_inbox WHERE status='new' AND (user_id=?".($adm?" OR user_id=0":"").") ORDER BY recv LIMIT 20");$q->execute([$uid]);$items=$q->fetchAll();
+  $ws=[];if($items){foreach($WS as $w){if(!in_array($w['level'],['edit','full'],true))continue;
+    $uq=$db->prepare("SELECT u.id,u.name FROM users u WHERE u.role<>'guest' AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?)) ORDER BY u.name");$uq->execute([(int)$w['id']]);
+    $ws[]=['id'=>(int)$w['id'],'name'=>$w['name'],'users'=>$uq->fetchAll()];}}
+  out(['items'=>$items,'ws'=>$ws,'err'=>$adm?mi_get('err',$db):'','me'=>(int)$uid]);
+case 'mail_dismiss':
+  mi_ddl($db);$db->prepare("UPDATE mail_inbox SET status='dismissed' WHERE id=? AND status='new' AND (user_id=? OR ?)")->execute([(int)($in['id']??0),$uid,$me['role']==='admin'?1:0]);out(['ok'=>1]);
+case 'mail_done':
+  mi_ddl($db);$db->prepare("UPDATE mail_inbox SET status='done',task_id=? WHERE id=? AND status='new' AND (user_id=? OR ?)")->execute([(int)($in['task_id']??0),(int)($in['id']??0),$uid,$me['role']==='admin'?1:0]);out(['ok'=>1]);
 case 'co_set':
   need_level('edit');$tid=(int)($in['id']??0);$us=array_values(array_unique(array_map('intval',is_array($in['users']??null)?$in['users']:[])));
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);

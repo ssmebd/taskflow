@@ -616,6 +616,10 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
 #mcd .mcr{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:9px 0;border-top:1px dashed var(--line)}#mcd .mcr:first-of-type{border-top:0}
 #mcd .mcr b{display:block;font-size:14px}#mcd .mcr small{color:var(--mut);font-size:12px}
 #mcd .mcd2{white-space:nowrap;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#eef2fb;color:#2b3a67}#mcd .mcd2.late{background:#fde8e8;color:#b42318}
+#mld{width:min(620px,94vw);max-height:94vh;padding:0;border:0;border-radius:18px;overflow:auto;resize:none!important;box-shadow:0 30px 90px rgba(10,25,60,.45);background:var(--card);color:var(--ink)}#mld::backdrop{background:rgba(8,20,48,.6);backdrop-filter:blur(4px)}
+#mld .mlh{padding:16px 20px;color:#fff;background:linear-gradient(135deg,#12337a,#2557b5)}#mld .mlh b{font-size:17px}#mld .mlh small{display:block;opacity:.85;margin-top:2px}
+#mld .mlb{padding:16px 20px;display:grid;gap:10px}#mld .mlb label{margin:0;font-weight:600;font-size:12.5px}#mld .mlb input,#mld .mlb select,#mld .mlb textarea{width:100%;box-sizing:border-box}#mld .mlb textarea{min-height:130px;resize:vertical;font:inherit}
+#mld .mlr{display:grid;grid-template-columns:1fr 1fr;gap:10px}#mld .mlf{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--line)}#mld .mlf .p{background:var(--pri,#2557b5);color:#fff;border:0;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer}
 #mcd .mcst{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 #mcd .mcst button{font:inherit;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;border:1px solid var(--pc,#94a3b8);background:transparent;color:var(--pc,#475569);cursor:pointer}
 #mcd .mcst button.on{background:var(--pc,#475569);color:#fff}
@@ -798,6 +802,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
   <div class="row"><label>Send every</label><select id="srd"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select><label>at</label><select id="srt"></select><span style="color:var(--mut);font-size:12px">Dhaka time</span><label class="ck"><input type="checkbox" id="sra" checked> Active</label><span style="flex:1"></span><button id="srdel">Delete</button><button id="srsn">✉ Send now</button><button class="p" id="srsv">Save</button></div></div>
  <div id="srst" style="font-size:13px;margin:4px 0;min-height:1em"></div><div class="acts" style="margin:8px 0 4px"><b style="flex:1">Preview</b><span id="srpn" style="color:var(--mut);font-size:12px"></span><button id="srpr">Refresh</button><button id="srpdf" type="button" title="Print, or choose Save as PDF in the print window">🖨 Print / PDF</button></div><div id="srprev"></div></dialog>
 <dialog id="mcd" aria-label="Good morning"></dialog>
+<dialog id="mld" aria-label="Email request"></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
 <dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
@@ -2522,6 +2527,31 @@ $("#tlist").addEventListener("click",async e=>{
 $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return;try{await api("user_role",{id:e.target.dataset.role,role:e.target.value});await load(true);renderUsers()}catch(err){alert(err.message);await load(true);renderUsers()}});
 
 // ---- Morning welcome card: stays (centred) until the person says "Got it" ----
+(()=>{const dlg=$("#mld");if(!dlg)return;let L=[],M=null,busy=false,snooze=0,warned=false;
+ const apiw=async(a,d,w)=>{const r=await fetch("api.php?a="+a+"&w="+(w||W),{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(d||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j};
+ const subj=s=>String(s||"").replace(/^\s*((fw|fwd|re)\s*:\s*)+/i,"").trim()||"(no subject)";
+ function render(){const it=L[0];if(!it){if(dlg.open)dlg.close();return}
+  const ws=M.ws,w0=ws.find(x=>x.id==W)||ws[0];if(!w0){apiw("mail_dismiss",{id:it.id}).then(()=>{L.shift();render()});return}
+  const rc=it.recv?new Date(it.recv.replace(" ","T")+"Z").toLocaleString():"";
+  const note="From: "+(it.from_name||it.from_email)+" <"+it.from_email+">"+(rc?"\nReceived: "+rc:"")+"\n\n"+String(it.body||"").slice(0,1800);
+  dlg.innerHTML=`<div class="mlh"><b>📧 A request came in by email</b><small>${L.length>1?L.length+" waiting. ":""}Forwarded by ${esc(it.from_name||it.from_email)}. Add it as a task so it is not forgotten.</small></div>
+  <div class="mlb"><div><label>Task title</label><input id="mlT" value="${ea(subj(it.subject))}" maxlength="255"></div>
+  <div class="mlr"><div><label>Company</label><select id="mlW">${ws.map(x=>`<option value="${x.id}" ${x.id==w0.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select></div><div><label>Assign to</label><select id="mlU"></select></div></div>
+  <div class="mlr"><div><label>Start date</label><input id="mlS" type="date"></div><div><label>Due date</label><input id="mlE" type="date"></div></div>
+  <div><label>Notes (from the email)</label><textarea id="mlN">${esc(note)}</textarea></div><div id="mlX" style="color:#c5221f;font-size:12.5px"></div></div>
+  <div class="mlf"><button type="button" id="mlL">Later</button><button type="button" id="mlD">Not a task</button><button type="button" class="p" id="mlC">Create task</button></div>`;
+  const fillU=()=>{const x=ws.find(v=>v.id==$("#mlW").value);$("#mlU").innerHTML=`<option value="">Unassigned</option>`+x.users.map(u=>`<option value="${u.id}" ${u.id==M.me?"selected":""}>${esc(u.name)}</option>`).join("")};
+  fillU();$("#mlW").onchange=fillU;
+  $("#mlL").onclick=()=>{snooze=Date.now()+30*60000;dlg.close()};
+  $("#mlD").onclick=async()=>{try{await apiw("mail_dismiss",{id:it.id});L.shift();render()}catch(e){$("#mlX").textContent=e.message}};
+  $("#mlC").onclick=async()=>{const t=$("#mlT").value.trim();if(!t){$("#mlX").textContent="Please give the task a title.";return}const b=$("#mlC");b.disabled=true;
+   try{const wid=+$("#mlW").value,r=await apiw("save",{title:t,assigned_to:$("#mlU").value,start_date:$("#mlS").value,end_date:$("#mlE").value,notes:$("#mlN").value},wid);await apiw("mail_done",{id:it.id,task_id:r.id});L.shift();if(wid===+W&&typeof load==="function"){try{load()}catch(e){}}render()}catch(e){b.disabled=false;$("#mlX").textContent=e.message}};
+  if(!dlg.open)dlg.showModal()}
+ async function check(){if(busy||document.hidden||Date.now()<snooze)return;if(document.querySelector("dialog[open]:not(#mld)"))return;busy=true;
+  try{const r=await apiw("mail_pending",{});M=r;L=r.items||[];if(r.err&&!warned){warned=true;console.warn("Email to task: "+r.err)}if(L.length)render();else if(dlg.open)dlg.close()}catch(e){}finally{busy=false}}
+ dlg.addEventListener("cancel",e=>{e.preventDefault();snooze=Date.now()+30*60000;dlg.close()});
+ setTimeout(check,6000);setInterval(check,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(check,1500)});
+})();
 (()=>{const dlg=$("#mcd");if(!dlg)return;let D=null,busy=false,warned=false;
  const apiw=async(a,d,w)=>{const r=await fetch("api.php?a="+a+"&w="+(w||W),{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(d||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j};
  const fdate=d=>new Date(d+"T00:00:00").toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}),fh=n=>(Math.round(n*100)/100).toString();
@@ -2553,7 +2583,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=295;
+const BUILD=296;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

@@ -11,3 +11,8 @@ In cPanel > Cron Jobs: schedule "Every 30 minutes", paste the command. It only s
 Create `taskflow-mail.json` in the server home folder (not in the web root, never in GitHub):
 `{"tenant_id":"...","client_id":"...","client_secret":"...","from":"taskflow@gurucadd.com"}`
 The app registration needs Microsoft Graph **Application** permission `Mail.Send` with admin consent. Limit it to the taskflow mailbox with an Exchange application access policy. If the file is missing, or Microsoft refuses, TaskFlow falls back to the web server's mail.
+
+## Email to task (forward an email, get a popup)
+Anyone can forward an email to taskflow@gurucadd.com. Within about a minute the person who forwarded it (matched by the email in their user details) gets a popup to turn it into a task (title, company, assignee, dates, notes pre-filled). Admins also see forwards from unknown senders.
+Needs one extra permission on the same app registration: Microsoft Graph **Application** permission `Mail.Read` with admin consent (limit it to the taskflow mailbox with the same Exchange application access policy). Until it is granted, admins see the reason in the browser console ("Email to task: ...").
+Only the last 3 days of the inbox are read. Tables `mail_inbox` and `mail_state` are created automatically.
