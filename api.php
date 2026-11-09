@@ -1,5 +1,5 @@
 <?php
-const BUILD=298;
+const BUILD=299;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1379,7 +1379,7 @@ case 'dt_color':
 case 'dt_del':
   need_level('full');del_gate($db,'dtype',(int)($in['id']??0));
 case 'col_add':
-  need_level('edit');if($me['role']!=='admin'&&$me['role']!=='userplus')out(['error'=>'Only Admin and User+ can add columns']);$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
+  need_level('edit');$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
   if($n==='')out(['error'=>'Enter a column name']);
   if(!in_array($t,['text','number','date','dropdown'],true))$t='text';
   if((int)count(get_cols($db))>=30)out(['error'=>'Maximum 30 custom columns']);
