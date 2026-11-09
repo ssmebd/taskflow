@@ -1440,6 +1440,7 @@ function mhChips(){$("#mhdays").innerHTML=`<button data-mhwk="-7" title="Previou
 async function mhLoad(){const s=mhSorted();if(!s.length){mhRows=[];mhDraw();return}
   try{const r=await api("my_hours",{from:s[0],to:s[s.length-1],user:+$("#mhu").value||0});mhRows=r.rows;mhPlan=r.plan||[];mhUser=r.user;mhCoOpts();mhDraw()}catch(e){alert(e.message)}}
 function mhCoOpts(){const c=$("#mhco"),cur=c.value,n=[...new Set(mhRows.map(x=>x.ws).filter(Boolean))].sort();if(cur&&!n.includes(cur))n.push(cur);c.innerHTML=`<option value="">All companies</option>`+n.map(v=>`<option value="${ea(v)}">${esc(v)}</option>`).join("");c.value=cur}
+let mhEd=new Set();
 function mhDraw(){const co=$("#mhco").value,tg=+$("#mhg").value||0,td=ltoday(),by={},only=!co&&$("#mhmo")&&$("#mhmo").checked,cs={};
   mhRows.forEach(x=>{if(mhSel.has(x.work_date)){cs[x.ws||""]=(cs[x.ws||""]||0)+ +x.hours}if(mhSel.has(x.work_date)&&(!co||x.ws===co))(by[x.work_date]=by[x.work_date]||[]).push(x)});
   let exp=0,miss=0,rows="",R=0,O=0,short=0;
@@ -1450,8 +1451,9 @@ function mhDraw(){const co=$("#mhco").value,tg=+$("#mhg").value||0,td=ltoday(),b
     const lg={};l.forEach(x=>{lg[x.task_id]=(lg[x.task_id]||0)+ +x.hours});
     const pl=mhPlan.filter(t=>(!co||t.ws===co)).filter(t=>{const a=t.start_date||t.end_date,e=t.end_date||t.start_date;return a<=d&&d<=e});
     const plh=pl.length?`<div style="margin-top:6px;font-size:12px"><span style="color:var(--mut)">Assigned &amp; ongoing:</span> ${pl.map(t=>`<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:9px;border:1px solid var(--line);background:${lg[t.id]?"#e6f4ea":past&&!wk?"#fff4d6":"var(--col)"}" title="${ea(t.title)}">${esc(t.order_no||t.title)}${t.ws?" · "+esc(t.ws):""} · ${lg[t.id]?"✓ "+fmtH(lg[t.id])+" h":past&&!wk?"no hours":"planned"}</span>`).join("")}</div>`:(wk?"":`<div style="margin-top:6px;font-size:12px;color:var(--mut)">No task assigned with dates covering this day</div>`);
-    const det=l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}</div>`).join("");
-    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td style="text-align:left"><b>${fmtH(rg)} h regular${ot?" + "+fmtH(ot)+" h OT":""}</b>${det}${plh}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button> <button data-mha="${d}" data-ot="1" title="Add overtime hours manually">+ OT</button>`}</td></tr>`}
+    const ed=mhEd.has(d)&&LV!=="view";
+    const det=ed?l.map(x=>`<div class="mhe" data-id="${x.id}" data-w="${x.wid}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:4px 0;font-size:12px"><span style="flex:1 1 220px;min-width:0"><b>${esc(x.order_no||"")} ${esc(x.title)}</b>${x.ws?" · "+esc(x.ws):""}${x.kind==="OT"?" · OT":""}</span><input class="mhh" type="number" step="0.25" min="0.25" max="24" value="${ea(x.hours)}" style="width:76px" title="Hours"><input class="mhn" value="${ea(x.note||"")}" maxlength="255" placeholder="Note" style="flex:1 1 140px;min-width:100px"><button type="button" data-mhs title="Save this entry">Save</button><button type="button" data-mhx title="Delete this entry">🗑</button><span class="mhm" style="color:#c5221f;flex-basis:100%"></span></div>`).join(""):l.map(x=>`<div style="font-size:12px;color:var(--mut)">${esc(x.order_no||"")} ${esc(x.title)} · ${fmtH(x.hours)} h${x.kind==="OT"?" OT":""}${x.ws?" · "+esc(x.ws):""}${x.note?" · "+esc(x.note):""}</div>`).join("");
+    rows+=`<tr><td>${esc(d)}</td><td>${WDN[dow]}</td><td style="text-align:left"><b>${fmtH(rg)} h regular${ot?" + "+fmtH(ot)+" h OT":""}</b>${det}${plh}</td><td style="${cl}">${st}</td><td>${LV==="view"?"":`<button data-mha="${d}">+ Add hours</button> <button data-mha="${d}" data-ot="1" title="Add overtime hours manually">+ OT</button>${l.length?` <button data-mhe="${d}" title="Edit or delete the hours you logged this day">${ed?"✓ Done editing":"✎ Edit"}</button>`:""}`}</td></tr>`}
   const cl2=Object.entries(cs).filter(([k])=>k).sort((a,b)=>b[1]-a[1]);
   $("#mhs").innerHTML=`<div style="margin:6px 0;font-size:15px">${co?`<b>${esc(co)}</b>: logged `:"Logged "}<b>${fmtH(R)} h</b> + <b>${fmtH(O)} h OT</b>${co?"":` · expected so far <b>${fmtH(exp)} h</b> · days short: <b style="color:${miss?"#c5221f":"#188038"}">${miss}</b>${short?` · missing <b style="color:#c5221f">${fmtH(short)} h</b>`:""}`}</div>${!co&&cl2.length>1?`<div style="font-size:12px;color:var(--mut);margin-bottom:4px">By company: ${cl2.map(([k,v])=>esc(k)+" "+fmtH(v)+" h").join(" · ")}</div>`:""}`;
   $("#mhout").innerHTML=`<table class="rt mhcol"><tr><th>Date</th><th>Day</th><th style="text-align:left">Hours logged and tasks</th><th>Status</th><th></th></tr>${rows||`<tr><td colspan="5" class="empty">${only?"No missed days in the selected dates \u{1F389}":"Tick one or more days above"}</td></tr>`}</table>`;mhCols()}
@@ -1495,7 +1497,13 @@ $("#mhdb").onclick=async()=>{const t=ltoday(),k=$("#mhdl").value,mo=(y,m)=>[new 
     H+=`</table></body></html>`;
     const box=document.createElement("div");box.className="pg pgwl";box.style.cssText="position:absolute;left:-12000px;top:0;width:1250px;background:#fff";box.innerHTML=H.replace(/^[\s\S]*<body>/,"").replace(/<\/body>[\s\S]*$/,"");document.body.appendChild(box);
     try{XL.save(XL.book([box],["Hours"]),"hours_"+String(who).replace(/[^\w-]+/g,"_")+"_"+a+"_to_"+b+".xlsx")}finally{box.remove()}}catch(e){alert(e.message)}};
-$("#mhu").addEventListener("change",mhLoad);$("#mhco").addEventListener("change",mhDraw);$("#mhg").addEventListener("input",mhDraw);
+$("#mhu").addEventListener("change",mhLoad);$("#mhco").addEventListener("change",mhDraw);
+$("#mhout").addEventListener("click",async e=>{const t=e.target.closest("[data-mhe],[data-mhs],[data-mhx]");if(!t)return;
+  if(t.dataset.mhe){const d=t.dataset.mhe;mhEd.has(d)?mhEd.delete(d):mhEd.add(d);mhDraw();return}
+  const r=t.closest(".mhe"),m=r.querySelector(".mhm"),id=+r.dataset.id,w=+r.dataset.w;m.textContent="";
+  try{if(t.dataset.mhs){const h=parseFloat(r.querySelector(".mhh").value);if(!(h>0&&h<=24)){m.textContent="Hours must be between 0.25 and 24";return}await apiW("tl_edit",{id,hours:h,note:r.querySelector(".mhn").value},w)}
+   else{if(!confirm("Delete this hours entry?"))return;await apiW("tl_del",{id},w)}
+   await mhLoad()}catch(x){m.textContent=x.message}});$("#mhg").addEventListener("input",mhDraw);
 $("#mhdays").addEventListener("click",e=>{const w=e.target.closest("[data-mhwk]");if(w){mhWk=isoAdd(mhWk,+w.dataset.mhwk);mhChips()}});
 $("#mhdays").addEventListener("change",e=>{const c=e.target.closest("[data-mhd]");if(!c)return;if(c.checked)mhSel.add(c.dataset.mhd);else mhSel.delete(c.dataset.mhd);mhSync();mhLoad()});
 $("#mhout").addEventListener("click",e=>{const b=e.target.closest("[data-mha]");if(!b)return;mhAddDate=b.dataset.mha;const wantOT=b.dataset.ot==="1";const uid=mhUser||me.id;
@@ -2583,7 +2591,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=296;
+const BUILD=297;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

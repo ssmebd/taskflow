@@ -1,5 +1,5 @@
 <?php
-const BUILD=296;
+const BUILD=297;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -12,7 +12,7 @@ function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
   if($a==='cm_add')return $t.((($in['kind']??'')==='instruction')?' (instruction)':'');
   foreach(['name','username','level','role'] as $k)if(isset($in[$k])&&is_scalar($in[$k])&&$t==='')return $k.': '.mb_substr((string)$in[$k],0,60);
   return $t;}
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_edit','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 
 // ---- Backups: database dump to a private folder, daily copy by email ----
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
@@ -1173,6 +1173,13 @@ case 'tl_rev':
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
   $db->prepare("UPDATE time_logs SET rev=? WHERE id=?")->execute([mb_substr(trim((string)($in['rev']??'')),0,60),$id]);out(['ok'=>1]);
+case 'tl_edit':
+  need_level('edit');$id=(int)($in['id']??0);$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);
+  if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
+  $q=$db->prepare("SELECT user_id,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
+  if($o===false)out(['error'=>'Entry not found']);
+  if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
+  $db->prepare("UPDATE time_logs SET hours=?,note=? WHERE id=?")->execute([$h,$n,$id]);ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
@@ -1329,7 +1336,7 @@ case 'my_hours':
   if($LV==='view'&&$me['role']!=='admin')out(['error'=>'Hours are not available with view-only access']);
   $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $who=$uid;if(!empty($in['user'])&&$me['role']==='admin')$who=(int)$in['user'];
-  $q=$db->prepare("SELECT l.id,l.task_id,l.work_date,l.hours,l.kind,l.note,w.name AS ws,t.title,t.order_no,COALESCE(pg.name,g.name) AS top_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);$rows=$q->fetchAll();
+  $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id AS wid,l.work_date,l.hours,l.kind,l.note,w.name AS ws,t.title,t.order_no,COALESCE(pg.name,g.name) AS top_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);$rows=$q->fetchAll();
   $plan=[];try{$q=$db->prepare("SELECT t.id,t.title,t.order_no,t.customer,t.start_date,t.end_date,t.status,w.name AS ws FROM tasks t LEFT JOIN workspaces w ON w.id=t.ws_id WHERE (t.assigned_to=? OR t.id IN(SELECT task_id FROM task_assignees WHERE user_id=?)) AND COALESCE(t.start_date,t.end_date) IS NOT NULL AND COALESCE(t.start_date,t.end_date)<=? AND COALESCE(t.end_date,t.start_date)>=? ORDER BY t.start_date,t.id LIMIT 600");$q->execute([$who,$who,$t,$f]);$plan=$q->fetchAll();}catch(Throwable $e){}
   out(['rows'=>$rows,'user'=>$who,'plan'=>$plan]);
 case 'wiki_list':
