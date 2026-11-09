@@ -757,7 +757,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
  <label>Username</label><input id="uu" name="nf_user" autocomplete="off" readonly>
  <label>Email (optional)</label><input id="ue" name="nf_mail" type="email" autocomplete="off" readonly>
  <label>Password (8+ characters)</label><span class="pw"><input id="up" name="nf_pass" type="password" autocomplete="new-password" readonly><button type="button" class="eye" title="Show / hide">👁</button></span>
- <label>User type</label><select id="ur"><option value="member">Member</option><option value="guest">Guest (view only)</option><option value="admin">Admin</option></select>
+ <label>User type</label><select id="ur"><option value="member">Member</option><option value="userplus">User+ (Member + can add columns)</option><option value="guest">Guest (view only)</option><option value="admin">Admin</option></select>
  <div class="acts"><span class="sp"></span><button id="uc">Cancel</button><button class="p" id="ta">Create user</button></div>
 </dialog>
 
@@ -1124,7 +1124,7 @@ function render(){
   const cur=wss.find(w=>w.id==W);document.title=(cur?cur.name+" – ":"")+"TaskFlow";
   $("#rpw").hidden=me.role!=="admin";document.body.classList.toggle("guest",me.role==="guest");$("#wm").hidden=me.role!=="admin";
   $("#gcb").hidden=view!=="list";const dvb=$("#dv"),isDef=(me.pref_view||"list")===view;dvb.textContent=isDef?"★ Default view":"☆ Make "+view+" my default";dvb.disabled=isDef;
-  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#alg").hidden=me.role!=="admin";$("#abk").hidden=me.role!=="admin";$("#hrm").hidden=me.role!=="admin";$("#srm").hidden=me.role!=="admin";$("#ghm").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
+  $("#who").textContent=me.role==="admin"?"Admin":LV==="view"?"View only":LV==="full"?"Full access":me.role==="userplus"?"User+":"Member";$("#uname").textContent=me.name||"";$("#uini").textContent=String(me.name||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();$("#amm").hidden=me.role!=="admin";$("#alg").hidden=me.role!=="admin";$("#abk").hidden=me.role!=="admin";$("#hrm").hidden=me.role!=="admin";$("#srm").hidden=me.role!=="admin";$("#ghm").hidden=me.role!=="admin";$("#rhome").classList.toggle("on",HOME);
   $("#wname").textContent=cur?cur.name:"";$("#vname").innerHTML=cur?wlogo(cur):"";$("#wlogo").innerHTML=cur?wlogo(cur):"";
   $("#wlinks").innerHTML=wss.map(w=>`<a class="wl${w.id==W?" on":""}" href="index.php?w=${w.id}" title="${ea(w.name)}">${wlogo(w)}</a>`).join("")||'<div class="empty" style="padding:12px">None</div>';
   fillCp();
@@ -2290,6 +2290,7 @@ $("#main").addEventListener("change",e=>{
 });
 $("#main").addEventListener("click",e=>{if(e.target.id==="gtoday"){const w=document.querySelector(".gwrap"),t=document.querySelector(".gtoday");if(w&&t)w.scrollLeft=Math.max(0,parseInt(t.style.left)-(gMode==="task"?250:170)-220)}});
 function renderCols(){
+  {const ac=document.querySelector("#cdlg .addcol");if(ac)ac.hidden=!(me.role==="admin"||me.role==="userplus")}
   const hc=hiddenCols(),lb=colLabels();
   const built=BASE_COLS.map(c=>`<div class="acts"><span style="flex:1">${esc(lb[c.id]||c.label)} <small style="color:var(--mut)">built-in${hc.includes(c.id)?" · hidden":""}</small></span><button data-bce="${c.id}">✎ Edit</button></div>`).join("");
   const cust=cols.map(c=>`<div class="acts"><span style="flex:1">${esc(c.name)} <small style="color:var(--mut)">${c.ctype}${c.ctype==="dropdown"?": "+esc((c.options||[]).join(", ")):""}${hc.includes("x_"+c.id)?" · hidden":""}</small></span>${LV!=="view"?`<button data-ce="${c.id}">✎ Edit</button>`:""}${me.role==="admin"?`<button data-cd="${c.id}">Remove</button>`:""}</div>`).join("");
@@ -2331,7 +2332,7 @@ $("#acsave").onclick=async()=>{try{
 function renderUsers(){
   $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}${u.email?`<br><small style="color:var(--mut)" title="${ea(u.email)}">${esc(u.email)}</small>`:""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
-   <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"?" selected":""}>Member</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
+   <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"&&u.role!=="userplus"?" selected":""}>Member</option><option value="userplus"${u.role==="userplus"?" selected":""}>User+ (can add columns)</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
    <span style="display:flex;gap:4px"><button data-ed="${u.id}" title="Edit name, username and email">✎</button><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
 const LGA={login:"Signed in",auto_login:"Signed in (kept)",logout:"Signed out",login_failed:"Failed sign-in",open_company:"Opened company",save:"Task",field:"Task edit",delete:"Deleted task(s)",dup:"Duplicated task(s)",co_set:"Changed people on task",task_move:"Moved task(s)",task_order:"Reordered tasks",tl_add:"Logged hours",tl_del:"Deleted hours entry",tl_rev:"Changed Rev on hours",cm_add:"Wrote a message",cm_del:"Deleted a message",user_add:"Added user",user_edit:"Edited user",user_pass:"Reset a password",user_role:"Changed user type",user_del:"Removed user",ws_access:"Changed access",ws_add:"Added company",ws_del:"Removed company",ws_rename:"Renamed company",dr_act:"Approval decision"};
@@ -2591,7 +2592,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=297;
+const BUILD=298;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

@@ -1,5 +1,5 @@
 <?php
-const BUILD=297;
+const BUILD=298;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1379,7 +1379,7 @@ case 'dt_color':
 case 'dt_del':
   need_level('full');del_gate($db,'dtype',(int)($in['id']??0));
 case 'col_add':
-  need_level('edit');$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
+  need_level('edit');if($me['role']!=='admin'&&$me['role']!=='userplus')out(['error'=>'Only Admin and User+ can add columns']);$n=mb_substr(trim($in['name']??''),0,60);$t=$in['ctype']??'text';
   if($n==='')out(['error'=>'Enter a column name']);
   if(!in_array($t,['text','number','date','dropdown'],true))$t='text';
   if((int)count(get_cols($db))>=30)out(['error'=>'Maximum 30 custom columns']);
@@ -1540,7 +1540,7 @@ case 'ws_access':
     $db->prepare("INSERT IGNORE INTO ws_users(ws_id,user_id,level) SELECT ?,id,IF(role='guest','view',?) FROM users WHERE id=?")->execute([$id,$lv,(int)($u['id']??0)]);}
   out(['ok'=>1]);
 case 'user_add':
-  admin();$n=trim($in['name']??'');$u=trim($in['username']??'');$p=$in['password']??'';$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
+  admin();$n=trim($in['name']??'');$u=trim($in['username']??'');$p=$in['password']??'';$r=in_array($in['role']??'',['admin','guest','userplus'],true)?$in['role']:'member';
   if($n===''||!preg_match('/^[A-Za-z0-9_.-]{3,40}$/',$u)||strlen($p)<8)out(['error'=>'Need a name, a username (3-40 chars) and an 8+ character password']);
   $em=trim((string)($in['email']??''));if($em!==''&&!filter_var($em,FILTER_VALIDATE_EMAIL))out(['error'=>'That email address does not look right']);
   try{$db->prepare("INSERT INTO users(name,username,email,pass_hash,role) VALUES(?,?,?,?,?)")->execute([mb_substr($n,0,100),$u,mb_substr($em,0,190),password_hash($p,PASSWORD_DEFAULT),$r]);}
@@ -1561,7 +1561,7 @@ case 'user_pass':
   admin();if(strlen($in['password']??'')<8)out(['error'=>'Password must be 8+ characters']);
   $db->prepare("UPDATE users SET pass_hash=? WHERE id=?")->execute([password_hash($in['password'],PASSWORD_DEFAULT),(int)$in['id']]);try{$db->prepare("DELETE FROM remember_tokens WHERE user_id=?")->execute([(int)$in['id']]);}catch(Throwable $e){}out(['ok'=>1]);
 case 'user_role':
-  admin();$id=(int)($in['id']??0);$r=in_array($in['role']??'',['admin','guest'],true)?$in['role']:'member';
+  admin();$id=(int)($in['id']??0);$r=in_array($in['role']??'',['admin','guest','userplus'],true)?$in['role']:'member';
   if($id===$uid)out(['error'=>'You cannot change your own type']);
   $db->prepare("UPDATE users SET role=? WHERE id=?")->execute([$r,$id]);
   if($r==='guest'){$db->prepare("UPDATE ws_users SET level='view' WHERE user_id=?")->execute([$id]);}
