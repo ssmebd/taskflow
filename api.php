@@ -1,5 +1,5 @@
 <?php
-const BUILD=301;
+const BUILD=302;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -164,16 +164,25 @@ function bk_prune($dir){
   }
 }
 function bk_host(){return preg_replace('/^www\./','',$_SERVER['SERVER_NAME']??'gurucadd.com');}
+// Backup and worklog emails go through Microsoft 365 first (the host's own mail() is often blocked or filtered), then fall back to mail().
+function bk_ms($to,$subject,$text,$file,$name,$ctype){
+  if(!ms_cfg())return 'Microsoft 365 mail is not set up';
+  $att=[];$size=is_file($file)?filesize($file):0;
+  if($size>0&&$size<=2500000)$att[]=[$name,$ctype,base64_encode(file_get_contents($file)),'bk'.bin2hex(random_bytes(4)),false];
+  elseif($size>2500000)$text.="\n\n(The file is too large to attach to this email. Download it from TaskFlow > user menu > Backups.)";
+  return ms_send($to,$subject,'<div style="font:14px Arial,sans-serif;white-space:pre-line">'.htmlspecialchars($text,ENT_QUOTES,'UTF-8').'</div>',$att);
+}
 function bk_mail($file,$name,$why){
   $to=BACKUP_EMAIL;if(!$to)return 'No email address set';
   $size=is_file($file)?filesize($file):0;
   $b='tf'.bin2hex(random_bytes(8));$att=$size>0&&$size<=18*1024*1024;
   $txt="TaskFlow database backup: $name (".round($size/1024)." KB)\n$why\n".($att?"The backup is attached. To restore, unzip the .gz and import the .sql file in phpMyAdmin.":"The backup is too large to attach. It is saved on the server in the taskflow-backups folder; download it from TaskFlow > user menu > Backups.")."\n";
+  $e1=bk_ms($to,'TaskFlow backup '.substr($name,9,16),$txt,$file,$name,'application/gzip');if($e1==='')return '';
   $h="From: TaskFlow <backup@".bk_host().">\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
   $m="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n$txt\r\n";
   if($att)$m.="--$b\r\nContent-Type: application/gzip; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"$name\"\r\n\r\n".chunk_split(base64_encode(file_get_contents($file)))."\r\n";
   $m.="--$b--";
-  return @mail($to,'TaskFlow backup '.substr($name,9,16),$m,$h)?'':'The server could not send the email';
+  return @mail($to,'TaskFlow backup '.substr($name,9,16),$m,$h)?'':'Microsoft 365: '.$e1.' | Server mail: could not send';
 }
 function bk_run($db,$force=false){
   $dir=bk_dir();$res=['ok'=>false,'time'=>time(),'file'=>'','size'=>0,'emailed'=>false,'err'=>''];
@@ -419,7 +428,7 @@ function ms_send($to,$subject,$html,$att=[]){
   if(!function_exists('curl_init'))return 'PHP curl is not available';
   $c=ms_cfg();if(!$c)return 'Microsoft 365 mail is not set up';
   $tok=ms_token($c,$err);if($tok==='')return $err;
-  $o=ms_http('https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/sendMail',json_encode(['message'=>['subject'=>$subject,'body'=>['contentType'=>'HTML','content'=>$html],'toRecipients'=>[['emailAddress'=>['address'=>$to]]],'attachments'=>array_map(fn($a)=>['@odata.type'=>'#microsoft.graph.fileAttachment','name'=>$a[0],'contentType'=>$a[1],'contentBytes'=>$a[2],'isInline'=>true,'contentId'=>$a[3]??pathinfo($a[0],PATHINFO_FILENAME)],$att)],'saveToSentItems'=>false]),['Authorization: Bearer '.$tok,'Content-Type: application/json'],$code);
+  $o=ms_http('https://graph.microsoft.com/v1.0/users/'.rawurlencode($c['from']).'/sendMail',json_encode(['message'=>['subject'=>$subject,'body'=>['contentType'=>'HTML','content'=>$html],'toRecipients'=>[['emailAddress'=>['address'=>$to]]],'attachments'=>array_map(fn($a)=>['@odata.type'=>'#microsoft.graph.fileAttachment','name'=>$a[0],'contentType'=>$a[1],'contentBytes'=>$a[2],'isInline'=>$a[4]??true,'contentId'=>$a[3]??pathinfo($a[0],PATHINFO_FILENAME)],$att)],'saveToSentItems'=>false]),['Authorization: Bearer '.$tok,'Content-Type: application/json'],$code);
   if($code===202||$code===200)return '';
   $r=json_decode($o,true);return 'Microsoft refused it ('.$code.'): '.mb_substr((string)($r['error']['message']??$o),0,220);}
 function sr_send($db,$s){
@@ -452,10 +461,11 @@ function sr_run($db,$force=false){
 function wl_mail($file,$name,$why){
   $to=BACKUP_EMAIL;if(!$to)return 'No email address set';
   $b='tf'.bin2hex(random_bytes(8));
+  $e1=bk_ms($to,'TaskFlow worklog '.substr($name,8,16),"TaskFlow worklog for the last 15 days, all companies.\n$why\nThe Excel file is attached: sheet 'Worklog' has every entry, sheet 'Totals' has hours per person per company.",$file,$name,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');if($e1==='')return '';
   $h="From: TaskFlow <backup@".bk_host().">\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=\"$b\"\r\n";
   $m="--$b\r\nContent-Type: text/plain; charset=utf-8\r\n\r\nTaskFlow worklog for the last 15 days, all companies.\n$why\nThe Excel file is attached: sheet 'Worklog' has every entry, sheet 'Totals' has hours per person per company.\r\n";
   $m.="--$b\r\nContent-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; name=\"$name\"\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"$name\"\r\n\r\n".chunk_split(base64_encode(file_get_contents($file)))."\r\n--$b--";
-  return @mail($to,'TaskFlow worklog '.substr($name,8,16),$m,$h)?'':'The server could not send the email';
+  return @mail($to,'TaskFlow worklog '.substr($name,8,16),$m,$h)?'':'Microsoft 365: '.$e1.' | Server mail: could not send';
 }
 function wl_run($db,$mail=true){
   $dir=bk_dir();$res=['ok'=>false,'time'=>time(),'file'=>'','size'=>0,'rows'=>0,'hours'=>0,'emailed'=>false,'err'=>''];
