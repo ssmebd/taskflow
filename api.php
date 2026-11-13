@@ -1,5 +1,5 @@
 <?php
-const BUILD=310;
+const BUILD=311;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -542,7 +542,10 @@ function ot_rebalance($db,$who,$d){
   try{
     $wk=(int)date('N',strtotime($d))>=6;$cum=0.0;
     $q=$db->prepare("SELECT id,task_id,ws_id,user_id,logged_by,hours,kind,note,rev,work_date,man FROM time_logs WHERE user_id=? AND work_date=? ORDER BY id");$q->execute([$who,$d]);
-    foreach($q->fetchAll() as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
+    $all=$q->fetchAll();
+    foreach($all as $r){if((int)$r['man']===2){if($r['kind']!=='R')$db->prepare("UPDATE time_logs SET kind='R' WHERE id=?")->execute([$r['id']]);$cum+=(float)$r['hours'];}} // hours pinned as Regular by hand use the 8 regular hours first
+    foreach($all as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
+      if((int)$r['man']===2)continue;
       if(!empty($r['man'])){if($r['kind']!=='OT')$db->prepare("UPDATE time_logs SET kind='OT' WHERE id=?")->execute([$r['id']]);continue;} // manually added overtime: never re-split, not counted in the 8 regular hours
       if($wk)$k='OT';
       elseif($cum+$h<=WORK_H+0.001)$k='R';
@@ -1186,11 +1189,11 @@ case 'tl_rev':
 case 'tl_edit':
   need_level('edit');$id=(int)($in['id']??0);$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
-  $q=$db->prepare("SELECT user_id,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
+  $q=$db->prepare("SELECT user_id,work_date,kind FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
   $db->prepare("UPDATE time_logs SET hours=?,note=? WHERE id=?")->execute([$h,$n,$id]);
-  $kk=(string)($in['kind']??'');if($kk==='OT')$db->prepare("UPDATE time_logs SET kind='OT',man=1 WHERE id=?")->execute([$id]);elseif($kk==='R')$db->prepare("UPDATE time_logs SET kind='R',man=0 WHERE id=?")->execute([$id]); // OT = fixed as overtime; Regular = automatic again
+  $kk=(string)($in['kind']??'');if($kk!==''&&$kk!==$o['kind']){if($kk==='OT')$db->prepare("UPDATE time_logs SET kind='OT',man=1 WHERE id=?")->execute([$id]);elseif($kk==='R')$db->prepare("UPDATE time_logs SET kind='R',man=2 WHERE id=?")->execute([$id]);} // changed by hand: OT stays OT, Regular stays Regular (the other hours of the day adjust around it)
   ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
