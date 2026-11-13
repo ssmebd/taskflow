@@ -1,5 +1,5 @@
 <?php
-const BUILD=314;
+const BUILD=315;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -12,7 +12,7 @@ function aud_detail(){global $a,$in,$AUD_T;$t=$AUD_T;$f=(string)($in['f']??'');
   if($a==='cm_add')return $t.((($in['kind']??'')==='instruction')?' (instruction)':'');
   foreach(['name','username','level','role'] as $k)if(isset($in[$k])&&is_scalar($in[$k])&&$t==='')return $k.': '.mb_substr((string)$in[$k],0,60);
   return $t;}
-$WRITEA=['save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_edit','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
+$WRITEA=['key_new','key_del','save','field','delete','dup','col_add','col_del','col_edit','user_add','user_edit','user_pass','user_del','ws_add','ws_rename','ws_logo','ov_set','ws_del','ws_access','dr_act','co_set','st_add','st_ren','st_del','st_move','st_color','gr_add','gr_ren','gr_del','cm_add','cm_del','gantt_set','task_move','gr_move','dt_add','dt_ren','dt_del','gr_order','task_order','tl_add','tl_del','tl_edit','tl_rev','inv_set','dt_color','inv_create','inv_step','inv_pay','inv_del'];
 
 // ---- Backups: database dump to a private folder, daily copy by email ----
 if(!defined('BACKUP_EMAIL'))define('BACKUP_EMAIL','gurucadd.bd@gmail.com');
@@ -501,6 +501,19 @@ function msg_reacts($db,$ids,$uid){
   foreach($q->fetchAll() as $r){$m=(int)$r['msg_id'];$e=$r['emoji'];if(!isset($by[$m][$e]))$by[$m][$e]=['e'=>$e,'n'=>0,'mine'=>false,'names'=>[]];
     $by[$m][$e]['n']++;if((int)$r['user_id']===$uid)$by[$m][$e]['mine']=true;if(count($by[$m][$e]['names'])<8)$by[$m][$e]['names'][]=(string)$r['name'];}
   $o=[];foreach($by as $m=>$l)$o[$m]=array_values($l);return $o;}
+// ---- API keys for other programs (read-only Wiki access) ----
+function ak_ddl($db){static $d=0;if($d)return;$d=1;$db->exec("CREATE TABLE IF NOT EXISTS api_keys(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,key_hash CHAR(64) NOT NULL,prefix VARCHAR(16) NOT NULL,scope VARCHAR(10) NOT NULL DEFAULT 'read',active TINYINT NOT NULL DEFAULT 1,created_by INT NULL,created_at DATETIME NOT NULL,last_used DATETIME NULL,UNIQUE KEY h(key_hash)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function ak_fail($code,$msg){http_response_code($code);header('Content-Type: application/json; charset=utf-8');echo json_encode(['error'=>$msg],JSON_UNESCAPED_UNICODE);exit;}
+function ak_auth($db){
+  ak_ddl($db);$k='';$h=$_SERVER['HTTP_X_API_KEY']??'';if($h==='')foreach(['HTTP_AUTHORIZATION','REDIRECT_HTTP_AUTHORIZATION'] as $n){if(!empty($_SERVER[$n])){$h=$_SERVER[$n];break;}}
+  if(preg_match('/^\s*(?:Bearer\s+)?(tfk_[0-9a-f]{40})\s*$/i',(string)$h,$m))$k=strtolower($m[1]);
+  if($k===''){usleep(300000);ak_fail(401,'Missing or invalid API key. Send it as: Authorization: Bearer <key>  (or the header X-API-Key: <key>)');}
+  $q=$db->prepare("SELECT id,scope FROM api_keys WHERE key_hash=? AND active=1");$q->execute([hash('sha256',$k)]);$r=$q->fetch();
+  if(!$r){usleep(300000);ak_fail(401,'Invalid or revoked API key');}
+  $db->prepare("UPDATE api_keys SET last_used=NOW() WHERE id=?")->execute([(int)$r['id']]);return $r;}
+function wk_text($b){$t=(string)$b;$t=preg_replace('#<img[^>]*>#i','',$t);$t=preg_replace('#<(br|/p|/div|/li|/h[1-6]|/tr)\b[^>]*>#i',"\n",$t);$t=html_entity_decode(strip_tags($t),ENT_QUOTES|ENT_HTML5,'UTF-8');$t=preg_replace("/[ \t]+/"," ",$t);$t=preg_replace("/\n[ \t]*/","\n",$t);return trim(preg_replace("/\n{3,}/","\n\n",$t));}
+function wk_snip($text,$terms,$n=200){$flat=preg_replace('/\s+/u',' ',$text);$pos=false;foreach($terms as $t){$p=mb_stripos($flat,$t);if($p!==false&&($pos===false||$p<$pos))$pos=$p;}
+  $st=$pos===false?0:max(0,$pos-60);$sn=mb_substr($flat,$st,$n);return ($st>0?'…':'').trim($sn).(mb_strlen($flat)>$st+$n?'…':'');}
 function out($d){
   global $a,$db,$WRITEA,$uid,$me,$W,$in,$AUD_T;
   if(isset($a,$db)&&in_array($a,$WRITEA,true)&&empty($d['error'])){try{$db->exec("INSERT INTO meta(k,v) VALUES('ver',1) ON DUPLICATE KEY UPDATE v=v+1");}catch(Throwable $e){}}
@@ -510,6 +523,23 @@ function out($d){
 if(($_GET['a']??'')==='remind'){header('Content-Type: text/plain');
   if(!hash_equals(rem_key(),(string)($_GET['key']??''))){http_response_code(403);exit("bad key\n");}
   echo rem_run($db,'',false)."\n".sr_run($db)."\nChat files expired: ".msg_purge($db,true)."\n";exit;}
+if(in_array(($_GET['a']??''),['ext_wiki_search','ext_wiki_page'],true)){
+  ak_auth($db);header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
+  if(($_GET['a'])==='ext_wiki_search'){
+    $qs=trim((string)($_GET['q']??''));if(mb_strlen($qs)<2)ak_fail(400,'Give a search text of at least 2 characters in q');
+    $lim=max(1,min(25,(int)($_GET['limit']??10)));$terms=array_values(array_filter(preg_split('/\s+/u',mb_substr($qs,0,100)),fn($x)=>mb_strlen($x)>=2));if(!$terms)ak_fail(400,'Search text too short');$terms=array_slice($terms,0,6);
+    $w=[];$pa=[];foreach($terms as $t){$l='%'.str_replace(['\\','%','_'],['\\\\','\%','\_'],$t).'%';$w[]="(title LIKE ? OR body LIKE ? OR tags LIKE ?)";array_push($pa,$l,$l,$l);}
+    $st=$db->prepare("SELECT id,title,body,cat,tags,updated_at FROM wiki_pages WHERE ".implode(' AND ',$w)." LIMIT 200");$st->execute($pa);$rows=$st->fetchAll();
+    foreach($rows as &$r){$sc=0;foreach($terms as $t){if(mb_stripos($r['title'],$t)!==false)$sc+=10;if(mb_stripos((string)$r['tags'],$t)!==false)$sc+=3;if(mb_stripos((string)$r['body'],$t)!==false)$sc+=1;}$r['sc']=$sc;}unset($r);
+    usort($rows,fn($a,$b)=>$b['sc']<=>$a['sc']?:strcmp($a['title'],$b['title']));$rows=array_slice($rows,0,$lim);$res=[];
+    foreach($rows as $r)$res[]=['id'=>(int)$r['id'],'title'=>$r['title'],'category'=>(string)$r['cat'],'snippet'=>wk_snip(wk_text($r['body']),$terms),'updated_at'=>$r['updated_at']];
+    echo json_encode(['query'=>$qs,'count'=>count($res),'results'=>$res],JSON_UNESCAPED_UNICODE);exit;}
+  $id=(int)($_GET['id']??0);$ti=trim((string)($_GET['title']??''));
+  if($id>0){$st=$db->prepare("SELECT id,title,body,cat,tags,updated_at FROM wiki_pages WHERE id=?");$st->execute([$id]);}
+  elseif($ti!==''){$st=$db->prepare("SELECT id,title,body,cat,tags,updated_at FROM wiki_pages WHERE title=? LIMIT 1");$st->execute([$ti]);}
+  else ak_fail(400,'Give the page id (id=) or its exact title (title=)');
+  $r=$st->fetch();if(!$r)ak_fail(404,'Page not found');
+  echo json_encode(['id'=>(int)$r['id'],'title'=>$r['title'],'category'=>(string)$r['cat'],'tags'=>(string)$r['tags'],'updated_at'=>$r['updated_at'],'text'=>wk_text($r['body'])],JSON_UNESCAPED_UNICODE);exit;}
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_GET['a']??'')==='wiki_img'){
   try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
@@ -787,6 +817,14 @@ case 'notif_poll':
     if($ic!==null&&$ix>$ic){$q=$db->prepare("SELECT c.id,c.task_id,c.ws_id,c.kind,c.body,t.title,COALESCE(us.name,'Someone') AS name FROM task_comments c JOIN tasks t ON t.id=c.task_id LEFT JOIN users us ON us.id=c.user_id WHERE c.id>? AND c.to_user_id=? AND c.user_id<>? AND c.ws_id IN($in_) ORDER BY c.id LIMIT 5");$q->execute([$ic,$u,$u]);
       foreach($q->fetchAll() as $r)$items[]=['k'=>'comment','id'=>(int)$r['id'],'from'=>$r['name'],'task'=>(int)$r['task_id'],'ws'=>(int)$r['ws_id'],'title'=>$r['title'],'kind'=>$r['kind'],'body'=>mb_substr((string)$r['body'],0,140)];}}
   out(['cm'=>max($mx,(int)$cm),'ic'=>max($ix,(int)$ic),'items'=>$items]);
+case 'key_list':
+  admin();ak_ddl($db);out(['keys'=>$db->query("SELECT id,name,prefix,scope,created_at,last_used FROM api_keys WHERE active=1 ORDER BY id DESC")->fetchAll()]);
+case 'key_new':
+  admin();ak_ddl($db);$n=mb_substr(trim((string)($in['name']??'')),0,80);if($n==='')out(['error'=>'Give the key a name, e.g. CadMan']);
+  $k='tfk_'.bin2hex(random_bytes(20));$db->prepare("INSERT INTO api_keys(name,key_hash,prefix,scope,created_by,created_at) VALUES(?,?,?,'read',?,NOW())")->execute([$n,hash('sha256',$k),substr($k,0,10),$uid]);
+  out(['ok'=>1,'key'=>$k,'id'=>(int)$db->lastInsertId()]);
+case 'key_del':
+  admin();ak_ddl($db);$db->prepare("UPDATE api_keys SET active=0 WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'bk_list':
   admin();$d=bk_dir();$last=($d&&is_file($d.'/last.json'))?json_decode((string)file_get_contents($d.'/last.json'),true):null;
   $wl=($d&&is_file($d.'/worklog_last.json'))?json_decode((string)file_get_contents($d.'/worklog_last.json'),true):null;
