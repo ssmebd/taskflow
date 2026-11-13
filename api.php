@@ -1,5 +1,5 @@
 <?php
-const BUILD=312;
+const BUILD=313;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1193,7 +1193,7 @@ case 'tl_edit':
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
   $db->prepare("UPDATE time_logs SET hours=?,note=? WHERE id=?")->execute([$h,$n,$id]);
-  $kk=(string)($in['kind']??'');if($kk!==''&&$kk!==$o['kind']){if($kk==='OT')$db->prepare("UPDATE time_logs SET kind='OT',man=1 WHERE id=?")->execute([$id]);elseif($kk==='R')$db->prepare("UPDATE time_logs SET kind='R',man=2 WHERE id=?")->execute([$id]);} // changed by hand: OT stays OT, Regular stays Regular (the other hours of the day adjust around it)
+  $kk=(string)($in['kind']??'');if($kk==='OT')$db->prepare("UPDATE time_logs SET kind='OT',man=1 WHERE id=?")->execute([$id]);elseif($kk==='R')$db->prepare("UPDATE time_logs SET kind='R',man=2 WHERE id=?")->execute([$id]);elseif($kk==='A')$db->prepare("UPDATE time_logs SET man=0 WHERE id=?")->execute([$id]); // Regular / OT = fixed by hand (other hours of the day adjust around it); Automatic = first 8 h of the day are regular, the rest OT
   ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
@@ -1351,7 +1351,7 @@ case 'my_hours':
   if($LV==='view'&&$me['role']!=='admin')out(['error'=>'Hours are not available with view-only access']);
   $f=(string)($in['from']??'');$t=(string)($in['to']??'');if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$f)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$t))out(['error'=>'Choose both dates']);
   $who=$uid;if(!empty($in['user'])&&$me['role']==='admin')$who=(int)$in['user'];
-  $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id AS wid,l.work_date,l.hours,l.kind,l.note,w.name AS ws,t.title,t.order_no,COALESCE(pg.name,g.name) AS top_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);$rows=$q->fetchAll();
+  $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id AS wid,l.work_date,l.hours,l.kind,l.man,l.note,w.name AS ws,t.title,t.order_no,COALESCE(pg.name,g.name) AS top_name FROM time_logs l JOIN tasks t ON t.id=l.task_id LEFT JOIN workspaces w ON w.id=l.ws_id LEFT JOIN task_groups g ON g.id=t.group_id LEFT JOIN task_groups pg ON pg.id=g.parent_id WHERE l.user_id=? AND l.work_date BETWEEN ? AND ? ORDER BY l.work_date,l.id");$q->execute([$who,$f,$t]);$rows=$q->fetchAll();
   $plan=[];try{$q=$db->prepare("SELECT t.id,t.title,t.order_no,t.customer,t.start_date,t.end_date,t.status,w.name AS ws FROM tasks t LEFT JOIN workspaces w ON w.id=t.ws_id WHERE (t.assigned_to=? OR t.id IN(SELECT task_id FROM task_assignees WHERE user_id=?)) AND COALESCE(t.start_date,t.end_date) IS NOT NULL AND COALESCE(t.start_date,t.end_date)<=? AND COALESCE(t.end_date,t.start_date)>=? ORDER BY t.start_date,t.id LIMIT 600");$q->execute([$who,$who,$t,$f]);$plan=$q->fetchAll();}catch(Throwable $e){}
   out(['rows'=>$rows,'user'=>$who,'plan'=>$plan]);
 case 'wiki_list':
