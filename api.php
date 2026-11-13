@@ -1,5 +1,5 @@
 <?php
-const BUILD=303;
+const BUILD=304;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1189,7 +1189,9 @@ case 'tl_edit':
   $q=$db->prepare("SELECT user_id,work_date FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
   if((int)$o['user_id']!==(int)$uid&&$me['role']!=='admin')out(['error'=>'You can only edit your own hours. Only an admin can change someone else\'s.']);
-  $db->prepare("UPDATE time_logs SET hours=?,note=? WHERE id=?")->execute([$h,$n,$id]);ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
+  $db->prepare("UPDATE time_logs SET hours=?,note=? WHERE id=?")->execute([$h,$n,$id]);
+  $kk=(string)($in['kind']??'');if($kk==='OT')$db->prepare("UPDATE time_logs SET kind='OT',man=1 WHERE id=?")->execute([$id]);elseif($kk==='R')$db->prepare("UPDATE time_logs SET kind='R',man=0 WHERE id=?")->execute([$id]); // OT = fixed as overtime; Regular = automatic again
+  ot_rebalance($db,(int)$o['user_id'],$o['work_date']);out(['ok'=>1]);
 case 'tl_del':
   need_level('edit');$id=(int)($in['id']??0);$q=$db->prepare("SELECT user_id,logged_by FROM time_logs WHERE id=? AND ws_id=?");$q->execute([$id,$W]);$o=$q->fetch();
   if($o===false)out(['error'=>'Entry not found']);
