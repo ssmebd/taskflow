@@ -1,5 +1,5 @@
 <?php
-const BUILD=311;
+const BUILD=312;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -1163,7 +1163,7 @@ case 'tl_list':
   $q=$db->prepare("SELECT l.id,l.user_id,COALESCE(u.name,'Former member') AS name,l.work_date,l.hours,l.kind,l.logged_by,l.note,l.rev FROM time_logs l LEFT JOIN users u ON u.id=l.user_id WHERE l.task_id=? AND l.ws_id=? ORDER BY l.work_date DESC,l.id DESC");$q->execute([$tid,$W]);
   out(['logs'=>$q->fetchAll(),'me'=>(int)$uid]);
 case 'tl_add':
-  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';$mn=($kd==='OT'&&!empty($in['manual']))?1:0;$rv=mb_substr(trim((string)($in['rev']??'')),0,60);
+  need_level('edit');$tid=(int)($in['task_id']??0);$d=(string)($in['date']??'');$h=round((float)($in['hours']??0),2);$n=mb_substr(trim((string)($in['note']??'')),0,255);$kd=(($in['kind']??'')==='OT')?'OT':'R';$mn=!empty($in['manual'])?($kd==='OT'?1:2):0;$rv=mb_substr(trim((string)($in['rev']??'')),0,60);
   if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d))out(['error'=>'Choose a date']);
   if($h<=0||$h>24)out(['error'=>'Hours must be between 0.25 and 24']);
   $q=$db->prepare("SELECT assigned_to FROM tasks WHERE id=? AND ws_id=?");$q->execute([$tid,$W]);$tr=$q->fetch();if(!$tr)out(['error'=>'Task not found']);
