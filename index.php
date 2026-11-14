@@ -1303,7 +1303,8 @@ function smPage(p,rows,csv){const from=$("#rf").value,to=$("#rt").value,m=new Ma
   const no=rInvNo(p).replace(/^INVOICE-/i,"");
   return {th,tc,dr,oth,html:`<div class="pg pgsm"><table class="smt"><colgroup><col style="width:27%"><col style="width:22%"><col style="width:22%"><col style="width:15%"><col style="width:14%"></colgroup><tr class="bar"><td colspan="5">Invoice Report: ${esc(no)}</td></tr><tr class="bar"><td colspan="5" style="text-align:center;font-size:24px;padding:4px">${esc(p.wl_title||p.client_name||"")}</td></tr><tr class="bar"><td colspan="5">Duration: ${dmy(from)} -${dmy(to)}</td></tr>
   <tr><th>Client Name</th><th>ACTIONED ITEMS</th><th class="c">HOURS SPENT</th><th class="c">Hourly Rate</th><th class="c">Cost(${esc(p.currency)})</th></tr>${body}<tr><td></td><td></td><td colspan="2" class="cb">Total Cost(${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table></div>`}}
-function drawReport(){
+let rStored=null;
+function drawReport(){if(rStored){$("#rout").innerHTML=rStored;return}
   const p=rEff(rCur()),rows=rProfRows(rCur()),vw=$("#rvw").value,csv=[];let h0="";
   if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this company in this period.</div>';return}
   const pp=new Map();rrows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>(+a[0])-(+b[0]));
@@ -1320,7 +1321,7 @@ function drawReport(){
   if(!p.client_name)h0+='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">Client name and address are empty. Fill them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
   $("#rout").innerHTML=h0+(vw==="inv"?"":pages)+(vw==="log"?"":inv)}
 const RWARN='<div class="noprint" style="background:#fff4d6;color:#7a5200;padding:8px 10px;border-radius:6px;margin:8px 0">No hourly rates are set, so cost shows 0. Set them in <b>Manage → company → 💲 Details &amp; rates</b>.</div>';
-async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
+async function runReport(){rStored=null;const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
   try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];rComp=r.company||rComp;const cur=rPend!=null?String(rPend):$("#rpf").value;rPend=null;
     $("#rpf").innerHTML=rList().map(p=>`<option value="${p.slot}">${esc(p.name)}</option>`).join("")+`<option value="new">＋ New profile…</option>`;$("#rpf").value=rList().some(p=>String(p.slot)===cur)?cur:rList()[0].slot;drawReport()}catch(e){alert(e.message)}}
 function rSync(){const d=$("#rdlg"),mx=d.classList.contains("rfull");$("#rmx").innerHTML=mx?"&#10064;":"&#9633;";$("#rmx").title=mx?"Restore size":"Maximize"}
@@ -1404,7 +1405,7 @@ $("#rcsv").onclick=()=>{const pgs=[...$("#rout").querySelectorAll(".pg")];if(!pg
 let rEdit=null;
 function rEditBar(){const b=$("#rapp"),n=$("#redit");if(rEdit){b.textContent="💾 Save changes";if(n){n.hidden=false;n.innerHTML="Editing draft <b>"+esc(rEdit.no)+"</b>"+(rEdit.note?" · <span style='color:#c5221f'>Amendment asked: "+esc(rEdit.note)+"</span>":"")+' <button id="rednx" type="button">Stop editing</button>'}}else{b.textContent="➕ Create invoice";if(n)n.hidden=true}}
 document.addEventListener("click",e=>{if(e.target.id==="rednx"){rEdit=null;rEditBar();drawReport()}});
-$("#rdlg").addEventListener("close",()=>{const d=$("#rdlg");if(d._skip>0){d._skip--;return}d._min=0;d.classList.remove("rmin");rEdit=null;rEditBar()});
+$("#rdlg").addEventListener("close",()=>{const d=$("#rdlg");if(d._skip>0){d._skip--;return}d._min=0;d.classList.remove("rmin");rEdit=null;rStored=null;rEditBar()});
 $("#rapp").onclick=async()=>{if(!rTot||!rTot.html)return alert("Nothing to create for this period.");const p=rEff(rCur()),no=rInvNo(p);
   if(!rTot.amount&&!confirm("The invoice total is 0 (rates may be missing). Create anyway?"))return;
   const el=document.createElement("div");el.innerHTML=rTot.html;
@@ -1425,7 +1426,7 @@ function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),
 $("#ivm").onclick=()=>{$("#ivl").showModal();ivLoad()};$("#ivlc").onclick=()=>$("#ivl").close();$("#ivlf").onchange=ivDraw;
 $("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[data-ivk]");if(!b)return;const k=b.dataset.ivk,id=+b.dataset.id,x=ivRows.find(r=>+r.id===id);
   try{if(k==="pay"){await api("inv_pay",{id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
-  else if(k==="open"){const j=await api("inv_get",{id});$("#ivl").close();rEdit=null;rEditBar();$("#rout").innerHTML=j.inv.html;rOpen()}
+  else if(k==="open"){const j=await api("inv_get",{id});$("#ivl").close();rEdit=null;rEditBar();rStored=j.inv.html;$("#rout").innerHTML=rStored;rOpen()}
   else if(k==="approve"){if(confirm("Approve invoice "+x.inv_no+"?\n\nIt becomes final (awaiting payment) and the next invoice number moves on by one."))await api("inv_step",{id,op:"approve"}).then(ivLoad)}
   else if(k==="amend"){const n=await ask("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
   else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
@@ -2622,7 +2623,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=320;
+const BUILD=321;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
