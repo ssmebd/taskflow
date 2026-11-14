@@ -1304,7 +1304,7 @@ function smPage(p,rows,csv){const from=$("#rf").value,to=$("#rt").value,m=new Ma
   return {th,tc,dr,oth,html:`<div class="pg pgsm"><table class="smt"><colgroup><col style="width:27%"><col style="width:22%"><col style="width:22%"><col style="width:15%"><col style="width:14%"></colgroup><tr class="bar"><td colspan="5">Invoice Report: ${esc(no)}</td></tr><tr class="bar"><td colspan="5" style="text-align:center;font-size:24px;padding:4px">${esc(p.wl_title||p.client_name||"")}</td></tr><tr class="bar"><td colspan="5">Duration: ${dmy(from)} -${dmy(to)}</td></tr>
   <tr><th>Client Name</th><th>ACTIONED ITEMS</th><th class="c">HOURS SPENT</th><th class="c">Hourly Rate</th><th class="c">Cost(${esc(p.currency)})</th></tr>${body}<tr><td></td><td></td><td colspan="2" class="cb">Total Cost(${esc(p.currency)})</td><td class="c">${num(tc)}</td></tr></table></div>`}}
 let rStored=null;
-function drawReport(){if(rStored){$("#rout").innerHTML=rStored;return}
+function drawReport(){if(rStored){const o=$("#rout"),v=$("#rvw").value;o.innerHTML=rStored;if(v!=="pack")o.querySelectorAll(".pg").forEach(g=>{if(g.classList.contains("pginv")?v==="log":v==="inv")g.remove()});return}
   const p=rEff(rCur()),rows=rProfRows(rCur()),vw=$("#rvw").value,csv=[];let h0="";
   if(!rows.length){rcsvRows=[];$("#rout").innerHTML='<div class="empty">No hours logged for this company in this period.</div>';return}
   const pp=new Map();rrows.forEach(x=>pp.set(x.user_id,x.person));const P=[...pp.entries()].sort((a,b)=>(+a[0])-(+b[0]));
@@ -1426,7 +1426,7 @@ function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),
 $("#ivm").onclick=()=>{$("#ivl").showModal();ivLoad()};$("#ivlc").onclick=()=>$("#ivl").close();$("#ivlf").onchange=ivDraw;
 $("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[data-ivk]");if(!b)return;const k=b.dataset.ivk,id=+b.dataset.id,x=ivRows.find(r=>+r.id===id);
   try{if(k==="pay"){await api("inv_pay",{id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
-  else if(k==="open"){const j=await api("inv_get",{id});$("#ivl").close();rEdit=null;rEditBar();rStored=j.inv.html;$("#rout").innerHTML=rStored;rOpen()}
+  else if(k==="open"){const j=await api("inv_get",{id});$("#ivl").close();rEdit=null;rEditBar();rStored=j.inv.html;drawReport();rOpen()}
   else if(k==="approve"){if(confirm("Approve invoice "+x.inv_no+"?\n\nIt becomes final (awaiting payment) and the next invoice number moves on by one."))await api("inv_step",{id,op:"approve"}).then(ivLoad)}
   else if(k==="amend"){const n=await ask("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
   else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
@@ -2623,7 +2623,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=321;
+const BUILD=322;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
