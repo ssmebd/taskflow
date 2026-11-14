@@ -1,5 +1,5 @@
 <?php
-const BUILD=318;
+const BUILD=319;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -570,9 +570,10 @@ const WORK_H=8.0;
 // Overtime is automatic: all of Saturday/Sunday, and anything beyond 8 hours on a weekday.
 function ot_rebalance($db,$who,$d){
   try{
-    $wk=(int)date('N',strtotime($d))>=6;$cum=0.0;
-    $q=$db->prepare("SELECT id,task_id,ws_id,user_id,logged_by,hours,kind,note,rev,work_date,man FROM time_logs WHERE user_id=? AND work_date=? ORDER BY id");$q->execute([$who,$d]);
-    $all=$q->fetchAll();
+    $wk=(int)date('N',strtotime($d))>=6;
+    $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id,l.user_id,l.logged_by,l.hours,l.kind,l.note,l.rev,l.work_date,l.man,(w.name REGEXP 'DMC|Dynamic Modular') AS dm FROM time_logs l LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date=? ORDER BY l.id");$q->execute([$who,$d]);
+    $grp=[[],[]];foreach($q->fetchAll() as $r)$grp[empty($r['dm'])?0:1][]=$r; // DMC hours are never added to Allshelter / Allshelter USA hours
+    foreach($grp as $all){$cum=0.0;
     foreach($all as $r){if((int)$r['man']===2){if($r['kind']!=='R')$db->prepare("UPDATE time_logs SET kind='R' WHERE id=?")->execute([$r['id']]);$cum+=(float)$r['hours'];}} // hours pinned as Regular by hand use the 8 regular hours first
     foreach($all as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
       if((int)$r['man']===2)continue;
@@ -589,6 +590,7 @@ function ot_rebalance($db,$who,$d){
         if($k!==$r['kind'])$db->prepare("UPDATE time_logs SET kind=? WHERE id=?")->execute([$k,$r['id']]);
         $cum+=$h;
       }
+    }
     }
   }catch(Throwable $e){}
 }
