@@ -284,6 +284,9 @@ body.guest #rpw,body.guest #tbtn,body.guest #rtools,body.guest #mhm,body.guest #
 #srdg{width:min(980px,98vw);max-height:98vh;min-width:min(420px,98vw);min-height:240px}#srdg[open]{display:flex;flex-direction:column}#srdg.srfull{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;left:0!important;top:0!important;margin:0!important;border-radius:0;border:0;resize:none}#srdg>*{flex:none}#srdg.srcol #srf{display:none}#srdg>#srprev{flex:1 1 auto;min-height:240px;max-height:none}#srprev table,#pbox table{background:none;border:0;table-layout:auto}#srprev td,#pbox td{overflow:visible}#srdg input:not([type=checkbox]),#srdg select,#srdg textarea,#srdg button{width:auto;margin:0}#srdg textarea{width:100%;min-height:56px}.srl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.src{border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px;cursor:pointer;min-width:200px}.src.on{border-color:var(--pri);box-shadow:0 0 0 2px rgba(37,99,235,.15)}.src small{display:block;color:var(--mut)}.srf{border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0;display:grid;gap:8px}.srf .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.srf label.ck{display:inline-flex;gap:5px;align-items:center;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer}#srprev{border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;background:#f8fafc;color:#0f172a}
 #tldg{width:min(620px,94vw)}.tlt{width:100%;border-collapse:collapse;font-size:13px}.tlt td,.tlt th{padding:5px 6px;border-bottom:1px solid var(--line);text-align:left}.tlt td.n{text-align:right}.tlt th{font-size:11px;color:var(--mut);text-transform:uppercase}
 .tlf{display:grid;grid-template-columns:150px 90px 1fr auto;gap:6px;margin-top:10px;align-items:center}
+#rdlg .rtb button{min-width:36px;font-weight:700}#rdlg .rtb .rclose:hover{background:#d93025;color:#fff;border-color:#d93025}
+#rdlg.rfull{width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;margin:0!important;inset:0;border-radius:0;border:0}
+#rdlg.rmin{position:fixed;left:12px;right:auto;top:auto;bottom:12px;width:min(360px,94vw)!important;height:auto!important;max-height:none!important;margin:0!important;padding:8px 10px;overflow:hidden;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.35);z-index:70}#rdlg.rmin>*:not(.rtb){display:none!important}#rdlg.rmin .rtb{margin:0!important}
 #rdlg{width:min(1000px,96vw);max-height:92vh;overflow:auto}#rdlg .rctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}#rdlg .rctl input,#rdlg .rctl select{width:auto}
 .rt{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}.rt th,.rt td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left}.rt th{font-size:11px;text-transform:uppercase;color:var(--mut)}.rt .n{text-align:right;white-space:nowrap}.rt tr.sub td{font-weight:600;background:var(--col)}.rt tr.tot td{font-weight:700;border-top:2px solid var(--ink)}
 .rcust{margin:16px 0 4px;font-size:16px}
@@ -814,7 +817,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
 <dialog id="mcd" aria-label="Good morning"></dialog>
 <dialog id="mld" aria-label="Email request"></dialog>
 <dialog id="asdg"><b>Who is this task assigned to?</b><p style="color:var(--mut);font-size:13px;margin:8px 0">This task has no assignee. Hours are logged against the assigned person, so choose who it should be assigned to.</p><select id="asw"></select><div class="acts"><span class="sp"></span><button id="asx">Cancel</button><button class="p" id="asok">Assign &amp; log hours</button></div></dialog>
-<dialog id="rdlg"><div class="acts noprint" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rcl">Close</button></div>
+<dialog id="rdlg"><div class="acts noprint rtb" style="margin:0 0 6px"><b style="flex:1">🧾 Worklog &amp; invoice</b><button id="rmn" type="button" title="Minimize">&#8211;</button><button id="rmx" type="button" title="Maximize">&#9633;</button><button id="rcl" type="button" title="Close" class="rclose">&#10005;</button></div>
  <div class="rctl noprint"><label style="margin:0">From</label><input type="date" id="rf"><label style="margin:0">To</label><input type="date" id="rt"><select id="rpp" title="Pick a standard period"></select><button id="r14">Last 14 days</button></div>
  <div class="rctl noprint"><select id="rpf"></select><button id="rpedit">⚙ Edit profile</button><select id="rvw"><option value="pack">Full pack (work logs + invoice)</option><option value="log">Work logs only</option><option value="inv">Invoice only</option></select><span class="sp"></span><button id="rcsv">⬇ Excel</button><button id="rapp" title="Save this report and invoice as a draft in Invoice tracking">➕ Create invoice</button><button class="p" id="rpr">🖨 Print / PDF</button></div>
  <div id="redit" class="noprint" hidden style="background:#fff4d6;color:#7a5200;padding:6px 10px;border-radius:6px;margin:6px 0"></div>
@@ -1320,8 +1323,14 @@ const RWARN='<div class="noprint" style="background:#fff4d6;color:#7a5200;paddin
 async function runReport(){const from=$("#rf").value,to=$("#rt").value;if(!from||!to)return;
   try{const r=await api("tl_report",{from,to});rrows=r.rows;rprofs=r.profiles||[];rComp=r.company||rComp;const cur=rPend!=null?String(rPend):$("#rpf").value;rPend=null;
     $("#rpf").innerHTML=rList().map(p=>`<option value="${p.slot}">${esc(p.name)}</option>`).join("")+`<option value="new">＋ New profile…</option>`;$("#rpf").value=rList().some(p=>String(p.slot)===cur)?cur:rList()[0].slot;drawReport()}catch(e){alert(e.message)}}
-$("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}$("#rdlg").showModal();runReport()};
-$("#rcl").onclick=()=>$("#rdlg").close();
+function rSync(){const d=$("#rdlg"),mx=d.classList.contains("rfull");$("#rmx").innerHTML=mx?"&#10064;":"&#9633;";$("#rmx").title=mx?"Restore size":"Maximize"}
+function rMax(on){$("#rdlg").classList.toggle("rfull",on);rSync();try{localStorage.setItem("rfull",on?"1":"")}catch(e){}}
+function rMini(){const d=$("#rdlg");if(!d.open||d._min)return;d._min=1;d._skip=(d._skip||0)+1;d.close();d.classList.add("rmin");d.show()}
+function rOpen(){const d=$("#rdlg");if(d.open&&d._min){d._min=0;d._skip=(d._skip||0)+1;d.close();d.classList.remove("rmin");d.showModal();return}if(!d.open){let f="";try{f=localStorage.getItem("rfull")}catch(e){}d.classList.toggle("rfull",!!f);rSync();d.showModal()}}
+function rClose(){const d=$("#rdlg");d._min=0;d.classList.remove("rmin");if(d.open)d.close()}
+$("#rmn").onclick=rMini;$("#rmx").onclick=()=>rMax(!$("#rdlg").classList.contains("rfull"));$("#rcl").onclick=rClose;
+$("#rdlg").querySelector(".rtb").addEventListener("dblclick",e=>{if(e.target.closest("button"))return;if($("#rdlg")._min)rOpen();else rMax(!$("#rdlg").classList.contains("rfull"))});
+$("#rm").onclick=()=>{if(!$("#rf").value){$("#rf").value=rShift(-13);$("#rt").value=rShift(0)}const was=$("#rdlg")._min;rOpen();if(!was)runReport()};
 $("#r14").onclick=()=>rPreset(-13,0);
 (()=>{const d=new Date(),o=[["","Standard period…"]];const f=(y,m,a,b)=>new Date(Date.UTC(y,m,a)).toISOString().slice(0,10);
   for(let k=0;k<4;k++){const y=new Date(d.getFullYear(),d.getMonth()-k,1),Y=y.getFullYear(),M=y.getMonth(),nm=y.toLocaleString("en",{month:"short"})+" "+Y,last=new Date(Y,M+1,0).getDate();
@@ -1395,7 +1404,7 @@ $("#rcsv").onclick=()=>{const pgs=[...$("#rout").querySelectorAll(".pg")];if(!pg
 let rEdit=null;
 function rEditBar(){const b=$("#rapp"),n=$("#redit");if(rEdit){b.textContent="💾 Save changes";if(n){n.hidden=false;n.innerHTML="Editing draft <b>"+esc(rEdit.no)+"</b>"+(rEdit.note?" · <span style='color:#c5221f'>Amendment asked: "+esc(rEdit.note)+"</span>":"")+' <button id="rednx" type="button">Stop editing</button>'}}else{b.textContent="➕ Create invoice";if(n)n.hidden=true}}
 document.addEventListener("click",e=>{if(e.target.id==="rednx"){rEdit=null;rEditBar();drawReport()}});
-$("#rdlg").addEventListener("close",()=>{rEdit=null;rEditBar()});
+$("#rdlg").addEventListener("close",()=>{const d=$("#rdlg");if(d._skip>0){d._skip--;return}d._min=0;d.classList.remove("rmin");rEdit=null;rEditBar()});
 $("#rapp").onclick=async()=>{if(!rTot||!rTot.html)return alert("Nothing to create for this period.");const p=rEff(rCur()),no=rInvNo(p);
   if(!rTot.amount&&!confirm("The invoice total is 0 (rates may be missing). Create anyway?"))return;
   const el=document.createElement("div");el.innerHTML=rTot.html;
@@ -1421,7 +1430,7 @@ $("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[d
   else if(k==="amend"){const n=await ask("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
   else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
   else if(k==="edit"){if(String(x.ws_id)!==String(W))return alert("This invoice belongs to "+x.company+". Switch to that company first, then press Edit.");
-    const j=await api("inv_get",{id});rEdit={id,no:j.inv.inv_no,seq:j.inv.seq,note:x.amend_note||""};rPend=j.inv.slot;$("#ivl").close();$("#rf").value=j.inv.from_date;$("#rt").value=j.inv.to_date;$("#rdlg").showModal();rEditBar();await runReport()}}catch(er){alert(er.message)}});
+    const j=await api("inv_get",{id});rEdit={id,no:j.inv.inv_no,seq:j.inv.seq,note:x.amend_note||""};rPend=j.inv.slot;$("#ivl").close();$("#rf").value=j.inv.from_date;$("#rt").value=j.inv.to_date;rOpen();rEditBar();await runReport()}}catch(er){alert(er.message)}});
 
 let profEdit=null;
 function openProf(p){profEdit=p?p.slot:0;const d=p||Object.assign(rDef(),{name:"New profile"});
@@ -2612,7 +2621,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=315;
+const BUILD=316;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
