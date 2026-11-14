@@ -1425,7 +1425,7 @@ function ivDraw(){const f=$("#ivlf").value,L=ivRows.filter(x=>!f||x.status===f),
 $("#ivm").onclick=()=>{$("#ivl").showModal();ivLoad()};$("#ivlc").onclick=()=>$("#ivl").close();$("#ivlf").onchange=ivDraw;
 $("#ivlt").addEventListener("click",async e=>{const b=e.target.closest("button[data-ivk]");if(!b)return;const k=b.dataset.ivk,id=+b.dataset.id,x=ivRows.find(r=>+r.id===id);
   try{if(k==="pay"){await api("inv_pay",{id,status:x.status==="paid"?"pending":"paid"});await ivLoad()}
-  else if(k==="open"){const j=await api("inv_get",{id});$("#pbox").innerHTML=j.inv.html;window.print()}
+  else if(k==="open"){const j=await api("inv_get",{id});$("#ivl").close();rEdit=null;rEditBar();$("#rout").innerHTML=j.inv.html;rOpen()}
   else if(k==="approve"){if(confirm("Approve invoice "+x.inv_no+"?\n\nIt becomes final (awaiting payment) and the next invoice number moves on by one."))await api("inv_step",{id,op:"approve"}).then(ivLoad)}
   else if(k==="amend"){const n=await ask("What needs to be amended?");if(n&&n.trim())await api("inv_step",{id,op:"amend",note:n}).then(ivLoad)}
   else if(k==="del"){if(confirm("Delete "+x.inv_no+"?"+(x.status==="draft"||x.status==="amend"?"":" The invoice number is not given back.")))await api("inv_del",{id}).then(ivLoad)}
@@ -2622,7 +2622,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=319;
+const BUILD=320;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
