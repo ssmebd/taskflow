@@ -1284,7 +1284,7 @@ function payBox(p){const bk=String(p.bank||"").trim()||DEF_BANK;return `<div cla
 function invCatPage(p,secs){const from=$("#rf").value,to=$("#rt").value,yy=to.slice(2,4),wk=isoWeek(from)+"-"+isoWeek(to)+"_"+yy;let tot=0;
   const cells=secs.map(s=>{tot+=s[2];return `<td class="c">${esc(p.symbol)}${num(s[2])}</td>`}).join("");
   return `<div class="pg pginv">${invTop(p)}<table class="itb"><tr><th class="l">INVOICE NO:</th><td class="b">${esc(rInvNo(p))}</td><th class="l">DATE:</th><td class="b c">${esc(to)}</td></tr><tr><td colspan="4" class="c"><b style="font-size:13px">CLIENT:</b> ${esc([p.client_name,p.client_addr].filter(Boolean).join(", "))}</td></tr><tr><td colspan="4" class="spc"></td></tr></table>
-  <table class="itb"><tr><td colspan="3" class="c">INVOICE WEEK</td><td colspan="${secs.length}" class="g"></td><td rowspan="2" class="g c">Total<br>(${esc(p.currency)})</td></tr>
+  <table class="itb"><tr><td colspan="3" class="g c">INVOICE WEEK</td><td colspan="${secs.length}" class="g c">${isoWeek(from)}-${isoWeek(to)}</td><td rowspan="2" class="g c">Total<br>(${esc(p.currency)})</td></tr>
   <tr><td class="c">WK</td><td class="c">START<br>DATE</td><td class="c">END DATE</td>${secs.map(s=>`<td class="c">${esc(secLabel(p,s[0]))}</td>`).join("")}</tr>
   <tr><td class="c">${wk}</td><td class="c">${esc(from)}</td><td class="c">${esc(to)}</td>${cells}<td class="c">${esc(p.symbol)}${num(tot)}</td></tr><tr><td colspan="${3+secs.length}" style="height:14px"></td><td></td></tr>
   <tr><td colspan="${3+secs.length}">Invoiced Total</td><td class="c">${esc(p.symbol)}${num(tot)}</td></tr></table>${payBox(p)}${invBottom(p)}</div>`}
@@ -2621,7 +2621,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=317;
+const BUILD=318;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
