@@ -23,3 +23,10 @@ Send the key with every request: `Authorization: Bearer tfk_...` (or `X-API-Key:
 - Search: `GET https://taskflow.gurucadd.com/api.php?a=ext_wiki_search&q=TEXT&limit=10` (limit 1-25, default 10; all words must match in title, tags or text; title matches rank first) -> `{"query","count","results":[{"id","title","category","snippet","updated_at"}]}`
 - One page: `GET https://taskflow.gurucadd.com/api.php?a=ext_wiki_page&id=12` or `...&title=Exact title` -> `{"id","title","category","tags","updated_at","text"}` (plain text, images removed)
 - Errors are JSON `{"error":"..."}` with HTTP 400 (bad request), 401 (missing/invalid/revoked key), 404 (page not found). Keys can only read the Wiki.
+
+## Sign-in check for other programs (`ext_login`)
+`POST https://taskflow.gurucadd.com/api.php?a=ext_login` with the same API key header as the Wiki API and a JSON body `{"user_id":"...","password":"..."}` (user_id is the username or email).
+- Right ID and password: `{"ok":true,"user":{"id":"..","name":"..","role":"..","token":".."}}` (the token is valid 30 days; only its hash is stored).
+- Wrong: HTTP 401 `{"ok":false,"error":"..."}`. Bad or missing API key: 401. Not HTTPS: 403. Not POST: 405.
+- 5 wrong tries in a row for the same user from the same IP, or 20 from one IP, lock it for 15 minutes (HTTP 429, `Retry-After: 900`).
+- The password is never stored or logged. Failed and successful sign-ins are listed in the audit log (without the password).

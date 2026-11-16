@@ -1,5 +1,5 @@
 <?php
-const BUILD=322;
+const BUILD=323;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -503,7 +503,7 @@ function msg_reacts($db,$ids,$uid){
   $o=[];foreach($by as $m=>$l)$o[$m]=array_values($l);return $o;}
 // ---- API keys for other programs (read-only Wiki access) ----
 function ak_ddl($db){static $d=0;if($d)return;$d=1;$db->exec("CREATE TABLE IF NOT EXISTS api_keys(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,key_hash CHAR(64) NOT NULL,prefix VARCHAR(16) NOT NULL,scope VARCHAR(10) NOT NULL DEFAULT 'read',active TINYINT NOT NULL DEFAULT 1,created_by INT NULL,created_at DATETIME NOT NULL,last_used DATETIME NULL,UNIQUE KEY h(key_hash)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
-function ak_fail($code,$msg){http_response_code($code);header('Content-Type: application/json; charset=utf-8');echo json_encode(['error'=>$msg],JSON_UNESCAPED_UNICODE);exit;}
+function ak_fail($code,$msg){http_response_code($code);header('Content-Type: application/json; charset=utf-8');echo json_encode(['ok'=>false,'error'=>$msg],JSON_UNESCAPED_UNICODE);exit;}
 function ak_auth($db){
   ak_ddl($db);$k='';$h=$_SERVER['HTTP_X_API_KEY']??'';if($h==='')foreach(['HTTP_AUTHORIZATION','REDIRECT_HTTP_AUTHORIZATION'] as $n){if(!empty($_SERVER[$n])){$h=$_SERVER[$n];break;}}
   if(preg_match('/^\s*(?:Bearer\s+)?(tfk_[0-9a-f]{40})\s*$/i',(string)$h,$m))$k=strtolower($m[1]);
@@ -540,6 +540,35 @@ if(in_array(($_GET['a']??''),['ext_wiki_search','ext_wiki_page'],true)){
   else ak_fail(400,'Give the page id (id=) or its exact title (title=)');
   $r=$st->fetch();if(!$r)ak_fail(404,'Page not found');
   echo json_encode(['id'=>(int)$r['id'],'title'=>$r['title'],'category'=>(string)$r['cat'],'tags'=>(string)$r['tags'],'updated_at'=>$r['updated_at'],'text'=>wk_text($r['body'])],JSON_UNESCAPED_UNICODE);exit;}
+// Sign-in check for other programs: POST api.php?a=ext_login {"user_id","password"} with an API key. The password is never stored or logged.
+function el_ddl($db){static $d=0;if($d)return;$d=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS ext_login_fail(k CHAR(64) PRIMARY KEY,fails INT NOT NULL DEFAULT 0,first_at DATETIME NOT NULL,locked_until DATETIME NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS ext_tokens(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,token_hash CHAR(64) NOT NULL,created_at DATETIME NOT NULL,expires_at DATETIME NOT NULL,UNIQUE KEY h(token_hash),KEY u(user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");}
+function el_locked($db,$k){$q=$db->prepare("SELECT locked_until FROM ext_login_fail WHERE k=? AND locked_until>NOW()");$q->execute([$k]);return (bool)$q->fetchColumn();}
+function el_fail($db,$k,$max){ // count a wrong try; lock for 15 minutes after $max in a row (tries older than 15 minutes start a new count)
+  $db->prepare("INSERT INTO ext_login_fail(k,fails,first_at) VALUES(?,1,NOW()) ON DUPLICATE KEY UPDATE fails=IF(first_at<DATE_SUB(NOW(),INTERVAL 15 MINUTE) OR (locked_until IS NOT NULL AND locked_until<=NOW()),1,fails+1),first_at=IF(first_at<DATE_SUB(NOW(),INTERVAL 15 MINUTE) OR (locked_until IS NOT NULL AND locked_until<=NOW()),NOW(),first_at),locked_until=IF(first_at<DATE_SUB(NOW(),INTERVAL 15 MINUTE),NULL,locked_until)")->execute([$k]);
+  $db->prepare("UPDATE ext_login_fail SET locked_until=DATE_ADD(NOW(),INTERVAL 15 MINUTE) WHERE k=? AND fails>=?")->execute([$k,$max]);}
+if(($_GET['a']??'')==='ext_login'){
+  header('Content-Type: application/json; charset=utf-8');header('Cache-Control: no-store');
+  $https=(!empty($_SERVER['HTTPS'])&&strtolower((string)$_SERVER['HTTPS'])!=='off')||strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO']??''))==='https';
+  if(!$https)ak_fail(403,'HTTPS is required');
+  if(($_SERVER['REQUEST_METHOD']??'')!=='POST'){header('Allow: POST');ak_fail(405,'Use POST with a JSON body');}
+  ak_auth($db);el_ddl($db);
+  $b=json_decode((string)file_get_contents('php://input'),true);if(!is_array($b))ak_fail(400,'Send JSON: {"user_id":"...","password":"..."}');
+  $lid=trim((string)($b['user_id']??''));$pw=(string)($b['password']??'');
+  if($lid===''||$pw===''||mb_strlen($lid)>120||strlen($pw)>200)ak_fail(400,'user_id and password are required');
+  $ip=mb_substr(trim((string)($_SERVER['HTTP_CF_CONNECTING_IP']??($_SERVER['REMOTE_ADDR']??''))),0,45);$k1=hash('sha256','up|'.mb_strtolower($lid).'|'.$ip);$k2=hash('sha256','ip|'.$ip); // this user from this IP, and this IP overall
+  if(el_locked($db,$k1)||el_locked($db,$k2)){header('Retry-After: 900');ak_fail(429,'Too many wrong tries. Try again in 15 minutes.');}
+  $s=$db->prepare("SELECT id,name,role,pass_hash,(username=?) AS exact FROM users WHERE username=? OR (email<>'' AND LOWER(email)=LOWER(?)) ORDER BY (username=?) DESC LIMIT 2");$s->execute([$lid,$lid,$lid,$lid]);$rows=$s->fetchAll();
+  $u=$rows?$rows[0]:false;if($u&&count($rows)>1&&!(int)$u['exact'])$u=false;
+  $okp=password_verify($pw,$u?$u['pass_hash']:password_hash('x',PASSWORD_DEFAULT)); // same work whether or not the user exists
+  if(!$u||!$okp){el_fail($db,$k1,5);el_fail($db,$k2,20);usleep(400000);aud_log($db,$u?(int)$u['id']:0,mb_substr($lid,0,60),'fail','ext_login_failed','Wrong ID or password (API)');ak_fail(401,'Wrong user ID or password');}
+  $db->prepare("DELETE FROM ext_login_fail WHERE k=?")->execute([$k1]);
+  $tok=bin2hex(random_bytes(32));
+  $db->prepare("INSERT INTO ext_tokens(user_id,token_hash,created_at,expires_at) VALUES(?,?,NOW(),DATE_ADD(NOW(),INTERVAL 30 DAY))")->execute([(int)$u['id'],hash('sha256',$tok)]);
+  if(mt_rand(1,50)===1)$db->exec("DELETE FROM ext_tokens WHERE expires_at<NOW()");
+  aud_log($db,(int)$u['id'],mb_substr($lid,0,60),'login','ext_login','Signed in through the API');
+  echo json_encode(['ok'=>true,'user'=>['id'=>(string)$u['id'],'name'=>$u['name'],'role'=>$u['role'],'token'=>$tok]],JSON_UNESCAPED_UNICODE);exit;}
 if(empty($_SESSION['uid'])){http_response_code(401);out(['error'=>'auth']);}
 if(($_GET['a']??'')==='wiki_img'){
   try{$q=$db->prepare("SELECT mime,data FROM wiki_media WHERE id=?");$q->execute([(int)($_GET['id']??0)]);$r=$q->fetch();}catch(Throwable $e){$r=false;}
