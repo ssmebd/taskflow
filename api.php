@@ -1,5 +1,5 @@
 <?php
-const BUILD=323;
+const BUILD=324;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -557,13 +557,12 @@ if(($_GET['a']??'')==='ext_login'){
   $b=json_decode((string)file_get_contents('php://input'),true);if(!is_array($b))ak_fail(400,'Send JSON: {"user_id":"...","password":"..."}');
   $lid=trim((string)($b['user_id']??''));$pw=(string)($b['password']??'');
   if($lid===''||$pw===''||mb_strlen($lid)>120||strlen($pw)>200)ak_fail(400,'user_id and password are required');
-  $ip=mb_substr(trim((string)($_SERVER['HTTP_CF_CONNECTING_IP']??($_SERVER['REMOTE_ADDR']??''))),0,45);$k1=hash('sha256','up|'.mb_strtolower($lid).'|'.$ip);$k2=hash('sha256','ip|'.$ip); // this user from this IP, and this IP overall
-  if(el_locked($db,$k1)||el_locked($db,$k2)){header('Retry-After: 900');ak_fail(429,'Too many wrong tries. Try again in 15 minutes.');}
+  $ip=mb_substr(trim((string)($_SERVER['HTTP_CF_CONNECTING_IP']??($_SERVER['REMOTE_ADDR']??''))),0,45);$k2=hash('sha256','ip|'.$ip); // only the IP is locked, a user is never locked out
+  if(el_locked($db,$k2)){header('Retry-After: 900');ak_fail(429,'Too many wrong tries. Try again in 15 minutes.');}
   $s=$db->prepare("SELECT id,name,role,pass_hash,(username=?) AS exact FROM users WHERE username=? OR (email<>'' AND LOWER(email)=LOWER(?)) ORDER BY (username=?) DESC LIMIT 2");$s->execute([$lid,$lid,$lid,$lid]);$rows=$s->fetchAll();
   $u=$rows?$rows[0]:false;if($u&&count($rows)>1&&!(int)$u['exact'])$u=false;
   $okp=password_verify($pw,$u?$u['pass_hash']:password_hash('x',PASSWORD_DEFAULT)); // same work whether or not the user exists
-  if(!$u||!$okp){el_fail($db,$k1,5);el_fail($db,$k2,20);usleep(400000);aud_log($db,$u?(int)$u['id']:0,mb_substr($lid,0,60),'fail','ext_login_failed','Wrong ID or password (API)');ak_fail(401,'Wrong user ID or password');}
-  $db->prepare("DELETE FROM ext_login_fail WHERE k=?")->execute([$k1]);
+  if(!$u||!$okp){el_fail($db,$k2,20);usleep(400000);aud_log($db,$u?(int)$u['id']:0,mb_substr($lid,0,60),'fail','ext_login_failed','Wrong ID or password (API)');ak_fail(401,'Wrong user ID or password');}
   $tok=bin2hex(random_bytes(32));
   $db->prepare("INSERT INTO ext_tokens(user_id,token_hash,created_at,expires_at) VALUES(?,?,NOW(),DATE_ADD(NOW(),INTERVAL 30 DAY))")->execute([(int)$u['id'],hash('sha256',$tok)]);
   if(mt_rand(1,50)===1)$db->exec("DELETE FROM ext_tokens WHERE expires_at<NOW()");
