@@ -2577,15 +2577,17 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
   dlg.innerHTML=`<div class="mlh"><b>📧 A request came in by email</b><small>${L.length>1?L.length+" waiting. ":""}Forwarded by ${esc(it.from_name||it.from_email)}. Add it as a task so it is not forgotten.</small></div>
   <div class="mlb"><div><label>Task title</label><input id="mlT" value="${ea(subj(it.subject))}" maxlength="255"></div>
   <div class="mlr"><div><label>Company</label><select id="mlW">${ws.map(x=>`<option value="${x.id}" ${x.id==w0.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select></div><div><label>Assign to</label><select id="mlU"></select></div></div>
+  <div><label>Group</label><select id="mlG"></select></div>
   <div class="mlr"><div><label>Start date</label><input id="mlS" type="date"></div><div><label>Due date</label><input id="mlE" type="date"></div></div>
   <div><label>Notes (from the email)</label><textarea id="mlN">${esc(note)}</textarea></div><div id="mlX" style="color:#c5221f;font-size:12.5px"></div></div>
   <div class="mlf"><button type="button" id="mlL">Later</button><button type="button" id="mlD">Not a task</button><button type="button" class="p" id="mlC">Create task</button></div>`;
   const fillU=()=>{const x=ws.find(v=>v.id==$("#mlW").value);$("#mlU").innerHTML=`<option value="">Unassigned</option>`+x.users.map(u=>`<option value="${u.id}" ${u.id==M.me?"selected":""}>${esc(u.name)}</option>`).join("")};
-  fillU();$("#mlW").onchange=fillU;
+  const fillG=()=>{const x=ws.find(v=>v.id==$("#mlW").value),g=x.groups||[];$("#mlG").innerHTML=`<option value="">No group</option>`+g.map(v=>`<option value="${v.id}">${esc(v.name)}</option>`).join("")};
+  fillU();fillG();$("#mlW").onchange=()=>{fillU();fillG()};
   $("#mlL").onclick=()=>{snooze=Date.now()+30*60000;dlg.close()};
   $("#mlD").onclick=async()=>{try{await apiw("mail_dismiss",{id:it.id});L.shift();render()}catch(e){$("#mlX").textContent=e.message}};
   $("#mlC").onclick=async()=>{const t=$("#mlT").value.trim();if(!t){$("#mlX").textContent="Please give the task a title.";return}const b=$("#mlC");b.disabled=true;
-   try{const wid=+$("#mlW").value,r=await apiw("save",{title:t,assigned_to:$("#mlU").value,start_date:$("#mlS").value,end_date:$("#mlE").value,notes:$("#mlN").value},wid);await apiw("mail_done",{id:it.id,task_id:r.id});L.shift();if(wid===+W&&typeof load==="function"){try{load()}catch(e){}}render()}catch(e){b.disabled=false;$("#mlX").textContent=e.message}};
+   try{const wid=+$("#mlW").value,r=await apiw("save",{title:t,assigned_to:$("#mlU").value,group_id:$("#mlG").value,start_date:$("#mlS").value,end_date:$("#mlE").value,notes:$("#mlN").value},wid);await apiw("mail_done",{id:it.id,task_id:r.id});L.shift();if(wid===+W&&typeof load==="function"){try{load()}catch(e){}}render()}catch(e){b.disabled=false;$("#mlX").textContent=e.message}};
   if(!dlg.open)dlg.showModal()}
  async function check(){if(busy||document.hidden||Date.now()<snooze)return;if(document.querySelector("dialog[open]:not(#mld)"))return;busy=true;
   try{const r=await apiw("mail_pending",{});M=r;L=r.items||[];if(r.err&&!warned){warned=true;console.warn("Email to task: "+r.err)}if(L.length)render();else if(dlg.open)dlg.close()}catch(e){}finally{busy=false}}
@@ -2623,7 +2625,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=324;
+const BUILD=325;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

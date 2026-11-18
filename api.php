@@ -1,5 +1,5 @@
 <?php
-const BUILD=324;
+const BUILD=325;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -900,7 +900,9 @@ case 'mail_pending':
   $q=$db->prepare("SELECT id,from_email,from_name,subject,body,recv,user_id FROM mail_inbox WHERE status='new' AND (user_id=?".($adm?" OR user_id=0":"").") ORDER BY recv LIMIT 20");$q->execute([$uid]);$items=$q->fetchAll();
   $ws=[];if($items){foreach($WS as $w){if(!in_array($w['level'],['edit','full'],true))continue;
     $uq=$db->prepare("SELECT u.id,u.name FROM users u WHERE u.role<>'guest' AND (u.role='admin' OR u.id IN(SELECT user_id FROM ws_users WHERE ws_id=?)) ORDER BY u.name");$uq->execute([(int)$w['id']]);
-    $ws[]=['id'=>(int)$w['id'],'name'=>$w['name'],'users'=>$uq->fetchAll()];}}
+    $gq=$db->prepare("SELECT id,name,parent_id FROM task_groups WHERE ws_id=? ORDER BY sort_no,id");$gq->execute([(int)$w['id']]);$gr=$gq->fetchAll();$gn=[];foreach($gr as $g)$gn[(int)$g['id']]=$g['name'];
+    $gl=[];foreach($gr as $g){$pn=!empty($g['parent_id'])&&isset($gn[(int)$g['parent_id']])?$gn[(int)$g['parent_id']].' › ':'';$gl[]=['id'=>(int)$g['id'],'name'=>$pn.$g['name']];}
+    $ws[]=['id'=>(int)$w['id'],'name'=>$w['name'],'users'=>$uq->fetchAll(),'groups'=>$gl];}}
   out(['items'=>$items,'ws'=>$ws,'err'=>$adm?mi_get('err',$db):'','me'=>(int)$uid]);
 case 'mail_dismiss':
   mi_ddl($db);$db->prepare("UPDATE mail_inbox SET status='dismissed' WHERE id=? AND status='new' AND (user_id=? OR ?)")->execute([(int)($in['id']??0),$uid,$me['role']==='admin'?1:0]);out(['ok'=>1]);
