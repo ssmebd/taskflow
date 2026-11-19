@@ -1,5 +1,5 @@
 <?php
-const BUILD=325;
+const BUILD=326;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -599,13 +599,13 @@ const WORK_H=8.0;
 function ot_rebalance($db,$who,$d){
   try{
     $wk=(int)date('N',strtotime($d))>=6;
-    $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id,l.user_id,l.logged_by,l.hours,l.kind,l.note,l.rev,l.work_date,l.man,(w.name REGEXP 'DMC|Dynamic Modular') AS dm FROM time_logs l LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date=? ORDER BY l.id");$q->execute([$who,$d]);
+    $q=$db->prepare("SELECT l.id,l.task_id,l.ws_id,l.user_id,l.logged_by,l.hours,l.kind,l.note,l.rev,l.work_date,l.man,(w.name REGEXP 'DMC|Dynamic Modular') AS dm,COALESCE(w.all_ot,0) AS ao FROM time_logs l LEFT JOIN workspaces w ON w.id=l.ws_id WHERE l.user_id=? AND l.work_date=? ORDER BY l.id");$q->execute([$who,$d]);
     $grp=[[],[]];foreach($q->fetchAll() as $r)$grp[empty($r['dm'])?0:1][]=$r; // DMC hours are never added to Allshelter / Allshelter USA hours
     foreach($grp as $all){$cum=0.0;
     foreach($all as $r){if((int)$r['man']===2){if($r['kind']!=='R')$db->prepare("UPDATE time_logs SET kind='R' WHERE id=?")->execute([$r['id']]);$cum+=(float)$r['hours'];}} // hours pinned as Regular by hand use the 8 regular hours first
     foreach($all as $r){$h=(float)$r['hours'];$k='R';$sp=0.0;
       if((int)$r['man']===2)continue;
-      if(!empty($r['man'])){if($r['kind']!=='OT')$db->prepare("UPDATE time_logs SET kind='OT' WHERE id=?")->execute([$r['id']]);continue;} // manually added overtime: never re-split, not counted in the 8 regular hours
+      if(!empty($r['man'])||!empty($r['ao'])){if($r['kind']!=='OT')$db->prepare("UPDATE time_logs SET kind='OT' WHERE id=?")->execute([$r['id']]);continue;} // manually added overtime: never re-split, not counted in the 8 regular hours
       if($wk)$k='OT';
       elseif($cum+$h<=WORK_H+0.001)$k='R';
       elseif($cum>=WORK_H-0.001)$k='OT';
@@ -654,7 +654,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v42']))return;
+  if(!empty($_SESSION['schema_v43']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -717,7 +717,8 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS user_photos(user_id INT NOT NULL PRIMARY KEY,mime VARCHAR(30) NOT NULL,data MEDIUMBLOB NOT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   notices_ddl($db);
   photo_seed($db);photo_seed2($db);photo_seed3($db);
-  $_SESSION['schema_v42']=1;
+  if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'all_ot'")->fetch()){$db->exec("ALTER TABLE workspaces ADD all_ot TINYINT NOT NULL DEFAULT 0");$db->exec("UPDATE workspaces SET all_ot=1 WHERE name REGEXP 'DMC|Dynamic Modular'");} // every hour logged in this company counts as overtime; DMC starts switched on
+  $_SESSION['schema_v43']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -1396,7 +1397,9 @@ case 'inv_pay':
 case 'inv_del':
   admin();$db->prepare("DELETE FROM invoices WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'co_get':
-  admin();$pe=col_peers($db,$W);out(['company'=>inv_company($db),'colsync'=>$pe?$pe[0]:0]);
+  admin();$pe=col_peers($db,$W);$q=$db->prepare("SELECT COALESCE(all_ot,0) FROM workspaces WHERE id=?");$q->execute([$W]);out(['company'=>inv_company($db),'colsync'=>$pe?$pe[0]:0,'all_ot'=>(int)$q->fetchColumn()]);
+case 'ws_allot':
+  admin();$db->prepare("UPDATE workspaces SET all_ot=? WHERE id=?")->execute([!empty($in['on'])?1:0,$W]);out(['ok'=>1]);
 case 'ws_colsync':
   admin();$id=(int)($in['id']??0);$with=(int)($in['with']??0);
   if(!$with){$db->prepare("UPDATE workspaces SET col_grp=0 WHERE id=?")->execute([$id]);out(['ok'=>1]);}

@@ -884,7 +884,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
   <label>Company name (shown in the app)<input id="con" maxlength="60"></label><label>Keep columns in sync with<select id="cosy"></select></label><label>Name on invoice<input id="coc"></label>
   <label>Address<input id="coa"></label><label>Bank / payment details<input id="cob"></label>
   <label>Currency code<input id="coy" maxlength="8" placeholder="AUD"></label><label>Currency symbol<input id="cos" maxlength="4" placeholder="$"></label>
-  <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label>
+  <label>Default rate / hour<input type="number" id="cod" min="0" step="0.01"></label><label>OT multiplier (1 = same rate)<input type="number" id="coo" min="0" step="0.05"></label><label style="grid-column:1/-1;display:flex;gap:8px;align-items:center"><input type="checkbox" id="coot" style="width:auto"> Count all hours logged in this company as OT (no 8-hour regular day)</label>
  </div>
  <div class="pgrid">
   <label>Invoice style<select id="colay"><option value="worklog">Category summary (Operations / Sales / Projects columns)</option><option value="items">Item list with PO no. (UCA style)</option><option value="summary">Client summary report + Drawing/Others invoice (DMC style)</option></select></label><label>Worklog title (blue box)<input id="cowt" placeholder="e.g. ALLSHELTER Pty. Ltd."></label>
@@ -1222,17 +1222,17 @@ $("#tll").addEventListener("click",async e=>{const id=e.target.dataset.tld;if(!i
 $("#tlcl").onclick=()=>$("#tldg").close();
 $("#tlb").onclick=()=>{const id=editing;if(!id)return;$("#dlg").close();openTL(id)};
 // ---- Company details & hourly rates (admin) ----
-let coId=0,coSy0=0;
+let coId=0,coSy0=0,coOt0=false;
 async function apiW(a,data,wid){const r=await fetch("api.php?a="+a+"&w="+wid,{method:"POST",headers:{"Content-Type":"application/json","X-Requested-With":"fetch"},body:JSON.stringify(data||{})});if(r.status===401){location="login.php";throw new Error("auth")}const j=await r.json();if(j.error)throw new Error(j.error);return j}
 async function coOpen(id){coId=id;const w=wss.find(x=>x.id==id);try{const r=await apiW("co_get",{},id),c=r.company||{};
-  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#cosy").innerHTML='<option value="0">Not linked</option>'+wss.filter(x=>x.id!=id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#cosy").value=r.colsync||0;coSy0=+(r.colsync||0);$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#colay").value=["items","summary"].includes(c.layout)?c.layout:"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
+  $("#cot").textContent=(w?w.name:"Company")+" — details & hourly rates";$("#con").value=w?w.name:"";$("#cosy").innerHTML='<option value="0">Not linked</option>'+wss.filter(x=>x.id!=id).map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join("");$("#cosy").value=r.colsync||0;coSy0=+(r.colsync||0);$("#coc").value=c.client_name||"";$("#coa").value=c.client_addr||"";$("#cob").value=c.bank||"";$("#coy").value=c.currency||"";$("#cos").value=c.symbol||"";$("#cod").value=c.rate||"";$("#coo").value=c.ot==null?1:c.ot;$("#coot").checked=!!+r.all_ot;coOt0=!!+r.all_ot;$("#colay").value=["items","summary"].includes(c.layout)?c.layout:"worklog";$("#cowt").value=c.wl_title||"";$("#copx").value=c.prefix||"";$("#cosf").value=c.suffix||"";$("#cosq").value=c.seq||"1";$("#copo").value=c.po||"";$("#cosl").value=c.sec_labels||"";
   $("#cor").innerHTML=allUsers.map(u=>`<label>${esc(u.name)}<input type="number" min="0" step="0.01" data-cr="${u.id}" value="${c.rates&&c.rates[u.id]!==undefined?c.rates[u.id]:""}"></label>`).join("")||'<span style="color:var(--mut)">No users yet</span>';
   $("#codlg").showModal()}catch(e){alert(e.message)}}
 $("#cox").onclick=()=>$("#codlg").close();
 $("#cosv").onclick=async()=>{const rates={};document.querySelectorAll("#cor [data-cr]").forEach(i=>{if(i.value!=="")rates[i.dataset.cr]=+i.value});
   const profile={name:"",client_name:$("#coc").value,client_addr:$("#coa").value,bank:$("#cob").value,currency:$("#coy").value,symbol:$("#cos").value,rate:+$("#cod").value||0,ot:$("#coo").value===""?1:+$("#coo").value,layout:$("#colay").value,wl_title:$("#cowt").value,prefix:$("#copx").value,suffix:$("#cosf").value,seq:$("#cosq").value.replace(/\D/g,"")||"1",po:$("#copo").value,sec_labels:$("#cosl").value,rates};
   try{const w=wss.find(x=>x.id==coId),n=$("#con").value.trim();if(n&&w&&n!==w.name)await apiW("ws_rename",{id:coId,name:n},coId);
-    await apiW("inv_set",{slot:0,profile},coId);if(+$("#cosy").value!==coSy0)await apiW("ws_colsync",{id:coId,with:+$("#cosy").value},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
+    await apiW("inv_set",{slot:0,profile},coId);if($("#coot").checked!==coOt0)await apiW("ws_allot",{on:$("#coot").checked?1:0},coId);if(+$("#cosy").value!==coSy0)await apiW("ws_colsync",{id:coId,with:+$("#cosy").value},coId);$("#codlg").close();await load(true);renderWs()}catch(e){alert(e.message)}};
 // ---- Worklog & invoice reports ----
 let rrows=[],rprofs=[],rcsvRows=[],rComp={rates:{},rate:0,ot:1};
 const rShift=n=>{const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString("en-CA")};
@@ -1466,8 +1466,8 @@ function mhDraw(){const co=$("#mhco").value,tg=+$("#mhg").value||0,td=ltoday(),b
   mhRows.forEach(x=>{if(mhSel.has(x.work_date)){cs[x.ws||""]=(cs[x.ws||""]||0)+ +x.hours}if(mhSel.has(x.work_date)&&(!co||x.ws===co))(by[x.work_date]=by[x.work_date]||[]).push(x)});
   let exp=0,miss=0,rows="",R=0,O=0,short=0;
   for(const d of mhSorted()){const dow=new Date(d+"T00:00:00Z").getUTCDay(),wk=dow===0||dow===6,t0=wk?0:tg,l=by[d]||[],h=l.reduce((s,x)=>s+ +x.hours,0),gs=mhGrp(l),ot=gs.reduce((s,g)=>s+g[1].o,0),rg=gs.length?Math.max(...gs.map(g=>g[1].r)):0;R+=gs.reduce((s,g)=>s+g[1].r,0);O+=ot;
-    const past=d<=td;if(past&&!co){exp+=t0;if(rg<t0){miss++;short+=t0-rg}}
-    let st="",cl="";if(co){st=h?"Logged in "+co:(past?"Nothing logged here":"Upcoming");cl="color:var(--mut)"}else if(!past){st="Upcoming";cl="color:var(--mut)"}else if(wk){st=h?"Weekend · all overtime":"Weekend";cl="color:var(--mut)"}else if(rg>=t0){st="✓ Complete"+(ot?` · <span style="color:#2563eb">${fmtH(ot)} h OT</span>`:"");cl="color:#16a34a"}else if(rg>0){st="⚠ Short by "+fmtH(t0-rg)+" h";cl="color:#dc2626;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
+    const past=d<=td;if(past&&!co){exp+=t0;if(rg<t0&&!(rg===0&&ot>0)){miss++;short+=t0-rg}}
+    let st="",cl="";if(co){st=h?"Logged in "+co:(past?"Nothing logged here":"Upcoming");cl="color:var(--mut)"}else if(!past){st="Upcoming";cl="color:var(--mut)"}else if(wk){st=h?"Weekend · all overtime":"Weekend";cl="color:var(--mut)"}else if(rg>=t0){st="✓ Complete"+(ot?` · <span style="color:#2563eb">${fmtH(ot)} h OT</span>`:"");cl="color:#16a34a"}else if(rg===0&&ot>0){st="OT only · "+fmtH(ot)+" h";cl="color:#2563eb"}else if(rg>0){st="⚠ Short by "+fmtH(t0-rg)+" h";cl="color:#dc2626;font-weight:600"}else{st="✗ Nothing logged";cl="color:#c5221f;font-weight:600"}
     if(only&&!(past&&!wk&&rg<t0))continue;
     const lg={};l.forEach(x=>{lg[x.task_id]=(lg[x.task_id]||0)+ +x.hours});
     const pl=mhPlan.filter(t=>(!co||t.ws===co)).filter(t=>{const a=t.start_date||t.end_date,e=t.end_date||t.start_date;return a<=d&&d<=e});
@@ -2625,7 +2625,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=325;
+const BUILD=326;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
