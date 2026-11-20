@@ -758,6 +758,9 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
  <div id="lgl" style="max-height:52vh;overflow:auto;margin-top:8px"></div>
  <small style="color:var(--mut)">Shows the latest 300 entries that match. Entries older than 90 days are removed automatically. Admin only.</small>
 </dialog>
+<dialog id="pfdlg" style="width:min(760px,96vw);max-height:94vh;overflow:auto"><div class="acts"><b id="pft" style="flex:1;font-size:17px">User profile</b><button id="pfx">Close</button></div>
+ <div id="pfb" style="display:grid;gap:14px;margin-top:10px"></div>
+</dialog>
 <dialog id="uedlg"><b>Edit user</b>
  <label>Full name</label><input id="een" maxlength="100">
  <label>Username</label><input id="eeu" maxlength="40" autocomplete="off">
@@ -2358,7 +2361,7 @@ function renderUsers(){
   $("#tlist").innerHTML=allUsers.map(u=>`<div class="urow"><span><b>${esc(u.name)}</b>${u.role==="guest"?' <small style="color:var(--mut)">· Guest</small>':""}${u.email?`<br><small style="color:var(--mut)" title="${ea(u.email)}">${esc(u.email)}</small>`:""}</span><span>${esc(u.username||"")}</span>
    <span class="pw"><input type="password" data-np="${u.id}" placeholder="•••••••• (new password)" autocomplete="new-password"><button type="button" class="eye" title="Show / hide">👁</button></span>
    <select data-role="${u.id}"${u.id==me.id?" disabled":""}><option value="member"${u.role!=="admin"&&u.role!=="guest"&&u.role!=="userplus"?" selected":""}>Member</option><option value="userplus"${u.role==="userplus"?" selected":""}>User+</option><option value="guest"${u.role==="guest"?" selected":""}>Guest (view only)</option><option value="admin"${u.role==="admin"?" selected":""}>Admin</option></select>
-   <span style="display:flex;gap:4px"><button data-ed="${u.id}" title="Edit name, username and email">✎</button><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
+   <span style="display:flex;gap:4px"><button data-pf="${u.id}" title="Open this person's page: details, salary, overtime">👤</button><button data-ed="${u.id}" title="Edit name, username and email">✎</button><button data-pw="${u.id}" title="Type a new password in the box, then press this">Reset password</button>${u.id==me.id?"":`<button data-rm="${u.id}" title="Remove user">✕</button>`}</span></div>`).join("");
 }
 const LGA={login:"Signed in",auto_login:"Signed in (kept)",logout:"Signed out",login_failed:"Failed sign-in",open_company:"Opened company",save:"Task",field:"Task edit",delete:"Deleted task(s)",dup:"Duplicated task(s)",co_set:"Changed people on task",task_move:"Moved task(s)",task_order:"Reordered tasks",tl_add:"Logged hours",tl_del:"Deleted hours entry",tl_rev:"Changed Rev on hours",cm_add:"Wrote a message",cm_del:"Deleted a message",user_add:"Added user",user_edit:"Edited user",user_pass:"Reset a password",user_role:"Changed user type",user_del:"Removed user",ws_access:"Changed access",ws_add:"Added company",ws_del:"Removed company",ws_rename:"Renamed company",dr_act:"Approval decision"};
 const lgUA=u=>{u=u||"";const b=/Edg\//.test(u)?"Edge":/Chrome\//.test(u)?"Chrome":/Firefox\//.test(u)?"Firefox":/Safari\//.test(u)?"Safari":"Browser",o=/Android/.test(u)?"Android":/iPhone|iPad/.test(u)?"iOS":/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"";return b+(o?" · "+o:"")};
@@ -2543,6 +2546,33 @@ async function lgLoad(){try{const r=await api("log_list",{kind:$("#lgk").value,u
   $("#lgl").innerHTML=r.rows.length?`<table class="tlt"><tr><th>When</th><th>Who</th><th>What</th><th>Details</th><th>Company</th><th>Where from</th></tr>${r.rows.map(l=>`<tr${l.kind==="fail"?' style="color:#dc2626"':""}><td style="white-space:nowrap">${esc(fmtT(l.created_at))}</td><td>${esc(l.name||l.username||"?")}</td><td>${esc(LGA[l.action]||l.action)}</td><td>${esc(l.detail||"")}</td><td>${esc(l.ws||"")}</td><td style="white-space:nowrap" title="${ea(l.ua)}">${esc(l.ip)} <small style="color:var(--mut)">${esc(lgUA(l.ua))}</small></td></tr>`).join("")}</table>`:'<div class="empty">Nothing recorded for this filter yet</div>'}catch(e){$("#lgl").innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
 $("#alg").onclick=e=>{e.preventDefault();$("#umenu").hidden=true;$("#lgdlg").showModal();lgLoad()};
 $("#lgx").onclick=()=>$("#lgdlg").close();$("#lgr").onclick=lgLoad;for(const i of ["lgk","lgu","lgw","lgf","lgt"])$("#"+i).addEventListener("change",lgLoad);
+
+// ---- Individual user page (admin): details, salary, overtime rate, increment history ----
+let pfId=0;
+const pfN=(n,c)=>n==null?"—":(c?c+" ":"")+(+n).toLocaleString("en",{minimumFractionDigits:2,maximumFractionDigits:2});
+async function pfOpen(id){pfId=id;try{const r=await api("up_get",{id}),u=r.user,p=r.profile,c=p.currency||"BDT";
+  $("#pft").textContent="👤 "+u.name;
+  const rl={admin:"Admin",guest:"Guest",userplus:"User+"}[u.role]||"Member";
+  $("#pfb").innerHTML=`<div class="card" style="padding:12px;border:1px solid var(--line);border-radius:10px"><b>Details</b>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><div><small style="color:var(--mut)">Username</small><br>${esc(u.username||"")}</div><div><small style="color:var(--mut)">Email</small><br>${esc(u.email||"—")}</div><div><small style="color:var(--mut)">User type</small><br>${rl}</div><div></div>
+   <label>Designation<input id="pfd" value="${ea(p.designation||"")}" maxlength="100"></label><label>Phone<input id="pfp" value="${ea(p.phone||"")}" maxlength="60"></label>
+   <label>Joining date<input id="pfj" type="date" value="${ea(p.joined||"")}"></label><label>Currency<input id="pfc" value="${ea(c)}" maxlength="8"></label>
+   <label style="grid-column:1/-1">Notes<textarea id="pfno" rows="2">${esc(p.notes||"")}</textarea></label></div></div>
+  <div class="card" style="padding:12px;border:1px solid var(--line);border-radius:10px"><b>Salary &amp; overtime rate</b>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px"><div><small style="color:var(--mut)">Current salary / month</small><br><b style="font-size:18px">${pfN(r.salary,c)}</b></div><div><small style="color:var(--mut)">Calculated OT rate / hour</small><br><b style="font-size:18px;color:#2563eb">${pfN(r.ot_rate,c)}</b></div><div><small style="color:var(--mut)">Rate = salary ÷ hours × multiplier</small></div>
+   <label>Hours in a month<input id="pfdv" type="number" min="1" max="744" step="0.5" value="${ea(+p.ot_div)}" title="26 days x 8 hours = 208"></label><label>OT multiplier<input id="pfm" type="number" min="0" max="10" step="0.05" value="${ea(+p.ot_mult)}" title="1 = same rate, 2 = double"></label></div></div>
+  <div class="card" style="padding:12px;border:1px solid var(--line);border-radius:10px"><b>Monthly overtime (last 12 months)</b>
+   <table style="width:100%;margin-top:8px"><tr><th>Month</th><th>OT hours</th><th>Salary</th><th>Rate / h</th><th>OT amount</th></tr>${r.months.map(m=>`<tr><td>${esc(m.m)}</td><td>${fmtH(m.hours)}</td><td>${pfN(m.salary)}</td><td>${pfN(m.rate)}</td><td><b>${pfN(m.amount,c)}</b></td></tr>`).join("")||`<tr><td colspan="5" style="color:var(--mut);text-align:center">No overtime logged</td></tr>`}</table></div>
+  <div class="card" style="padding:12px;border:1px solid var(--line);border-radius:10px"><b>Increment history</b>
+   <table style="width:100%;margin-top:8px"><tr><th>From date</th><th>Salary</th><th>Change</th><th>Note</th><th></th></tr>${r.history.map(h=>`<tr><td>${esc(h.date)}</td><td><b>${pfN(h.amount,c)}</b></td><td>${h.change==null?"Starting salary":(h.change>=0?"+":"")+pfN(h.change)+(h.pct==null?"":" ("+(h.pct>=0?"+":"")+h.pct+"%)")}</td><td>${esc(h.note||"")}</td><td><button data-pfsd="${h.id}" title="Delete this entry">🗑</button></td></tr>`).join("")||`<tr><td colspan="5" style="color:var(--mut);text-align:center">No salary recorded yet</td></tr>`}</table>
+   <div style="display:grid;grid-template-columns:150px 140px 1fr auto;gap:6px;margin-top:8px;align-items:end"><label>From date<input id="pfsd" type="date"></label><label>New salary<input id="pfsa" type="number" min="0" step="0.01"></label><label>Note<input id="pfsn" maxlength="255" placeholder="e.g. Annual increment"></label><button class="p" id="pfsadd">Add</button></div></div>
+  <div class="acts"><span class="sp"></span><button class="p" id="pfsave">Save details</button></div>`;
+  if(!$("#pfdlg").open)$("#pfdlg").showModal()}catch(e){alert(e.message)}}
+$("#pfx").onclick=()=>$("#pfdlg").close();
+$("#pfdlg").addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  try{if(b.id==="pfsave"){await api("up_save",{id:pfId,designation:$("#pfd").value,phone:$("#pfp").value,joined:$("#pfj").value,notes:$("#pfno").value,currency:$("#pfc").value,ot_div:+$("#pfdv").value,ot_mult:+$("#pfm").value});await pfOpen(pfId)}
+  else if(b.id==="pfsadd"){await api("up_sal_add",{id:pfId,date:$("#pfsd").value,amount:+$("#pfsa").value,note:$("#pfsn").value});await pfOpen(pfId)}
+  else if(b.dataset.pfsd&&confirm("Delete this salary entry?")){await api("up_sal_del",{id:+b.dataset.pfsd});await pfOpen(pfId)}}catch(er){alert(er.message)}});
 let edId=0;
 $("#eec").onclick=()=>$("#uedlg").close();
 $("#ees").onclick=async()=>{try{await api("user_edit",{id:edId,name:$("#een").value,username:$("#eeu").value,email:$("#eee").value});$("#uedlg").close();await load(true);renderUsers()}catch(e){alert(e.message)}};
@@ -2559,6 +2589,7 @@ $("#ta").onclick=async()=>{
 $("#tlist").addEventListener("click",async e=>{
   try{
     if(e.target.dataset.rm&&confirm("Remove this user? Their tasks become unassigned.")){await api("user_del",{id:e.target.dataset.rm});await load(true);renderUsers()}
+    if(e.target.dataset.pf){pfOpen(+e.target.dataset.pf);return}
     if(e.target.dataset.ed){const u=allUsers.find(x=>x.id==e.target.dataset.ed);if(u){edId=u.id;$("#een").value=u.name||"";$("#eeu").value=u.username||"";$("#eee").value=u.email||"";$("#uedlg").showModal()}return}
     if(e.target.dataset.pw){const inp=$('#tlist input[data-np="'+e.target.dataset.pw+'"]'),p=inp.value;if(p.length<8){alert("Type a new password of 8+ characters first.");return}await api("user_pass",{id:e.target.dataset.pw,password:p});inp.value="";alert("Password changed.")}
     const ey=e.target.closest(".eye");if(ey){const i=ey.parentNode.querySelector("input");i.type=i.type==="password"?"text":"password"}
@@ -2625,7 +2656,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=327;
+const BUILD=328;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}

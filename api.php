@@ -1,5 +1,5 @@
 <?php
-const BUILD=327;
+const BUILD=328;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -654,7 +654,7 @@ function wiki_seed_run($db,$uid){
   return ['n'=>$n,'err'=>''];
 }
 function ensure_schema($db){
-  if(!empty($_SESSION['schema_v43']))return;
+  if(!empty($_SESSION['schema_v44']))return;
   $db->exec("CREATE TABLE IF NOT EXISTS custom_cols(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(60) NOT NULL,ctype VARCHAR(10) NOT NULL DEFAULT 'text',options TEXT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   if(!$db->query("SHOW COLUMNS FROM tasks LIKE 'extra'")->fetch())$db->exec("ALTER TABLE tasks ADD extra MEDIUMTEXT NULL");
   $db->exec("CREATE TABLE IF NOT EXISTS workspaces(id INT AUTO_INCREMENT PRIMARY KEY,name VARCHAR(80) NOT NULL,sort_no INT NOT NULL DEFAULT 0) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -718,7 +718,9 @@ function ensure_schema($db){
   notices_ddl($db);
   photo_seed($db);photo_seed2($db);photo_seed3($db);
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'all_ot'")->fetch()){$db->exec("ALTER TABLE workspaces ADD all_ot TINYINT NOT NULL DEFAULT 0");$db->exec("UPDATE workspaces SET all_ot=1 WHERE name REGEXP 'DMC|Dynamic Modular'");} // every hour logged in this company counts as overtime; DMC starts switched on
-  $_SESSION['schema_v43']=1;
+  $db->exec("CREATE TABLE IF NOT EXISTS user_profile(user_id INT PRIMARY KEY,phone VARCHAR(60) NOT NULL DEFAULT '',designation VARCHAR(100) NOT NULL DEFAULT '',joined DATE NULL,notes TEXT NULL,currency VARCHAR(8) NOT NULL DEFAULT 'BDT',ot_div DECIMAL(8,2) NOT NULL DEFAULT 208,ot_mult DECIMAL(6,2) NOT NULL DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $db->exec("CREATE TABLE IF NOT EXISTS user_salary(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,eff_date DATE NOT NULL,amount DECIMAL(12,2) NOT NULL,note VARCHAR(255) NOT NULL DEFAULT '',created_by INT NULL,created_at DATETIME NOT NULL,KEY u(user_id,eff_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+  $_SESSION['schema_v44']=1;
 }
 try{ensure_schema($db);}catch(Throwable $e){out(['error'=>'Database upgrade failed: '.$e->getMessage()]);}
 $q=$db->prepare("SELECT pref_view FROM users WHERE id=?");$q->execute([$uid]);$pv=$q->fetchColumn();$me['pref_view']=in_array($pv,['board','gantt'],true)?$pv:'list';
@@ -1635,6 +1637,28 @@ case 'user_add':
   catch(PDOException $e){out(['error'=>'That username is already taken']);}
   $nid=(int)$db->lastInsertId();
   out(['ok'=>1]);
+case 'up_get': // individual user page (admin only: contains salary)
+  admin();$id=(int)($in['id']??0);$q=$db->prepare("SELECT id,name,username,email,role FROM users WHERE id=?");$q->execute([$id]);$u=$q->fetch();if(!$u)out(['error'=>'User not found']);
+  $q=$db->prepare("SELECT phone,designation,joined,notes,currency,ot_div,ot_mult FROM user_profile WHERE user_id=?");$q->execute([$id]);$p=$q->fetch()?:['phone'=>'','designation'=>'','joined'=>null,'notes'=>'','currency'=>'BDT','ot_div'=>208,'ot_mult'=>1];
+  $q=$db->prepare("SELECT id,eff_date,amount,note FROM user_salary WHERE user_id=? ORDER BY eff_date DESC,id DESC");$q->execute([$id]);$sal=$q->fetchAll();
+  $at=function($d)use($sal){foreach($sal as $s)if($s['eff_date']<=$d)return (float)$s['amount'];return null;};
+  $div=max(1,(float)$p['ot_div']);$mult=(float)$p['ot_mult'];$cur=$at(date('Y-m-d'));
+  $q=$db->prepare("SELECT DATE_FORMAT(work_date,'%Y-%m') m,SUM(hours) h FROM time_logs WHERE user_id=? AND kind='OT' AND work_date>=DATE_SUB(DATE_FORMAT(CURDATE(),'%Y-%m-01'),INTERVAL 11 MONTH) GROUP BY m ORDER BY m DESC");$q->execute([$id]);$mo=[];
+  foreach($q->fetchAll() as $r){$s=$at(date('Y-m-t',strtotime($r['m'].'-01')));$rt=$s===null?null:round($s/$div*$mult,2);$mo[]=['m'=>$r['m'],'hours'=>round((float)$r['h'],2),'salary'=>$s,'rate'=>$rt,'amount'=>$rt===null?null:round($rt*(float)$r['h'],2)];}
+  $hist=[];$n=count($sal);foreach($sal as $i=>$s){$prev=$sal[$i+1]['amount']??null;$hist[]=['id'=>(int)$s['id'],'date'=>$s['eff_date'],'amount'=>(float)$s['amount'],'note'=>$s['note'],'change'=>$prev!==null?round((float)$s['amount']-(float)$prev,2):null,'pct'=>$prev!==null&&(float)$prev>0?round(((float)$s['amount']-(float)$prev)/(float)$prev*100,1):null];}
+  out(['user'=>$u,'profile'=>$p,'salary'=>$cur,'ot_rate'=>$cur===null?null:round($cur/$div*$mult,2),'history'=>$hist,'months'=>$mo]);
+case 'up_save':
+  admin();$id=(int)($in['id']??0);$q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$id]);if(!(int)$q->fetchColumn())out(['error'=>'User not found']);
+  $jd=trim((string)($in['joined']??''));if($jd!==''&&!preg_match('/^\d{4}-\d{2}-\d{2}$/',$jd))out(['error'=>'Joining date is not valid']);
+  $div=(float)($in['ot_div']??208);$mu=(float)($in['ot_mult']??1);if($div<1||$div>744||$mu<0||$mu>10)out(['error'=>'Check the overtime settings']);
+  $db->prepare("INSERT INTO user_profile(user_id,phone,designation,joined,notes,currency,ot_div,ot_mult) VALUES(?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE phone=VALUES(phone),designation=VALUES(designation),joined=VALUES(joined),notes=VALUES(notes),currency=VALUES(currency),ot_div=VALUES(ot_div),ot_mult=VALUES(ot_mult)")
+    ->execute([$id,mb_substr(trim((string)($in['phone']??'')),0,60),mb_substr(trim((string)($in['designation']??'')),0,100),$jd?:null,mb_substr((string)($in['notes']??''),0,4000),mb_substr(strtoupper(trim((string)($in['currency']??'BDT'))?:'BDT'),0,8),$div,$mu]);out(['ok'=>1]);
+case 'up_sal_add':
+  admin();$id=(int)($in['id']??0);$d=(string)($in['date']??'');$am=round((float)($in['amount']??0),2);if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$d)||$am<=0||$am>1e9)out(['error'=>'Give a date and a salary amount']);
+  $q=$db->prepare("SELECT COUNT(*) FROM users WHERE id=?");$q->execute([$id]);if(!(int)$q->fetchColumn())out(['error'=>'User not found']);
+  $db->prepare("INSERT INTO user_salary(user_id,eff_date,amount,note,created_by,created_at) VALUES(?,?,?,?,?,NOW())")->execute([$id,$d,$am,mb_substr(trim((string)($in['note']??'')),0,255),$uid]);out(['ok'=>1]);
+case 'up_sal_del':
+  admin();$db->prepare("DELETE FROM user_salary WHERE id=?")->execute([(int)($in['id']??0)]);out(['ok'=>1]);
 case 'user_edit':
   admin();$id=(int)($in['id']??0);$n=mb_substr(trim((string)($in['name']??'')),0,100);$u=trim((string)($in['username']??''));$em=trim((string)($in['email']??''));
   if($n==='')out(['error'=>'Enter a name']);
