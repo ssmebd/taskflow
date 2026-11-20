@@ -1,5 +1,5 @@
 <?php
-const BUILD=329;
+const BUILD=330;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -307,7 +307,20 @@ function sr_whiten($b64){
   $wc=[];for($a=0;$a<=127;$a++)$wc[$a]=imagecolorallocatealpha($o,255,255,255,$a);
   for($y=0;$y<$nh;$y++)for($x=0;$x<$nw;$x++){$a=(imagecolorat($o,$x,$y)>>24)&127;imagesetpixel($o,$x,$y,$wc[$a]);}
   ob_start();imagepng($o);$png=ob_get_clean();return $png?base64_encode($png):'';}
-function sr_assets($db,$ws,$mode){
+function sr_clearbg($b64){
+  // Makes the white background around a logo transparent (flood from the four corners, so white inside the logo stays). Returns '' if it can't (no GD).
+  if(!function_exists('imagecreatefromstring'))return '';
+  $im=@imagecreatefromstring((string)base64_decode($b64));if(!$im)return '';
+  $w=imagesx($im);$h=imagesy($im);if($w<2||$h<2)return '';
+  $sc=min(1,200/max($w,$h));$nw=max(2,(int)round($w*$sc));$nh=max(2,(int)round($h*$sc));
+  $o=imagecreatetruecolor($nw,$nh);imagealphablending($o,false);imagesavealpha($o,true);imagefill($o,0,0,imagecolorallocatealpha($o,255,255,255,127));
+  imagecopyresampled($o,$im,0,0,0,0,$nw,$nh,$w,$h);
+  $isbg=function($x,$y)use($o){$c=imagecolorat($o,$x,$y);$al=($c>>24)&127;if($al>=100)return true;return (($c>>16)&255)>=205&&(($c>>8)&255)>=205&&($c&255)>=205;};
+  $seen=[];$st=[[0,0],[$nw-1,0],[0,$nh-1],[$nw-1,$nh-1]];$clr=imagecolorallocatealpha($o,255,255,255,127);
+  while($st){[$x,$y]=array_pop($st);if($x<0||$y<0||$x>=$nw||$y>=$nh)continue;$k=$y*$nw+$x;if(isset($seen[$k]))continue;$seen[$k]=1;if(!$isbg($x,$y))continue;
+    imagesetpixel($o,$x,$y,$clr);$st[]=[$x+1,$y];$st[]=[$x-1,$y];$st[]=[$x,$y+1];$st[]=[$x,$y-1];}
+  ob_start();imagepng($o);$png=ob_get_clean();return $png?base64_encode($png):'';}
+function sr_assets($db,$ws,$mode,$nobox=false){
   // mode 'cid': images are attached to the email and referenced by cid. mode 'data': inline data URIs (for the on-screen preview).
   $o=['tf'=>'','co'=>[],'names'=>[],'att'=>[],'white'=>false];
   $f=__DIR__.'/icon-192.png';
@@ -319,6 +332,7 @@ function sr_assets($db,$ws,$mode){
   if(count($o['names'])>3)$L=[];
   $o['white']=$L&&!array_filter($L,fn($l)=>$l[3]==='');
   foreach($L as $i=>$l){$n=$i+1;$mime=$o['white']?'image/png':$l[1];$b64=$o['white']?$l[3]:$l[2];
+    if($nobox&&!$o['white']){$cl=sr_clearbg($l[2]);if($cl!==''){$mime='image/png';$b64=$cl;}}
     if($mode==='cid'){$id='cologo'.$n;$o['co'][]=['cid:'.$id,$l[0]];$o['att'][]=[$id.'.'.($mime==='image/png'?'png':'jpg'),$mime,$b64,$id];}
     else $o['co'][]=['data:'.$mime.';base64,'.$b64,$l[0]];}
   return $o;}
@@ -434,7 +448,7 @@ function ms_send($to,$subject,$html,$att=[]){
 function sr_send($db,$s){
   $to=sr_valid_emails($s['emails']);if(!$to)return ['ok'=>false,'sent'=>0,'err'=>'No valid email addresses'];
   $ws=array_filter(array_map('intval',explode(',',(string)$s['ws_ids'])));$d=sr_data($db,$ws,$s['excl_g']??'',$s['excl_t']??'',$s['ahead']??3,$s['grp_order']??'',$s['rng_from']??null,$s['rng_to']??null,$s['rng_mode']??'');
-  $title=($s['name']!==''?$s['name']:'Task status report');$as=sr_assets($db,$ws,'cid');$as['nobox']=!empty($s['logo_nobox']);$html='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,$as).'</body></html>';$htmlPlain='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,['tf'=>'','co'=>[],'names'=>$as['names']]).'</body></html>';
+  $title=($s['name']!==''?$s['name']:'Task status report');$as=sr_assets($db,$ws,'cid',!empty($s['logo_nobox']));$as['nobox']=!empty($s['logo_nobox']);$html='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,$as).'</body></html>';$htmlPlain='<!doctype html><html><body style="margin:0;padding:0;background:#eef2f7">'.sr_html($d,$title,['tf'=>'','co'=>[],'names'=>$as['names']]).'</body></html>';
   $txt=$title."\nWeek ".$d['from'].' to '.$d['to']."\n\n";
   $tx=['done'=>[!empty($d['custom'])?'COMPLETED IN THIS PERIOD':'COMPLETED THIS WEEK','done'],'going'=>['ONGOING','going'],'soon'=>[!empty($d['custom'])?'STARTING BY '.strtoupper(date('j M',strtotime($d['next']))):'STARTING IN '.strtoupper(($d['ahead']??3)===1?'THE NEXT DAY':'THE NEXT '.($d['ahead']??3).' DAYS'),'soon']];foreach(array_map(fn($x)=>$tx[$x],$d['order']??['done','going','soon']) as $g){$txt.=$g[0].' ('.count($d[$g[1]]).")\n";foreach($d[$g[1]] as $r)$txt.='- '.trim(($r['order_no']?$r['order_no'].' ':'').$r['title']).($r['customer']?' | '.$r['customer']:'').($r['person']?' | '.$r['person']:'').($g[1]==='soon'?' | starts '.$r['start_date']:'')."\n";$txt.="\n";}
   $host=bk_host();$sent=0;$err='';
@@ -1374,7 +1388,7 @@ case 'sr_list':
   admin();sr_ddl($db);$q=$db->query("SELECT id,name,ws_ids,emails,dow,hhmm,active,last_sent,COALESCE(excl_g,'') AS excl_g,COALESCE(excl_t,'') AS excl_t,ahead,COALESCE(grp_order,'') AS grp_order,rng_from,rng_to,rng_mode,logo_nobox FROM status_reports ORDER BY id");
   out(['items'=>$q->fetchAll(),'companies'=>$db->query("SELECT id,name FROM workspaces ORDER BY sort_no,name")->fetchAll(),'users'=>$db->query("SELECT id,name,email,role FROM users ORDER BY name")->fetchAll(),'ms_from'=>($mc=ms_cfg())?$mc['from']:'']);
 case 'sr_preview':
-  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[],$in['rf']??null,$in['rt']??null,(in_array($in['mode']??'',['nweek','twn'],true)?$in['mode']:''));out(['html'=>sr_html($d,'Task status report',array_merge(sr_assets($db,(array)($in['ws']??[]),'data'),['nobox'=>!empty($in['nobox'])])),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'next'=>$d['next'],'from'=>$d['from'],'to'=>$d['to'],'custom'=>$d['custom'],'today'=>$d['today']]);
+  admin();sr_ddl($db);$d=sr_data($db,(array)($in['ws']??[]),(array)($in['exg']??[]),(array)($in['ext']??[]),$in['ahead']??3,$in['order']??[],$in['rf']??null,$in['rt']??null,(in_array($in['mode']??'',['nweek','twn'],true)?$in['mode']:''));out(['html'=>sr_html($d,'Task status report',array_merge(sr_assets($db,(array)($in['ws']??[]),'data',!empty($in['nobox'])),['nobox'=>!empty($in['nobox'])])),'n'=>[count($d['done']),count($d['going']),count($d['soon'])],'tree'=>$d['tree'],'next'=>$d['next'],'from'=>$d['from'],'to'=>$d['to'],'custom'=>$d['custom'],'today'=>$d['today']]);
 case 'sr_save':
   admin();sr_ddl($db);$id=(int)($in['id']??0);$nm=mb_substr(trim((string)($in['name']??'')),0,80);
   $em=implode(', ',sr_valid_emails($in['emails']??''));if($em==='')out(['error'=>'Add at least one valid email address']);
