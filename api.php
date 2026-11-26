@@ -1,5 +1,5 @@
 <?php
-const BUILD=331;
+const BUILD=332;
 require 'config.php';require 'remember.php';
 header('Content-Type: application/json');
 if(PHP_SAPI==='cli'){$cmd=$argv[1]??'';if($cmd==='remind'){echo rem_run($db,$argv[2]??'',($argv[3]??'')==='force')."\n".sr_run($db)."\n";exit(0);}$r=$cmd==='backup'?bk_run($db):($cmd==='worklog'?wl_run($db):['ok'=>false,'file'=>'','err'=>'Usage: php api.php backup | worklog | remind [am|pm [force]]']);echo ($r['ok']?'OK ':'FAILED ').$r['file'].' '.$r['err']."\n";exit($r['ok']?0:1);}
@@ -610,6 +610,9 @@ if(!$me){session_destroy();http_response_code(401);out(['error'=>'auth']);}
 if($me['role']==='guest'&&preg_match('/^(msg_|chat_)/',$a))out(['error'=>'Chat is not available for guest accounts. You can add messages on tasks.']);
 const WORK_H=8.0;
 // Overtime is automatic: all of Saturday/Sunday, and anything beyond 8 hours on a weekday.
+function ot_backfill($db,$wid=0){ // re-split every logged day of the companies set to "all hours are OT" (hours pinned to Regular by hand stay Regular)
+  try{$q=$db->prepare("SELECT DISTINCT l.user_id,l.work_date FROM time_logs l JOIN workspaces w ON w.id=l.ws_id WHERE w.all_ot=1".($wid?" AND w.id=?":""));$q->execute($wid?[$wid]:[]);
+    foreach($q->fetchAll() as $r)ot_rebalance($db,(int)$r['user_id'],$r['work_date']);}catch(Throwable $e){}}
 function ot_rebalance($db,$who,$d){
   try{
     $wk=(int)date('N',strtotime($d))>=6;
@@ -731,6 +734,7 @@ function ensure_schema($db){
   $db->exec("CREATE TABLE IF NOT EXISTS user_photos(user_id INT NOT NULL PRIMARY KEY,mime VARCHAR(30) NOT NULL,data MEDIUMBLOB NOT NULL,updated_at DATETIME NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   notices_ddl($db);
   photo_seed($db);photo_seed2($db);photo_seed3($db);
+  try{$q=$db->prepare("SELECT v FROM meta WHERE k='allot_backfill1'");$q->execute();if(!(int)$q->fetchColumn()){$db->prepare("INSERT INTO meta(k,v) VALUES('allot_backfill1',1) ON DUPLICATE KEY UPDATE v=1")->execute();ot_backfill($db);}}catch(Throwable $e){}
   if(!$db->query("SHOW COLUMNS FROM workspaces LIKE 'all_ot'")->fetch()){$db->exec("ALTER TABLE workspaces ADD all_ot TINYINT NOT NULL DEFAULT 0");$db->exec("UPDATE workspaces SET all_ot=1 WHERE name REGEXP 'DMC|Dynamic Modular'");} // every hour logged in this company counts as overtime; DMC starts switched on
   $db->exec("CREATE TABLE IF NOT EXISTS user_profile(user_id INT PRIMARY KEY,phone VARCHAR(60) NOT NULL DEFAULT '',designation VARCHAR(100) NOT NULL DEFAULT '',joined DATE NULL,notes TEXT NULL,currency VARCHAR(8) NOT NULL DEFAULT 'BDT',ot_div DECIMAL(8,2) NOT NULL DEFAULT 208,ot_mult DECIMAL(6,2) NOT NULL DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
   $db->exec("CREATE TABLE IF NOT EXISTS user_salary(id INT AUTO_INCREMENT PRIMARY KEY,user_id INT NOT NULL,eff_date DATE NOT NULL,amount DECIMAL(12,2) NOT NULL,note VARCHAR(255) NOT NULL DEFAULT '',created_by INT NULL,created_at DATETIME NOT NULL,KEY u(user_id,eff_date)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
@@ -1415,7 +1419,7 @@ case 'inv_del':
 case 'co_get':
   admin();$pe=col_peers($db,$W);$q=$db->prepare("SELECT COALESCE(all_ot,0) FROM workspaces WHERE id=?");$q->execute([$W]);out(['company'=>inv_company($db),'colsync'=>$pe?$pe[0]:0,'all_ot'=>(int)$q->fetchColumn()]);
 case 'ws_allot':
-  admin();$db->prepare("UPDATE workspaces SET all_ot=? WHERE id=?")->execute([!empty($in['on'])?1:0,$W]);out(['ok'=>1]);
+  admin();$db->prepare("UPDATE workspaces SET all_ot=? WHERE id=?")->execute([!empty($in['on'])?1:0,$W]);if(!empty($in['on']))ot_backfill($db,(int)$W);out(['ok'=>1]);
 case 'ws_colsync':
   admin();$id=(int)($in['id']??0);$with=(int)($in['with']??0);
   if(!$with){$db->prepare("UPDATE workspaces SET col_grp=0 WHERE id=?")->execute([$id]);out(['ok'=>1]);}
