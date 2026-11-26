@@ -791,7 +791,7 @@ html.indesk header .bk2{display:none!important}html.indesk body header{padding-r
  <small style="color:var(--mut)">Hours are logged under the person the task is assigned to (you will be asked to assign someone if it has no assignee). Use quarter-hours, e.g. 1.5 = 1 h 30 min.</small>
 </dialog>
 <dialog id="mhdg"><div class="acts" style="margin:0 0 6px"><b style="flex:1">⏱ My hours check</b><button id="mhcl">Close</button></div>
- <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mh14">Last 14 days</button><button id="mh30">Last 30 days</button><label style="margin:0 0 0 6px;display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="mhmo"> Missed days only</label></div>
+ <div class="rctl"><label style="margin:0">From</label><input type="date" id="mhf"><label style="margin:0">To</label><input type="date" id="mht"><button id="mhtd">Today</button><button id="mhw">This week</button><button id="mhlw">Last week</button><button id="mhtm">This month</button><button id="mhlm">Last month</button><button id="mh14">Last 14 days</button><button id="mh30">Last 30 days</button><label style="margin:0 0 0 6px;display:inline-flex;gap:4px;align-items:center"><input type="checkbox" id="mhmo"> Missed days only</label></div>
  <div class="rctl"><label style="margin:0">Target hours / day</label><input type="number" id="mhg" value="8" min="0" step="0.25" style="width:80px"><span id="mhdays"></span><select id="mhu" hidden></select><label style="margin:0 0 0 6px">Company</label><select id="mhco" title="Show hours for one company or all"><option value="">All companies</option></select></div>
  <div class="rctl"><label style="margin:0">Download</label><select id="mhdl"><option value="day">Today</option><option value="week">This week (Mon–Sun)</option><option value="lweek">Last week</option><option value="month">This month</option><option value="lmonth">Last month</option><option value="sel">Dates selected above</option></select><button id="mhdb" title="Save your hours as an Excel file laid out like the worklog">⬇ Excel</button></div>
  <div id="mhs"></div><div id="mhout"></div></dialog>
@@ -1499,6 +1499,8 @@ $("#mhm").addEventListener("click",e=>{e.preventDefault();$("#umenu").hidden=tru
 $("#mhcl").onclick=()=>$("#mhdg").close();
 $("#mhtd").onclick=()=>mhRange(ltoday(),ltoday());$("#mh30").onclick=()=>mhRange(isoAdd(ltoday(),-29),ltoday());$("#mhmo").addEventListener("change",mhDraw);
 $("#mhw").onclick=()=>{const s=wkStart(ltoday());mhRange(s,isoAdd(s,6))};
+$("#mhtm").onclick=()=>{const t=ltoday(),f=t.slice(0,8)+"01",e=new Date(+t.slice(0,4),+t.slice(5,7),0);mhRange(f,t.slice(0,8)+String(e.getDate()).padStart(2,"0"))};
+$("#mhlm").onclick=()=>{const t=ltoday(),d=new Date(+t.slice(0,4),+t.slice(5,7)-2,1),p=n=>String(n).padStart(2,"0"),m=d.getFullYear()+"-"+p(d.getMonth()+1),e=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();mhRange(m+"-01",m+"-"+p(e))};
 $("#mhlw").onclick=()=>{const s=isoAdd(wkStart(ltoday()),-7);mhRange(s,isoAdd(s,6))};
 $("#mh14").onclick=()=>mhRange(isoAdd(ltoday(),-13),ltoday());
 ["mhf","mht"].forEach(i=>$("#"+i).addEventListener("change",()=>{const a=$("#mhf").value,b=$("#mht").value;if(a&&b&&a<=b)mhRange(a,b)}));
@@ -2659,7 +2661,7 @@ $("#tlist").addEventListener("change",async e=>{if(!e.target.dataset.role)return
  let tries=0;const kick=()=>{if(me&&me.role){if(me.role!=="guest")open();return}if(++tries<40)setTimeout(kick,500)};setTimeout(kick,1200);
 })();
 load(true);
-const BUILD=330;
+const BUILD=331;
 $("#bld").textContent="Build "+BUILD;$("#bld").onclick=()=>location.reload();$("#ubl").textContent="↻ Build "+BUILD;$("#ubl").onclick=e=>{e.preventDefault();location.reload()};
 function chkBuild(b){const e=$("#bld"),u=$("#ubl");if(u){if(b&&+b!==BUILD){u.textContent="↻ Build "+b+" ready · tap to update";u.style.background="#fff4d6";u.style.color="#7a5200"}else{u.textContent="↻ Build "+BUILD;u.style.background="";u.style.color=""}}if(b&&+b!==BUILD){e.textContent="↻ Build "+b+" ready · tap to update";e.style.background="#fff4d6";e.style.color="#7a5200";e.style.opacity=1}else{e.textContent="Build "+BUILD;e.style.background="";e.style.color="";e.style.opacity=.8}}
 function setLive(ok){const l=$("#live");l.innerHTML=`<span style="color:${ok?"#22c55e":"#9ca3af"};text-shadow:${ok?"0 0 6px #22c55e":"none"}">●</span> ${ok?"Live":"Offline"}`;l.style.color=""}
